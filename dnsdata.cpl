@@ -141,4 +141,32 @@ d24np1(-2+(*))=M\t
 
 END setup_derivatives
 
+!// Setup Boundary conditions variables----------------------------------------------------
+ARRAY(-nz..nz,1..ny-1,-2..2) OF REAL D2vmat=0, etamat=0		!// o fino a ny o ny+1?? dipende fino a dove risolvo le equazioni
+ARRAY(1..ny-1,-2..2) OF REAL D0mat=0
+D0mat(1..ny-1)=derivatives.d0; LUdecomp D0mat
+ARRAY(-2..2) OF REAL v0bc(-1..0)=0,vnbc(0..1)=0,eta0bc(-1..0)=0,etanbc(0..1)=0
+
+v0bc(0)=d040; v0bc(-1)=d140; eta0bc(0)=d040
+eta0bc(-1)=derivatives(1).d4
+DO v0bc(0)(i)=~-v0bc(0)(-2)*v0bc(-1)(i)/v0bc(-1)(-2) FOR i= -1 TO 2
+DO eta0bc(0)(i)=~-eta0bc(0)(-2)*eta0bc(-1)(i)/eta0bc(-1)(-2) FOR i= -1 TO 2
+
+! vnbc(0)=d04n; vnbc(1)=d24n; etanbc(0)=d14n !Boundary layer
+vnbc(0)=d04n; vnbc(1)=d14n; etanbc(0)=d04n
+etanbc(1)=derivatives(ny-1).d4
+DO vnbc(0)(i)=~-vnbc(0)(2)*vnbc(1)(i)/vnbc(1)(2) FOR i= -2 TO 1
+DO etanbc(0)(i)=~-etanbc(0)(2)*etanbc(1)(i)/etanbc(1)(2) FOR i= -2 TO 1
+
+!// Function to applay Boundary conditions
+SUBROUTINE applybc_0(ARRAY(*) OF REAL eq^(*); ARRAY(-1..0,-2..2) OF REAL bc) 
+  	DO eq(1,i)=~-eq(1,-2)*bc(-1,i)/bc(-1,-2) FOR i=-1 TO 2
+  	DO eq(1,i)=~-eq(1,-1)*bc(0,i)/bc(0,-1) FOR i=0 TO 2
+  	DO eq(2,i-1)=~-eq(2,-2)*bc(0,i)/bc(0,-1) FOR i=0 TO 2
+END applybc_0
+SUBROUTINE applybc_n(ARRAY(*) OF REAL eq^(*); ARRAY(0..1,-2..2) OF REAL bc) 
+  	DO eq(ny-1,i)=~-eq(ny-1,2)*bc(1,i)/bc(1,2) FOR i=-2 TO 1
+  	DO eq(ny-1,i)=~-eq(ny-1,1)*bc(0,i)/bc(0,1) FOR i=-2 TO 0
+  	DO eq(ny-2,i+1)=~-eq(ny-2,2)*bc(0,i)/bc(0,1) FOR i=-2 TO 0
+END applybc_n
 
