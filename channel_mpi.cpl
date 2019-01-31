@@ -1,31 +1,16 @@
-USE dnsdata
-!USE dnsdirect
 #include <mpi.h>
 #include <math.h>
 #include <stdlib.h>
-
 #include <time.h>
 
-
-WRITE 
-<*
-/* Initialize MPI */
-MPI_Init(&argc,&argv);
-MPI_Comm remap_comm; // @suppress("Type cannot be resolved")
-MPI_Comm_dup( MPI_COMM_WORLD, &remap_comm ); // @suppress("Symbol is not resolved")
-int rank,size;
-MPI_Comm_size(MPI_COMM_WORLD,&size);
-MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-*>
-
 INTEGER rank
+USE dnsdata
 WRITE
-<*
-rank_ = rank;
-*>
+
+
 
 USE convol_trasp
-
+!y_pencil_parser( VV, start_mode_x, end_mode_x, start_mode_z, end_mode_z, 0)
 
 <*
 MPI_Finalize();

@@ -1,148 +1,149 @@
 !USE rtchecks
 USE fft
 USE rbmat
-USE parallel
 
-nsmp=1
+!// Parallel - initialization--------------------------------------------------
+WRITE 
+<*/* Initialize MPI */
+MPI_Init(&argc,&argv);
+MPI_Comm remap_comm; // @suppress("Type cannot be resolved")
+MPI_Comm_dup( MPI_COMM_WORLD, &remap_comm ); // @suppress("Symbol is not resolved")
+int rank,size;
+MPI_Comm_size(MPI_COMM_WORLD,&size);
+MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+rank_ = rank;
+*>
 
-! Parallel - initialization
-INTEGER iproc,nproc
-IF COMMANDLINE.HI<1 THEN iproc=1; nproc=1 ELSE
-iproc=atoi(COMMANDLINE(1)); nproc=atoi(COMMANDLINE(2)); END IF
-bufsize=800; baseport=IPPORT_USERRESERVED+111
-FILE prev,next
-IF iproc<nproc THEN
-  next=fdopen(tcpserver(baseport+iproc),"r+")
-  setvbuf(next,malloc(bufsize),_IOFBF,bufsize)
-END IF
-IF iproc>1 THEN
-  prev=fdopen(tcpclient(COMMANDLINE(3),baseport+iproc-1),"r+")
-  setvbuf(prev,malloc(bufsize),_IOFBF,bufsize)
-END IF
-first==(prev=NULL FILE); last==(next=NULL FILE); has_terminal==last
-
-
-USE rbmatmod
-
+!// Variables initialization---------------------------------------------------
 INTEGER ny,nx,nz
 REAL alfa0, beta0, a, ymin, ymax, t_max, dt_field, dt_save
 REAL u_conv, u0, un, w_conv, w0, wn, t0, tn
-REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0
+REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0, maxtimelevels=1
 BOOLEAN time_from_restart
 STRING restart_file
-STRUCTURE[ARRAY(-2..2) OF REAL d0,d1,d2,d4] derivatives(1,ny)
-ARRAY(-2..2) OF REAL d040,d140,d240,d340,d14m1,d24m1, d04n,d14n,d24n,d14np1,d24np1
 
-
-
-
-
-! --------------------------------------------------------------------------------------------------------- !
+!// Structures initialization--------------------------------------------------
 VELOCITY=STRUCTURE(COMPLEX u,v,w)
 MOMFLUX=STRUCTURE(COMPLEX uu,uv,vv,vw,ww,uw)
 ARRAY(0..1023) OF CHAR header
 ARRAY(-1..ny+1,0..nx,-nz..nz) OF VELOCITY Vimage
 INLINE FUNCTION OS(INTEGER iy,i)=ni*[d4(i)-2*k2*d2(i)+k2*k2*d0(i)]
 INLINE FUNCTION SQ(INTEGER iy,i)=ni*[d2(i)-k2*d0(i)]
+rhstype=STRUCTURE(COMPLEX eta,D2v)
+VETA=STRUCTURE(COMPLEX v,eta)
 
+!// Function to copy data from C to structure MOMFLUX----------------------------------------------------
 REAL FUNCTION move_data( POINTER TO REAL work; INTEGER index  )
 <*		
 	double value = work_[index_];
 	return value;
 *>
 END move_data
-	
 
+!// Routine to read data from the structure MOMFLUX	
 SUBROUTINE y_pencil_parser( POINTER TO ARRAY(*,*,*) OF MOMFLUX  VV; INTEGER start_mode_x; INTEGER end_mode_x;
-				  INTEGER start_mode_z; INTEGER end_mode_z; INTEGER rank; INTEGER desidered_rank)
+				  INTEGER start_mode_z; INTEGER end_mode_z; INTEGER desidered_rank)
 	IF rank = desidered_rank THEN 
-		loop_mode_x = start_mode_x
+		INTEGER loop_mode_x = start_mode_x;		INTEGER loop_end_mode_x = nx-1
 		LOOP FOR mode_z= start_mode_z TO end_mode_z
-			LOOP FOR mode_x= loop_mode_x TO nx-1
+			IF mode_z = end_mode_z THEN loop_end_mode_x = end_mode_x-1
+			LOOP FOR mode_x= loop_mode_x TO loop_end_mode_x
 				WRITE "==============(nx=" mode_x", nz=" mode_z ")================"
 				LOOP FOR mode_y=0 TO ny-1
 					WRITE "("mode_x","mode_z","mode_y")  " VV(mode_x,mode_z,mode_y)
 				REPEAT LOOP	
-				loop_mode_x = 0
+				loop_mode_x = 0;
 			REPEAT LOOP
-			
 		REPEAT LOOP
 	END IF
 END y_pencil_parser
 
-
+!// Routine to initialize constants
 SUBROUTINE read_initial_data
- FILE in_data=OPEN("dns.in")
- READ BY NAME FROM in_data ny,nx,nz,alfa0,beta0,ymin,ymax,a,ni,pr; ni=1/ni; pr=1/pr
- DO WHILE READ BY NAME FROM in_data meanpx OR meanflowx; px=meanpx
- DO WHILE READ BY NAME FROM in_data meanpz OR meanflowz; pz=meanpz
- READ BY NAME FROM in_data u_conv, w_conv
- READ BY NAME FROM in_data u0, un, w0, wn, t0, tn
- DO WHILE READ BY NAME FROM in_data deltat OR cflmax
- READ BY NAME FROM in_data t_max, time_from_restart, dt_field, dt_save
- IF NOT READ BY NAME FROM in_data restart_file THEN restart_file=""
- CLOSE in_data
- IF has_terminal THEN
-   WRITE BY NAME nproc,nsmp
-   WRITE BY NAME nx, nz, ny, time
-   WRITE BY NAME meanflowx, meanpx, meanflowz, meanpz
-   WRITE BY NAME ymin, ymax, a, alfa0, beta0, 1/ni, 1/pr
-   WRITE BY NAME u_conv, u0, un, w_conv, w0, wn, t0, tn
-   WRITE BY NAME deltat, cflmax, t_max, dt_save, dt_field  
- END IF
+FILE in_data=OPEN("dns.in")
+READ BY NAME FROM in_data ny,nx,nz,alfa0,beta0,ymin,ymax,a,ni,pr; ni=1/ni; pr=1/pr
+DO WHILE READ BY NAME FROM in_data meanpx OR meanflowx; px=meanpx
+DO WHILE READ BY NAME FROM in_data meanpz OR meanflowz; pz=meanpz
+READ BY NAME FROM in_data u_conv, w_conv
+READ BY NAME FROM in_data u0, un, w0, wn, t0, tn
+DO WHILE READ BY NAME FROM in_data deltat OR cflmax
+READ BY NAME FROM in_data t_max, time_from_restart, dt_field, dt_save
+IF NOT READ BY NAME FROM in_data restart_file THEN restart_file=""
+CLOSE in_data
+IF rank= 0 THEN
+	WRITE BY NAME nx, nz, ny, time
+    WRITE BY NAME meanflowx, meanpx, meanflowz, meanpz
+    WRITE BY NAME ymin, ymax, a, alfa0, beta0, 1/ni, 1/pr
+    WRITE BY NAME u_conv, u0, un, w_conv, w0, wn, t0, tn
+    WRITE BY NAME deltat, cflmax, t_max, dt_save, dt_field  
+END IF
 END read_initial_data
 
 BOOLEAN reread=NO
 SUBROUTINE kill_received(INTEGER signum)
- reread=YES
+	reread=YES
 END kill_received
 
+!// Read initial data------------------------------------------------------------------
 read_initial_data; signal(SIGUSR2,kill_received)
 
-! Grid in y direction and compact finite differences operators
-nyl=1+(iproc-1)*(ny-1) DIV nproc; nyh=iproc*(ny-1) DIV nproc
-REAL y(MAX(-1,nyl-4)..MIN(ny+1,nyh+4))
+!// Grid in y direction and compact finite differences operators-----------------------
+REAL y(-1..ny+1)
 !DO y(i)=ymin+(ymax-ymin)*i/ny FOR ALL i !Mesh equispaziata
 !DO y(i)=ymin+(ymax-ymin)*[tanh(a*(i/ny-1))/tanh(a)+1] FOR ALL i !Boundary layer
 DO y(i)=ymin+0.5*(ymax-ymin)*[tanh(a*(2*i/ny-1))/tanh(a)+0.5*(ymax-ymin)] FOR ALL i !Channel
 
 
-INTEGER nxd=3*nx DIV 2 - 1; DO INC nxd UNTIL FFTfit(nxd)
-INTEGER nzd=3*nz - 1; DO INC nzd UNTIL FFTfit(nzd)
-WRITE BY NAME nxd, nzd
-SHARED ARRAY(0..nxd-1,0..nzd-1) OF VELOCITY Vd
+STRUCTURE[ARRAY(-2..2) OF REAL d0,d1,d2,d4] derivatives(1..ny-1) 
+ARRAY(-2..2) OF REAL d040,d140,d240,d340,d14m1,d24m1, d04n,d14n,d24n,d14np1,d24np1
+!// Setup derivatives------------------------------------------------------------------
+MODULE setup_derivatives
+REAL M(0..4,0..4),t(0..4)
+LOOP FOR iy=1 TO ny-1 WITH derivatives(iy)
+  	DO M(i,j)=(y(iy-2+j)-y(iy))**(4-i) FOR i=0 TO 4 AND j=0 TO 4; LUdecomp M
+  	t=0; t(0)=24
+  	d4(-2+(*))=M\t
+  	DO M(i,j)=(5-i)*(6-i)*(7-i)*(8-i)*(y(iy-2+j)-y(iy))**(4-i) FOR i=0 TO 4 AND j=0 TO 4; LUdecomp M
+ 	 DO t(i)=SUM {d4(j)*(y(iy+j)-y(iy))**(8-i)} FOR j=-2 TO 2 FOR i=0 TO 4
+	  d0(-2+(*))=M\t
+ 	 DO M(i,j)=(y(iy-2+j)-y(iy))**(4-i) FOR i=0 TO 4 AND j=0 TO 4; LUdecomp M
+  	t=0; DO t(i)=SUM d0(j)*(4-i)*(3-i)*(y(iy+j)-y(iy))**(2-i) FOR j=-2 TO 2 FOR i=0 TO 2
+  	d2(-2+(*))=M\t
+  	t=0; DO t(i)=SUM d0(j)*(4-i)*(y(iy+j)-y(iy))**(3-i) FOR j=-2 TO 2 FOR i=0 TO 3
+  	d1(-2+(*))=M\t
+REPEAT
+
+d040=0; d040(-1)=1
+DO M(i,j)=(y(-1+j)-y(0))**(4-i) FOR i=0 TO 4 AND j=0 TO 4; LUdecomp M
+t=0; t(3)=1
+d140(-2+(*))=M\t
+t=0; t(2)=2
+d240(-2+(*))=M\t
+t=0; t(3)=6
+d340(-2+(*))=M\t
+DO M(i,j)=(y(-1+j)-y(-1))**(4-i) FOR i=0 TO 4 AND j=0 TO 4; LUdecomp M
+t=0; t(3)=1
+d14m1(-2+(*))=M\t
+t=0; t(2)=2
+d24m1(-2+(*))=M\t
+
+d04n=0; d04n(1)=1
+DO M(i,j)=(y(ny-3+j)-y(ny))**(4-i) FOR i=0 TO 4 AND j=0 TO 4; LUdecomp M
+t=0; t(3)=1
+d14n(-2+(*))=M\t
+t=0; t(2)=2
+d24n(-2+(*))=M\t
+DO M(i,j)=(y(ny-3+j)-y(ny+1))**(4-i) FOR i=0 TO 4 AND j=0 TO 4; LUdecomp M
+t=0; t(3)=1
+d14np1(-2+(*))=M\t
+t=0; t(2)=2
+d24np1(-2+(*))=M\t
+
+END setup_derivatives
 
 
-maxtimelevels=1
-rhstype=STRUCTURE(COMPLEX eta,D2v)
-VETA=STRUCTURE(COMPLEX v,eta)
-SHARED ARRAY(0..nx,-nz..nz,nyl-2..nyh+2) OF VELOCITY V
-!ARRAY(0..nx-1,-nz..nz,0..ny+4-1) OF MOMFLUX VV
-SHARED ARRAY(0..nx,-nz..nz,MAX(1,nyl-2)..MIN(ny-1,nyh+2),1..maxtimelevels) OF rhstype oldrhs
-SHARED rhstype memrhs(0..nx,-nz..nz,0..2)
 
-SUBROUTINE read_restart_file
-IF restart_file="" THEN
-  time=0; V=0
-  IF last THEN LOOP FOR iy=HI-10 TO HI
-    DO WITH V(ix,iz,iy): u=0.0001*EXP(RAND()*2*PI*I); v=0.0001*EXP(RAND()*2*PI*I); w=0.0001*EXP(RAND()*2*PI*I) FOR ALL ix,iz
-    DO V(0,-iz,iy).u=CONJG(V(0,iz,iy).u);V(0,-iz,iy).v=CONJG(V(0,iz,iy).v);V(0,-iz,iy).w=CONJG(V(0,iz,iy).w) FOR iz=1 TO nz
-  REPEAT
-  DO WITH V(0,0,iy): u.REAL=3/4*(1-[1-y(iy)]^2); u.IMAG=0; v=0; w.IMAG=0 FOR iy=V.LO3 TO V.HI3
-ELSE
-  IF has_terminal THEN WRITE "Reading from restart_file: ", restart_file
-  diskimage = OPEN(restart_file); WITH diskimage:
-    IF time_from_restart THEN
-      READ BY NAME FROM header ny,nx,nz,alfa0,beta0,ymin,ymax,a,ni,time; ni=1/ni
-      IF has_terminal THEN WRITE "Starting at non-zero time="time
-    END IF
-    LOOP FOR iy = nyl-2 TO nyh+2
-      V(*,*,iy) = Vimage(iy)
-#ifdef scalar
-    phi(*,*,iy)=phiimage(iy)
-#endif
-    REPEAT LOOP
-  CLOSE diskimage
-END IF
-DO WITH V(0,0,iy): u=~+u_conv; w=~+w_conv FOR ALL iy
-END read_restart_file    
+
+
+
+   

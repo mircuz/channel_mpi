@@ -1,12 +1,11 @@
 WRITE
-
 <*
   	/**************************************************************************************************************
-	 * 													      *													  *
-	 * 				2D FFT with Pencil Decomposition in MPI Space	   			      *
-	 * 													      *														  *
+	 * 													      													  *
+	 * 				2D FFT with Pencil Decomposition in MPI Space	   			      							  *
+	 * 													      													  *
 	 **************************************************************************************************************
-											     Author: Dr. Mirco Meazzo */
+											     										 Author: Dr. Mirco Meazzo */
   #include "remap3d_wrap.h"    // To perform 3D remapping
   #include "fft_support.h"
 
@@ -519,34 +518,31 @@ modes_xz = (displs+scounts) DIV (ny*2)
 end_mode_z = modes_xz DIV nx;
 end_mode_x = modes_xz - end_mode_z*nx; 			
 end_mode_z = end_mode_z -nz;
-!// Allocate local array VV
+
+!// Allocate and fill the local array VV
 ARRAY(0..nx, start_mode_z..end_mode_z,0..ny) OF MOMFLUX VV 
-
-
-!//IF rank = 0 THEN
 LOOP FOR counter= 0 TO scounts-1
 	<*
-	entry_uu_  =dnsdata_15move_data(uu,counter_);
-	entry_uv_  =dnsdata_15move_data(uv,counter_);
-	entry_vv_  =dnsdata_15move_data(vv,counter_);
-	entry_vw_  =dnsdata_15move_data(vw,counter_);
-	entry_ww_  =dnsdata_15move_data(ww,counter_);
-	entry_uw_  =dnsdata_15move_data(uw,counter_);
+	entry_uu_  =dnsdata_10move_data(uu,counter_);
+	entry_uv_  =dnsdata_10move_data(uv,counter_);
+	entry_vv_  =dnsdata_10move_data(vv,counter_);
+	entry_vw_  =dnsdata_10move_data(vw,counter_);
+	entry_ww_  =dnsdata_10move_data(ww,counter_);
+	entry_uw_  =dnsdata_10move_data(uw,counter_);
  	counter_++;
 	*> 
 	VV(mode_x,mode_z,mode_y).uu.REAL= entry_uu;	VV(mode_x,mode_z,mode_y).vv.REAL= entry_vv;	VV(mode_x,mode_z,mode_y).ww.REAL= entry_ww;
 	VV(mode_x,mode_z,mode_y).uv.REAL= entry_uv;	VV(mode_x,mode_z,mode_y).vw.REAL= entry_vw;	VV(mode_x,mode_z,mode_y).uw.REAL= entry_uw;	
 	<*
-	entry_uu_  =dnsdata_15move_data(uu,counter_);
-	entry_uv_  =dnsdata_15move_data(uv,counter_);
-	entry_vv_  =dnsdata_15move_data(vv,counter_);
-	entry_vw_  =dnsdata_15move_data(vw,counter_);
-	entry_ww_  =dnsdata_15move_data(ww,counter_);
-	entry_uw_  =dnsdata_15move_data(uw,counter_);
+	entry_uu_  =dnsdata_10move_data(uu,counter_);
+	entry_uv_  =dnsdata_10move_data(uv,counter_);
+	entry_vv_  =dnsdata_10move_data(vv,counter_);
+	entry_vw_  =dnsdata_10move_data(vw,counter_);
+	entry_ww_  =dnsdata_10move_data(ww,counter_);
+	entry_uw_  =dnsdata_10move_data(uw,counter_);
 	*> 
 	VV(mode_x,mode_z,mode_y).uu.IMAG= entry_uu;	VV(mode_x,mode_z,mode_y).vv.IMAG= entry_vv;	VV(mode_x,mode_z,mode_y).ww.IMAG= entry_ww;
 	VV(mode_x,mode_z,mode_y).uv.IMAG= entry_uv;	VV(mode_x,mode_z,mode_y).vw.IMAG= entry_vw;	VV(mode_x,mode_z,mode_y).uw.IMAG= entry_uw;
-	!//WRITE mode_x, mode_z, mode_y	
 	mode_y = mode_y + 1
 	IF mode_y = ny THEN
 		mode_y = 0
@@ -557,9 +553,12 @@ LOOP FOR counter= 0 TO scounts-1
 		END IF
 	END IF
 REPEAT LOOP
-!//END IF
 
-y_pencil_parser( VV, start_mode_x, end_mode_x, start_mode_z, end_mode_z, rank, 0)
+<* 	free(u);	free(v);	free(w);
+  	free(uu);	free(uv);	free(vv);	free(vw);	free(ww);	free(uw); 
+*>
+
+
 
 
 
