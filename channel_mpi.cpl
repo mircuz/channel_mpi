@@ -2,16 +2,18 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+#include "remap3d_wrap.h"
 
 INTEGER rank
 USE dnsdata
+USE initialization
 WRITE
 
 
 
 USE convol_trasp
-!//y_pencil_parser_mom( VV, start_mode_x, end_mode_x, start_mode_z, end_mode_z, 2)
-!//y_pencil_parser_vel( V, start_mode_x, end_mode_x, start_mode_z, end_mode_z, 2)
+!//y_pencil_parser_mom( VV, start_mode_x, end_mode_x, start_mode_z, end_mode_z, 0)
+!//y_pencil_parser_vel( V, start_mode_x, end_mode_x, start_mode_z, end_mode_z, 0)
 
 <*
 MPI_Finalize();
