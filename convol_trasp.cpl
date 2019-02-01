@@ -6,96 +6,6 @@ WRITE
 	 ****************************************************************************
 											     	   Author: Dr. Mirco Meazzo */
 
-  /******************************************** Memory Alloc *******************************************/
-  FFT_SCALAR *u = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *v = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *w = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *u_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *v_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *w_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *uu = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *uv = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *vv = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *vw = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *ww = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *uw = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *sendbuf = (FFT_SCALAR *) malloc(sendsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(recvsize*sizeof(FFT_SCALAR)*2);
-
-  if ((u||u_read||v||v_read||w||w_read||uu||uv||vv||vw||ww||uw||sendbuf||recvbuf) == NULL) {
-	  perror(".:Error while allocating memory for remapping variables:.\n");
-	  abort();
-  }
-
-  // Declare variables, on all procs, needed to Scatter data
-  FFT_SCALAR *V, *U, *W, *U_read, *V_read, *W_read;
-
-  // Allocate mememory needed to Scatter data, only on the broadcaster
-  // U
-  U_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
-  U = (FFT_SCALAR*) malloc( nxd*ny*nzd*2* sizeof(FFT_SCALAR));
-  if( (U||U_read) == NULL) {
-	  perror(".:Error while allocatin broadcaster memory U:.\n");
-	  abort();
-  }
-  if (rank == 0) {
-	  read_data(nx, ny, nz, U_read, "u.dat");
-  	  apply_AA(nx, ny, nz, nxd, nzd, U, U_read);
-  }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nxd, ny, nzd, U, u, 1);
-  MPI_Barrier(MPI_COMM_WORLD);
-  free(U);
-  if (rank == 0) transpose_on_rank0( nx, ny, nz, U_read);
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Scatterv(U_read, scounts_scat, displs_scat, MPI_DOUBLE, u_read, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 0) free(U_read);
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  //Send chunks of array Velocity to all processors
-  
-
-  //V
-  V_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
-  V = (FFT_SCALAR*) malloc( nxd*ny*nzd*2* sizeof(FFT_SCALAR));
-  if( (V||V_read) == NULL) {
-	  perror(".:Error while allocating broadcaster memory V:.\n");
-	  abort();
-  }
-  if (rank == 0){
-  	  read_data(nx, ny, nz, V_read, "v.dat");
-  	  apply_AA(nx, ny, nz, nxd, nzd, V, V_read);
-  }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nxd, ny, nzd, V, v, 1);
-  MPI_Barrier(MPI_COMM_WORLD);
-  free(V);
-  if (rank == 0) transpose_on_rank0( nx, ny, nz, V_read);
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Scatterv(V_read, scounts_scat, displs_scat, MPI_DOUBLE, v_read, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 0) free(V_read);
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  //W
-  W_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
-  W = (FFT_SCALAR*) malloc( nxd*ny*nzd*2* sizeof(FFT_SCALAR));
-  if( (W||W_read) == NULL) {
-	  perror(".:Error while allocating broadcaster memory W:.\n");
-	  abort();
-  }
-  if (rank == 0){
-  	  read_data(nx, ny, nz, W_read, "w.dat");
-   	  apply_AA(nx, ny, nz, nxd, nzd, W, W_read);
-  }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nxd, ny, nzd, W, w, 1);
-  MPI_Barrier(MPI_COMM_WORLD);
-  free(W);
-  if (rank == 0) transpose_on_rank0( nx, ny, nz, W_read);
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Scatterv(W_read, scounts_scat, displs_scat, MPI_DOUBLE, w_read, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 0) free(W_read);
-  MPI_Barrier(MPI_COMM_WORLD);
 
   /************************************************ backward FFTs *********************************************/
   if (rank == 0) printf("Reading and Antialiasing completed...\nStarting Backward transformations...\n");
@@ -448,8 +358,7 @@ LOOP FOR mode_z = start_mode_z TO end_mode_z
 	loop_start_mode_x = 0
 REPEAT LOOP
 
-<* 	free(u);	free(v);	free(w);	free(u_read);	free(v_read);	free(w_read);
-  	free(uu);	free(uv);	free(vv);	free(vw);	free(ww);	free(uw); 	*>
+
 
 
 
