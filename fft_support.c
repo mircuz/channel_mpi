@@ -280,23 +280,16 @@ void cores_handler( int modes, int size, int *modes_per_proc) {
 
 }
 
-void read_data_and_apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, char file_to_read[4]) {
-
-	// Allocate the arrays
-	FFT_SCALAR  *U_read;
-	U_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
-	if( U_read==NULL) {
-		perror(".:Error while allocating memory to read .dat");
-		abort();
-	}
-
+void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4]) {
 	//On rank 0 read the dataset
 	FILE *U_dat;	U_dat = fopen( file_to_read, "r");
 	for ( int i = 0; i < (nx)*(ny)*(nz)*2; i++) {
 		fscanf( U_dat, "%lf", &U_read[i]);
 		//printf("I've read %lf\n", U_read[i]);
 	}
+}
 
+void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read) {
 	/* First things first 0..nz modes are read.
 	 * Since the U_read start with negative nz modes we must skip the first 2*nx*ny*(nz_left+1) rows */
 	int nz_left = 1+ (nz-1)/2, reader= 2*nx*ny*(nz_left-1) ;
@@ -341,7 +334,6 @@ void read_data_and_apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR
 		last_index = stride_z + stride_y;
 		//printf("last %d\n", last_index);
 	}
-	free(U_read);
 	/* for (int i =0; i < nxd*nzd*ny*2; i++) {
 	  		  printf("u[%d] = %g\n", i, U[i]);
 	  	  } */
@@ -411,7 +403,7 @@ if (rank == desidered_rank) {
 void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_klo,
 					 int in_khi, int nxd, int ny, int nzd, FFT_SCALAR *arr, FFT_SCALAR *arr_recv, int flag){
 	/* Flag = 1 	=> 	Scatterw
-	 * Flag = -1 	=>	Gatherww */
+	 * Flag = -1 	=>	Gatherw */
 
 	int *contiguous_y = (int *) malloc(sizeof(int)*size);
 	int *contiguous_z = (int *) malloc(sizeof(int)*size);

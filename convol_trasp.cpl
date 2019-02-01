@@ -127,6 +127,25 @@ WRITE
   	  displs[i] = offset;
   	  offset += scounts[i];
   }
+
+
+  /********************************** Setup asymetric factors for scattering **********************************/
+  // Setup matrix
+  int modes_per_proc_scat[size], displs_scat[size], scounts_scat[size], receive_scat[size];
+  for (int i = 0; i < size; i++){
+	  modes_per_proc_scat[i] = 0;
+	  displs_scat[i] = 0;
+  }
+  // Set modes per processor
+  cores_handler( nx*nz, size, modes_per_proc_scat);
+  // Scattering parameters
+  offset=0;
+  for (int i=0; i<size; ++i) {
+	  scounts_scat[i] = modes_per_proc_scat[i]*ny*2;
+	  receive_scat[i] = scounts_scat[i];
+  	  displs_scat[i] = offset ;
+  	  offset += modes_per_proc_scat[i] *ny*2;
+  }
   //printf("modes_ proc %d on rank %d\n", modes_per_proc[rank], rank);
   //printf("scoutn %d & disps %d on rank %d\n", scounts[rank], displs[rank], rank);
 
@@ -135,6 +154,9 @@ WRITE
   FFT_SCALAR *u = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *v = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *w = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
+  FFT_SCALAR *u_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
+  FFT_SCALAR *v_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
+  FFT_SCALAR *w_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *uu = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *uv = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *vv = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
@@ -144,49 +166,80 @@ WRITE
   FFT_SCALAR *sendbuf = (FFT_SCALAR *) malloc(sendsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(recvsize*sizeof(FFT_SCALAR)*2);
 
-  if ((u||v||w||uu||uv||vv||vw||ww||uw||sendbuf||recvbuf) == NULL) {
+  if ((u||u_read||v||v_read||w||w_read||uu||uv||vv||vw||ww||uw||sendbuf||recvbuf) == NULL) {
 	  perror(".:Error while allocating memory for remapping variables:.\n");
 	  abort();
   }
 
   // Declare variables, on all procs, needed to Scatter data
-  FFT_SCALAR *V, *U, *W;
+  FFT_SCALAR *V, *U, *W, *U_read, *V_read, *W_read;
 
   // Allocate mememory needed to Scatter data, only on the broadcaster
   // U
+  U_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
   U = (FFT_SCALAR*) malloc( nxd*ny*nzd*2* sizeof(FFT_SCALAR));
-  if( U == NULL) {
+  if( (U||U_read) == NULL) {
 	  perror(".:Error while allocatin broadcaster memory U:.\n");
 	  abort();
   }
-  if (rank == 0) read_data_and_apply_AA(nx, ny, nz, nxd, nzd, U, "u.dat");
-
-  //Send chunks of array Velocity to all processors
+  if (rank == 0) {
+	  read_data(nx, ny, nz, U_read, "u.dat");
+  	  apply_AA(nx, ny, nz, nxd, nzd, U, U_read);
+  }
   Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nxd, ny, nzd, U, u, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(U);
+  if (rank == 0) transpose_on_rank0( nx, ny, nz, U_read);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Scatterv(U_read, scounts_scat, displs_scat, MPI_DOUBLE, u_read, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 0) free(U_read);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  //Send chunks of array Velocity to all processors
+  
 
   //V
+  V_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
   V = (FFT_SCALAR*) malloc( nxd*ny*nzd*2* sizeof(FFT_SCALAR));
-  if( V == NULL) {
+  if( (V||V_read) == NULL) {
 	  perror(".:Error while allocating broadcaster memory V:.\n");
 	  abort();
   }
-  if (rank == 0) read_data_and_apply_AA(nx, ny, nz, nxd, nzd, V, "v.dat");
+  if (rank == 0){
+  	  read_data(nx, ny, nz, V_read, "v.dat");
+  	  apply_AA(nx, ny, nz, nxd, nzd, V, V_read);
+  }
   Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nxd, ny, nzd, V, v, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(V);
+  if (rank == 0) transpose_on_rank0( nx, ny, nz, V_read);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Scatterv(V_read, scounts_scat, displs_scat, MPI_DOUBLE, v_read, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 0) free(V_read);
+  MPI_Barrier(MPI_COMM_WORLD);
 
   //W
+  W_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
   W = (FFT_SCALAR*) malloc( nxd*ny*nzd*2* sizeof(FFT_SCALAR));
-  if( W == NULL) {
+  if( (W||W_read) == NULL) {
 	  perror(".:Error while allocating broadcaster memory W:.\n");
 	  abort();
   }
-  if (rank == 0) read_data_and_apply_AA(nx, ny, nz, nxd, nzd, W, "w.dat");
+  if (rank == 0){
+  	  read_data(nx, ny, nz, W_read, "w.dat");
+   	  apply_AA(nx, ny, nz, nxd, nzd, W, W_read);
+  }
   Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nxd, ny, nzd, W, w, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(W);
+  if (rank == 0) transpose_on_rank0( nx, ny, nz, W_read);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Scatterv(W_read, scounts_scat, displs_scat, MPI_DOUBLE, w_read, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 0) free(W_read);
+  MPI_Barrier(MPI_COMM_WORLD);
 
   /************************************************ backward FFTs *********************************************/
   if (rank == 0) printf("Reading and Antialiasing completed...\nStarting Backward transformations...\n");
@@ -322,25 +375,6 @@ WRITE
   if (rank == 0) printf("Completed\nStarting dealiasing operations\n");
 
 
-  /********************************** Setup asymetric factors for scattering **********************************/
-  // Setup matrix
-  int modes_per_proc_scat[size], displs_scat[size], scounts_scat[size], receive_scat[size];
-  for (int i = 0; i < size; i++){
-	  modes_per_proc_scat[i] = 0;
-	  displs_scat[i] = 0;
-  }
-  // Set modes per processor
-  cores_handler( nx*nz, size, modes_per_proc_scat);
-  // Scattering parameters
-  offset=0;
-  for (int i=0; i<size; ++i) {
-	  scounts_scat[i] = modes_per_proc_scat[i]*ny*2;
-	  receive_scat[i] = scounts_scat[i];
-  	  displs_scat[i] = offset ;
-  	  offset += modes_per_proc_scat[i] *ny*2;
-  }
-
-
   /*********************************************** Modes cutting ********************************************/
   double TIMER_AA = 0.0;
   TIMER_AA -= MPI_Wtime();
@@ -468,7 +502,7 @@ WRITE
   if (rank == 0) free(UW);
 
   TIMER_AA += MPI_Wtime();
-  //print_y_pencil(nx, ny, nz, uu, rank, displs_scat[rank], scounts_scat[rank], 3);
+  //print_y_pencil(nx, ny, nz, w_read, rank, displs_scat[rank], scounts_scat[rank], 0);
 
 
   /************************************************ Print Stats *********************************************/
@@ -503,7 +537,7 @@ WRITE
 *>
 
 WRITE
-REAL entry_uu, entry_uv, entry_vv, entry_vw, entry_ww, entry_uw
+REAL entry_uu, entry_uv, entry_vv, entry_vw, entry_ww, entry_uw, entry_u, entry_v, entry_w
 INTEGER displs, scounts, counter=0, mode_y=0, modes_xz, start_mode_z, mode_z, end_mode_z, start_mode_x, mode_x, end_mode_x
 
 !// Read starting modes
@@ -511,7 +545,7 @@ modes_xz = displs DIV (ny*2)
 start_mode_z = modes_xz DIV nx;
 start_mode_x = modes_xz - start_mode_z*nx;	
 !// Take into account the negative modes
-start_mode_z = start_mode_z - nz;		mode_z = start_mode_z;		mode_x = start_mode_x
+start_mode_z = start_mode_z - nz;
 
 !// Calculate ending mode_z & mode_x
 modes_xz = (displs+scounts) DIV (ny*2)
@@ -519,46 +553,47 @@ end_mode_z = modes_xz DIV nx;
 end_mode_x = modes_xz - end_mode_z*nx; 			
 end_mode_z = end_mode_z -nz;
 
+INTEGER loop_end_mode_x = nx-1; INTEGER loop_start_mode_x = start_mode_x
 !// Allocate and fill the local array VV
 ARRAY(0..nx, start_mode_z..end_mode_z,0..ny) OF MOMFLUX VV 
-LOOP FOR counter= 0 TO scounts-1
-	<*
-	entry_uu_  =dnsdata_10move_data(uu,counter_);
-	entry_uv_  =dnsdata_10move_data(uv,counter_);
-	entry_vv_  =dnsdata_10move_data(vv,counter_);
-	entry_vw_  =dnsdata_10move_data(vw,counter_);
-	entry_ww_  =dnsdata_10move_data(ww,counter_);
-	entry_uw_  =dnsdata_10move_data(uw,counter_);
- 	counter_++;
-	*> 
-	VV(mode_x,mode_z,mode_y).uu.REAL= entry_uu;	VV(mode_x,mode_z,mode_y).vv.REAL= entry_vv;	VV(mode_x,mode_z,mode_y).ww.REAL= entry_ww;
-	VV(mode_x,mode_z,mode_y).uv.REAL= entry_uv;	VV(mode_x,mode_z,mode_y).vw.REAL= entry_vw;	VV(mode_x,mode_z,mode_y).uw.REAL= entry_uw;	
-	<*
-	entry_uu_  =dnsdata_10move_data(uu,counter_);
-	entry_uv_  =dnsdata_10move_data(uv,counter_);
-	entry_vv_  =dnsdata_10move_data(vv,counter_);
-	entry_vw_  =dnsdata_10move_data(vw,counter_);
-	entry_ww_  =dnsdata_10move_data(ww,counter_);
-	entry_uw_  =dnsdata_10move_data(uw,counter_);
-	*> 
-	VV(mode_x,mode_z,mode_y).uu.IMAG= entry_uu;	VV(mode_x,mode_z,mode_y).vv.IMAG= entry_vv;	VV(mode_x,mode_z,mode_y).ww.IMAG= entry_ww;
-	VV(mode_x,mode_z,mode_y).uv.IMAG= entry_uv;	VV(mode_x,mode_z,mode_y).vw.IMAG= entry_vw;	VV(mode_x,mode_z,mode_y).uw.IMAG= entry_uw;
-	mode_y = mode_y + 1
-	IF mode_y = ny THEN
-		mode_y = 0
-		mode_x = mode_x + 1
-		IF mode_x = nx THEN 
-			mode_x = 0
-			mode_z = mode_z + 1
-		END IF
-	END IF
+ARRAY(0..nx, start_mode_z..end_mode_z,0..ny) OF VELOCITY V 
+LOOP FOR mode_z = start_mode_z TO end_mode_z
+	IF mode_z = end_mode_z THEN loop_end_mode_x = end_mode_x
+	LOOP FOR mode_x = loop_start_mode_x TO loop_end_mode_x	
+		LOOP FOR mode_y = 0 TO ny-1	
+		<*	entry_uu_  =dnsdata_10move_data(uu,counter_);
+			entry_uv_  =dnsdata_10move_data(uv,counter_);
+			entry_vv_  =dnsdata_10move_data(vv,counter_);
+			entry_vw_  =dnsdata_10move_data(vw,counter_);
+			entry_ww_  =dnsdata_10move_data(ww,counter_);
+			entry_uw_  =dnsdata_10move_data(uw,counter_);
+			entry_u_  =dnsdata_10move_data(u_read,counter_);
+			entry_v_  =dnsdata_10move_data(v_read,counter_);
+			entry_w_  =dnsdata_10move_data(w_read,counter_);
+ 			counter_++;		*> 
+			VV(mode_x,mode_z,mode_y).uu.REAL= entry_uu;	VV(mode_x,mode_z,mode_y).vv.REAL= entry_vv;	VV(mode_x,mode_z,mode_y).ww.REAL= entry_ww;
+			VV(mode_x,mode_z,mode_y).uv.REAL= entry_uv;	VV(mode_x,mode_z,mode_y).vw.REAL= entry_vw;	VV(mode_x,mode_z,mode_y).uw.REAL= entry_uw;
+			V(mode_x,mode_z,mode_y).u.REAL= entry_u;	V(mode_x,mode_z,mode_y).v.REAL= entry_v;	V(mode_x,mode_z,mode_y).w.REAL= entry_w;
+		<*	entry_uu_  =dnsdata_10move_data(uu,counter_);
+			entry_uv_  =dnsdata_10move_data(uv,counter_);
+			entry_vv_  =dnsdata_10move_data(vv,counter_);
+			entry_vw_  =dnsdata_10move_data(vw,counter_);
+			entry_ww_  =dnsdata_10move_data(ww,counter_);
+			entry_uw_  =dnsdata_10move_data(uw,counter_);
+			entry_u_  =dnsdata_10move_data(u_read,counter_);
+			entry_v_  =dnsdata_10move_data(v_read,counter_);
+			entry_w_  =dnsdata_10move_data(w_read,counter_);
+			counter_++;		*> 
+			VV(mode_x,mode_z,mode_y).uu.IMAG= entry_uu;	VV(mode_x,mode_z,mode_y).vv.IMAG= entry_vv;	VV(mode_x,mode_z,mode_y).ww.IMAG= entry_ww;
+			VV(mode_x,mode_z,mode_y).uv.IMAG= entry_uv;	VV(mode_x,mode_z,mode_y).vw.IMAG= entry_vw;	VV(mode_x,mode_z,mode_y).uw.IMAG= entry_uw;
+			V(mode_x,mode_z,mode_y).u.IMAG= entry_u;	V(mode_x,mode_z,mode_y).v.IMAG= entry_v;	V(mode_x,mode_z,mode_y).w.IMAG= entry_w;
+		REPEAT LOOP
+	REPEAT LOOP
+	loop_start_mode_x = 0
 REPEAT LOOP
 
-<* 	free(u);	free(v);	free(w);
-  	free(uu);	free(uv);	free(vv);	free(vw);	free(ww);	free(uw); 
-*>
-
-
+<* 	free(u);	free(v);	free(w);	free(u_read);	free(v_read);	free(w_read);
+  	free(uu);	free(uv);	free(vv);	free(vw);	free(ww);	free(uw); 	*>
 
 
 

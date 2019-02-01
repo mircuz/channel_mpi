@@ -19,7 +19,8 @@ void print_z_pencil(int nz, int in_ilo, int in_ihi, int in_jlo,
 void FFT( double *c, int N, int isign );
 void b_FFT( double *work, int elem_per_proc, int N_trasf);
 void f_FFT( double *work, int elem_per_proc, int N_trasf);
-void read_data_and_apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, char file[4]);
+void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4]);
+void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read);
 void x_dealiasing(int scounts, int modes_per_proc, int nx, int nxd, FFT_SCALAR *u);
 void z_dealiasing(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U);
 void transpose_on_rank0(int nx, int ny, int nz, FFT_SCALAR *U);
