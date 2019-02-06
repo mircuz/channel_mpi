@@ -21,6 +21,8 @@ REAL u_conv, u0, un, w_conv, w0, wn, t0, tn
 REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0, maxtimelevels=1
 BOOLEAN time_from_restart
 STRING restart_file
+INTEGER localdim
+
 
 !// Structures initialization--------------------------------------------------
 VELOCITY=STRUCTURE(COMPLEX u,v,w)
@@ -107,6 +109,31 @@ read_initial_data; signal(SIGUSR2,kill_received)
 INTEGER nxd = (nx)*3 DIV 2 -1 ;	INTEGER nzd = 3*nz-1;
 DO INC nxd UNTIL FFTfit(nxd);	
 DO INC nzd UNTIL FFTfit(nzd);
+
+!// X-Backward FFT---------------------------------------------------------------------
+SUBROUTINE b_FFT_x(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc)
+ARRAY(0..nxd-1) OF COMPLEX in
+	INTEGER count = 0, i=0;
+	LOOP WHILE ( count < elem_per_proc/(2*nxd))
+		!// fill IN array
+		LOOP FOR n = 0 TO nxd-1
+			in[n].REAL = work[i];
+			INC i
+			in[n].IMAG = work[i];
+			INC i
+			IF rank = 0 THEN WRITE in[n]
+		REPEAT LOOP
+		RFT(in)
+		!n=0
+		!()LOOP FOR i = 0 TO 2*nxd
+			work[i+count*2*nxd] = in[n].REAL
+			INC n;	INC i
+			work[i+count*2*nxd] = in[n].IMAG
+		REPEAT LOOP!)
+		INC count
+	REPEAT LOOP
+END b_FFT_x
+
 
 !// Grid in y direction and compact finite differences operators-----------------------
 REAL y(-1..ny+1)

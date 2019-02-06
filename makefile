@@ -13,15 +13,16 @@ compilation:
 	$(CC) -O3 -fPIC -c initialization.c
 	$(CC) -O3 -fPIC -c convol_trasp.c
 	$(CC) -O3 -fPIC -c fft_support.c
+	$(CC) -O3 -fPIC -c data_man.c
 	$(CC) -O3 -fPIC -c channel_mpi.c
 	$(CC) -O3 -fPIC -c dnsdata.c
 	
-	$(CC) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o dnsdata.o -lfft3dmpi -lm 
+	$(CC) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o -lfft3dmpi -lm 
 		#Ricordarsi dnsdirect.o !!
 
 
 clean: 
-	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c
+	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c
 	rm *.o
 	rm *.d
 	rm exe

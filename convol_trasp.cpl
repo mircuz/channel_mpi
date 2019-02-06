@@ -1,3 +1,4 @@
+!USE rtchecks
 WRITE
 <*	/****************************************************************************
 	 * 													      					*
@@ -17,13 +18,21 @@ WRITE
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
   // Backward FFT#1
-  //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u, rank, scounts[rank], 3);
+  //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, scounts[rank], 0);
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   double timer_b1 = 0.0;
-  timer_b1 -= MPI_Wtime();
-  b_FFT( u, elem_per_proc, i_length );
+  timer_b1 -= MPI_Wtime();	
+*>
+
+b_FFT_x( u, localdim)
+
+	
+<*
+  //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, scounts[rank], 2);
+  /*b_FFT( u, elem_per_proc, i_length );
   b_FFT( v, elem_per_proc, i_length );
-  b_FFT( w, elem_per_proc, i_length );
+  b_FFT( w, elem_per_proc, i_length );*/
+  
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_b1 += MPI_Wtime();
 
@@ -31,7 +40,7 @@ WRITE
   // Transpose in z-pencil
   double timer_trasp_z = 0.0, TIMER_TRASP_z = 0.0;
   timer_trasp_z -= MPI_Wtime();
-  remap3d_remap(remap_zpencil,u,u,sendbuf,recvbuf);
+  remap3d_remap(remap_zpencil,u_,u_,sendbuf,recvbuf);
   remap3d_remap(remap_zpencil,v,v,sendbuf,recvbuf);
   remap3d_remap(remap_zpencil,w,w,sendbuf,recvbuf);
   MPI_Barrier(remap_comm); // @suppress("Symbol is not resolved")
@@ -41,16 +50,16 @@ WRITE
   // Backward FFT#2
   double timer_b2 = 0.0;
   timer_b2 -= MPI_Wtime();
-  b_FFT( u, elem_per_proc, k_length );
+ /* b_FFT( u, elem_per_proc, k_length );
   b_FFT( v, elem_per_proc, k_length );
-  b_FFT( w, elem_per_proc, k_length );
+  b_FFT( w, elem_per_proc, k_length );*/
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_b2 += MPI_Wtime();
 
 
   //Finalize plan
   remap3d_destroy(remap_zpencil);
-  //print_z_pencil( nz, in_ilo, in_ihi, in_jlo, u, rank, scounts[rank], 0);
+  //print_z_pencil( nzd, in_ilo, in_ihi, in_jlo, u, rank, scounts[rank], 0);
 
 
   /************************************************ Convolutions *********************************************/
@@ -58,12 +67,12 @@ WRITE
   double timer_conv = 0.0;
   timer_conv -= MPI_Wtime();
   for ( int i = 0; i < elem_per_proc; i++) {
-	  uu[i] = u[i]*u[i];
-	  uv[i] = u[i]*v[i];
+	  uu[i] = u_[i]*u_[i];
+	  uv[i] = u_[i]*v[i];
 	  vv[i] = v[i]*v[i];
 	  vw[i] = v[i]*w[i];
 	  ww[i] = w[i]*w[i];
-	  uw[i] = u[i]*w[i];
+	  uw[i] = u_[i]*w[i];
   }
   timer_conv += MPI_Wtime();
   //print_z_pencil( nzd, out_ilo, out_ihi, out_jlo, uu, rank, scounts[rank], 1);
@@ -83,12 +92,12 @@ WRITE
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f1 -= MPI_Wtime();
   //f_FFT( u, elem_per_proc, k_length );
-  f_FFT( uu, elem_per_proc, k_length );
+ /* f_FFT( uu, elem_per_proc, k_length );
   f_FFT( uv, elem_per_proc, k_length );
   f_FFT( vv, elem_per_proc, k_length );
   f_FFT( vw, elem_per_proc, k_length );
   f_FFT( ww, elem_per_proc, k_length );
-  f_FFT( uw, elem_per_proc, k_length );
+  f_FFT( uw, elem_per_proc, k_length );*/
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f1 += MPI_Wtime();
 
@@ -112,12 +121,12 @@ WRITE
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f2 -= MPI_Wtime();
   //f_FFT( u, elem_per_proc, i_length );
-  f_FFT( uu, elem_per_proc, i_length );
+ /* f_FFT( uu, elem_per_proc, i_length );
   f_FFT( uv, elem_per_proc, i_length );
   f_FFT( vv, elem_per_proc, i_length );
   f_FFT( vw, elem_per_proc, i_length );
   f_FFT( ww, elem_per_proc, i_length );
-  f_FFT( uw, elem_per_proc, i_length );
+  f_FFT( uw, elem_per_proc, i_length );*/
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f2 += MPI_Wtime();
 
