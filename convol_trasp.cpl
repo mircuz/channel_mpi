@@ -268,7 +268,7 @@ WRITE
   if (rank == 0) free(UW);
 
   TIMER_AA += MPI_Wtime();
-  //print_y_pencil(nx, ny, nz, w_read, rank, displs_scat[rank], scounts_scat[rank], 0);
+  //print_y_pencil(nx, ny, nz, u_read, rank, displs_scat[rank], scounts_scat[rank], 0);
 
 
   /************************************************ Print Stats *********************************************/
@@ -307,26 +307,26 @@ REAL entry_uu, entry_uv, entry_vv, entry_vw, entry_ww, entry_uw, entry_u, entry_
 INTEGER displs, scounts, counter=0, mode_y=0, modes_xz, start_mode_z, mode_z, end_mode_z, start_mode_x, mode_x, end_mode_x
 
 !// Read starting modes
-modes_xz = displs DIV (ny*2)
-start_mode_z = modes_xz DIV nx;
-start_mode_x = modes_xz - start_mode_z*nx;	
+modes_xz = displs DIV ((ny+3)*2)
+start_mode_z = modes_xz DIV (nx+1);
+start_mode_x = modes_xz - start_mode_z*(nx+1);	
 !// Take into account the negative modes
 start_mode_z = start_mode_z - nz;
 
 !// Calculate ending mode_z & mode_x
-modes_xz = (displs+scounts) DIV (ny*2)
-end_mode_z = modes_xz DIV nx;
-end_mode_x = modes_xz - end_mode_z*nx; 			
+modes_xz = (displs+scounts) DIV ((ny+3)*2)
+end_mode_z = modes_xz DIV (nx+1);
+end_mode_x = modes_xz - end_mode_z*(nx+1); 			
 end_mode_z = end_mode_z -nz;
 
-INTEGER loop_end_mode_x = nx-1; INTEGER loop_start_mode_x = start_mode_x
+INTEGER loop_end_mode_x = nx; INTEGER loop_start_mode_x = start_mode_x
 !// Allocate and fill the local array VV
-ARRAY(0..nx, start_mode_z..end_mode_z,0..ny) OF MOMFLUX VV 
-ARRAY(0..nx, start_mode_z..end_mode_z,0..ny) OF VELOCITY V 
+ARRAY(0..nx, start_mode_z..end_mode_z,-1..ny+1) OF MOMFLUX VV 
+ARRAY(0..nx, start_mode_z..end_mode_z,-1..ny+1) OF VELOCITY V 
 LOOP FOR mode_z = start_mode_z TO end_mode_z
 	IF mode_z = end_mode_z THEN loop_end_mode_x = end_mode_x
 	LOOP FOR mode_x = loop_start_mode_x TO loop_end_mode_x	
-		LOOP FOR mode_y = 0 TO ny-1	
+		LOOP FOR mode_y = -1 TO ny+1	
 		<*	entry_uu_  =dnsdata_10move_data(uu,counter_);
 			entry_uv_  =dnsdata_10move_data(uv,counter_);
 			entry_vv_  =dnsdata_10move_data(vv,counter_);

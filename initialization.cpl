@@ -9,7 +9,7 @@ WRITE
   
   #include "fft_support.h"
   int nfast,nmid,nslow, nx,ny,nz;
-  nx = nx_;		ny = ny_;	nz = nz_*2+1;
+  nx = nx_+1;		ny = ny_+3;	nz = nz_*2+1;
 
   int nxd_AA = (nx*3)/2;
   // fftFitting

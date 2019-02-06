@@ -44,12 +44,12 @@ END move_data
 SUBROUTINE y_pencil_parser_mom( POINTER TO ARRAY(*,*,*) OF MOMFLUX VV; INTEGER start_mode_x; INTEGER end_mode_x;
 				  INTEGER start_mode_z; INTEGER end_mode_z; INTEGER desidered_rank)
 	IF rank = desidered_rank THEN 
-		INTEGER loop_mode_x = start_mode_x;		INTEGER loop_end_mode_x = nx-1
+		INTEGER loop_mode_x = start_mode_x;		INTEGER loop_end_mode_x = nx
 		LOOP FOR mode_z= start_mode_z TO end_mode_z
 			IF mode_z = end_mode_z THEN loop_end_mode_x = end_mode_x-1
 			LOOP FOR mode_x= loop_mode_x TO loop_end_mode_x
 				WRITE "==============(nx=" mode_x", nz=" mode_z ")================"
-				LOOP FOR mode_y=0 TO ny-1
+				LOOP FOR mode_y=-1 TO ny+1
 					WRITE "("mode_x","mode_z","mode_y")  " VV(mode_x,mode_z,mode_y)
 				REPEAT LOOP	
 				loop_mode_x = 0;
@@ -62,12 +62,12 @@ END y_pencil_parser_mom
 SUBROUTINE y_pencil_parser_vel( POINTER TO ARRAY(*,*,*) OF VELOCITY VV; INTEGER start_mode_x; INTEGER end_mode_x;
 				  INTEGER start_mode_z; INTEGER end_mode_z; INTEGER desidered_rank)
 	IF rank = desidered_rank THEN 
-		INTEGER loop_mode_x = start_mode_x;		INTEGER loop_end_mode_x = nx-1
+		INTEGER loop_mode_x = start_mode_x;		INTEGER loop_end_mode_x = nx
 		LOOP FOR mode_z= start_mode_z TO end_mode_z
 			IF mode_z = end_mode_z THEN loop_end_mode_x = end_mode_x-1
 			LOOP FOR mode_x= loop_mode_x TO loop_end_mode_x
 				WRITE "==============(nx=" mode_x", nz=" mode_z ")================"
-				LOOP FOR mode_y=0 TO ny-1
+				LOOP FOR mode_y=-1 TO ny+1
 					WRITE "("mode_x","mode_z","mode_y")  " VV(mode_x,mode_z,mode_y)
 				REPEAT LOOP	
 				loop_mode_x = 0;
