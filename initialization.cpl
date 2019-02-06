@@ -11,7 +11,7 @@ WRITE
   int nfast,nmid,nslow, nx,ny,nz;
   nx = nx_+1;		ny = ny_+3;	nz = nz_*2+1;
 
-  int nxd_AA = (nx*3)/2;
+  /*int nxd_AA = (nx*3)/2;
   // fftFitting
   int nxd = 4; int nzd = 4;
   while ( nxd < nxd_AA ) {
@@ -20,6 +20,9 @@ WRITE
   while ( nzd < nz ) {
 	  nzd = nzd*2;
   }
+*/
+  int nzd = nzd_;
+  int nxd = nxd_;	
 
   // Length of the array along directions
   int i_length = nxd;
@@ -45,7 +48,7 @@ WRITE
 
   if (rank == 0) {
   	  printf("\n========================================================================================\n"
-  			  "\t2D FFT with %dx%dx%d total modes (%d,%d,%d) on %d procs, %dx%dx%d grid\t\n"
+  			  "\t2D FFT with %dx%dx%d total modes, %dx%dx%d investigated on %d procs, %dx%dx%d grid\t\n"
   			"========================================================================================\n\n",
   			  nfast,nmid,nslow,nx,ny,nz,size,npfast,npmid,npslow);
     }
