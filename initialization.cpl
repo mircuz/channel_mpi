@@ -145,5 +145,6 @@ WRITE
 *>
 	
 POINTER TO ARRAY(0..localdim-1) OF REAL u
+POINTER TO ARRAY(0..localdim-1) OF REAL uu
 
 

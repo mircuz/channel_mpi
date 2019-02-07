@@ -15,6 +15,6 @@ USE convol_trasp
 !//y_pencil_parser_vel( V, start_mode_x, end_mode_x, start_mode_z, end_mode_z, 3)
 
 <* 	free(u_);	free(v);	free(w);	free(u_read);	free(v_read);	free(w_read);
-  	free(uu);	free(uv);	free(vv);	free(vw);	free(ww);	free(uw); 	*>
+  	free(uu_);	free(uv);	free(vv);	free(vw);	free(ww);	free(uw); 	*>
 <*	MPI_Finalize();	*>
 

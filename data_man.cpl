@@ -8,7 +8,7 @@ WRITE
   FFT_SCALAR *u_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *v_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *w_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
-  FFT_SCALAR *uu = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
+  uu_ = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *uv = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *vv = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *vw = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
@@ -17,7 +17,7 @@ WRITE
   FFT_SCALAR *sendbuf = (FFT_SCALAR *) malloc(sendsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(recvsize*sizeof(FFT_SCALAR)*2);
 
-  if ((u_||u_read||v||v_read||w||w_read||uu||uv||vv||vw||ww||uw||sendbuf||recvbuf) == NULL) {
+  if ((u_||u_read||v||v_read||w||w_read||uu_||uv||vv||vw||ww||uw||sendbuf||recvbuf) == NULL) {
 	  perror(".:Error while allocating memory for remapping variables:.\n");
 	  abort();
   }

@@ -24,7 +24,7 @@ WRITE
   timer_b1 -= MPI_Wtime();	
 *>
 
-!FFT_x( u, localdim, 1)
+FFT_x( u, localdim, 1)
 	
 <*
   //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, scounts[rank], 0);
@@ -70,14 +70,21 @@ FFT_z( u, localdim, 1)
   // Operations
   double timer_conv = 0.0;
   timer_conv -= MPI_Wtime();
-  for ( int i = 0; i < elem_per_proc; i++) {
-	  uu[i] = u_[i]*u_[i];
+*>
+LOOP FOR i=0 TO localdim
+	uu[i] = u[i]*u[i]
+REPEAT LOOP
+<*
+
+ /* for ( int i = 0; i < elem_per_proc; i++) {
+	  uu_[i] = u_[i]*u_[i];
+	printf("uu = %g\n",uu_[i]);
 	  uv[i] = u_[i]*v[i];
 	  vv[i] = v[i]*v[i];
 	  vw[i] = v[i]*w[i];
 	  ww[i] = w[i]*w[i];
 	  uw[i] = u_[i]*w[i];
-  }
+  } */
   timer_conv += MPI_Wtime();
   //print_z_pencil( nzd, out_ilo, out_ihi, out_jlo, uu, rank, scounts[rank], 1);
   if (rank == 0) printf("Completed\nStarting Forward transformations...\n");
@@ -96,7 +103,7 @@ FFT_z( u, localdim, 1)
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f1 -= MPI_Wtime();
 *>
-!FFT_z( u, localdim, -1)
+FFT_z( uu, localdim, -1)
 <*
   //f_FFT( u, elem_per_proc, k_length );
  /* f_FFT( uu, elem_per_proc, k_length );
@@ -112,8 +119,8 @@ FFT_z( u, localdim, 1)
   // Transpose to x-pencil
   double timer_trasp_x = 0.0, TIMER_TRASP_x = 0.0;
   timer_trasp_x -= MPI_Wtime();
-  //remap3d_remap(remap_xpencil,u,u,sendbuf,recvbuf);
-  remap3d_remap(remap_xpencil,uu,uu,sendbuf,recvbuf);
+  remap3d_remap(remap_xpencil,u_,u_,sendbuf,recvbuf);
+  remap3d_remap(remap_xpencil,uu_,uu_,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,uv,uv,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,vv,vv,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,vw,vw,sendbuf,recvbuf);
@@ -121,15 +128,16 @@ FFT_z( u, localdim, 1)
   remap3d_remap(remap_xpencil,uw,uw,sendbuf,recvbuf);
   MPI_Barrier(remap_comm); // @suppress("Symbol is not resolved")
   timer_trasp_x += MPI_Wtime();
-
+//print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, scounts[rank], 0);
 
   // Forward FFT#2
   double timer_f2 = 0.0;
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f2 -= MPI_Wtime();
 *>
-!FFT_x( u, localdim, -1)
+FFT_x( uu, localdim, -1)
 <*
+	print_x_pencil(nxd, in_jlo, in_jhi, in_klo, uu_, rank, scounts[rank], 0);
   //f_FFT( u, elem_per_proc, i_length );
  /* f_FFT( uu, elem_per_proc, i_length );
   f_FFT( uv, elem_per_proc, i_length );
@@ -145,11 +153,11 @@ FFT_z( u, localdim, 1)
   free(recvbuf);	 free(sendbuf);
 
   // De-alias locally
-  //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, uu, rank, 2*nxd*(in_jhi-in_jlo+1)*(in_khi-in_klo+1), 2);
+  //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, 2*nxd*(in_jhi-in_jlo+1)*(in_khi-in_klo+1), 0);
   double timer_aax = 0.0;
   timer_aax -= MPI_Wtime();
   //x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, u);
-  x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uu);
+  x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uu_);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uv);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, vv);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, vw);
@@ -175,14 +183,14 @@ FFT_z( u, localdim, 1)
   		  abort();
   	  }
   }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nx, ny, nzd, UU, uu, -1);
+  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nx, ny, nzd, UU, uu_, -1);
   MPI_Barrier(MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   if (rank == 0) {
 	  z_dealiasing( nx, ny, nz, nxd, nzd, UU);
 	  transpose_on_rank0( nx, ny, nz, UU);
   }
   else free(UU);
-  MPI_Scatterv(UU, scounts_scat, displs_scat, MPI_DOUBLE, uu, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Scatterv(UU, scounts_scat, displs_scat, MPI_DOUBLE, uu_, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) free(UU);
 
@@ -346,7 +354,7 @@ LOOP FOR mode_z = start_mode_z TO end_mode_z
 	IF mode_z = end_mode_z THEN loop_end_mode_x = end_mode_x
 	LOOP FOR mode_x = loop_start_mode_x TO loop_end_mode_x	
 		LOOP FOR mode_y = -1 TO ny+1	
-		<*	entry_uu_  =dnsdata_10move_data(uu,counter_);
+		<*	entry_uu_  =dnsdata_10move_data(uu_,counter_);
 			entry_uv_  =dnsdata_10move_data(uv,counter_);
 			entry_vv_  =dnsdata_10move_data(vv,counter_);
 			entry_vw_  =dnsdata_10move_data(vw,counter_);
@@ -359,7 +367,7 @@ LOOP FOR mode_z = start_mode_z TO end_mode_z
 			VV(mode_x,mode_z,mode_y).uu.REAL= entry_uu;	VV(mode_x,mode_z,mode_y).vv.REAL= entry_vv;	VV(mode_x,mode_z,mode_y).ww.REAL= entry_ww;
 			VV(mode_x,mode_z,mode_y).uv.REAL= entry_uv;	VV(mode_x,mode_z,mode_y).vw.REAL= entry_vw;	VV(mode_x,mode_z,mode_y).uw.REAL= entry_uw;
 			V(mode_x,mode_z,mode_y).u.REAL= entry_u;	V(mode_x,mode_z,mode_y).v.REAL= entry_v;	V(mode_x,mode_z,mode_y).w.REAL= entry_w;
-		<*	entry_uu_  =dnsdata_10move_data(uu,counter_);
+		<*	entry_uu_  =dnsdata_10move_data(uu_,counter_);
 			entry_uv_  =dnsdata_10move_data(uv,counter_);
 			entry_vv_  =dnsdata_10move_data(vv,counter_);
 			entry_vw_  =dnsdata_10move_data(vw,counter_);
