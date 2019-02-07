@@ -24,7 +24,7 @@ WRITE
   timer_b1 -= MPI_Wtime();	
 *>
 
-b_FFT_x( u, localdim, 1)
+!FFT_x( u, localdim, 1)
 	
 <*
   //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, scounts[rank], 0);
@@ -47,9 +47,10 @@ b_FFT_x( u, localdim, 1)
   // Backward FFT#2
   double timer_b2 = 0.0;
   timer_b2 -= MPI_Wtime();
+  //print_z_pencil( nzd, in_ilo, in_ihi, in_jlo, u_, rank, scounts[rank], 0);
 *>
 
-b_FFT_z( u, localdim, 1)
+FFT_z( u, localdim, 1)
 
 <*
 
@@ -95,7 +96,7 @@ b_FFT_z( u, localdim, 1)
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f1 -= MPI_Wtime();
 *>
-b_FFT_z( u, localdim, -1)
+!FFT_z( u, localdim, -1)
 <*
   //f_FFT( u, elem_per_proc, k_length );
  /* f_FFT( uu, elem_per_proc, k_length );
@@ -127,7 +128,7 @@ b_FFT_z( u, localdim, -1)
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f2 -= MPI_Wtime();
 *>
-b_FFT_x( u, localdim, -1)
+!FFT_x( u, localdim, -1)
 <*
   //f_FFT( u, elem_per_proc, i_length );
  /* f_FFT( uu, elem_per_proc, i_length );
@@ -286,7 +287,7 @@ b_FFT_x( u, localdim, -1)
   if (rank == 0) free(UW);
 
   TIMER_AA += MPI_Wtime();
-  print_y_pencil(nx, ny, nz, u_read, rank, displs_scat[rank], scounts_scat[rank], 0);
+  //print_y_pencil(nx, ny, nz, u_read, rank, displs_scat[rank], scounts_scat[rank], 0);
 
 
   /************************************************ Print Stats *********************************************/
