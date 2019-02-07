@@ -13,21 +13,21 @@ WRITE
   // ------------------------------------------- Setup z-Transpose --------------------------------------------
   remap3d_create( remap_comm , &remap_zpencil);
   remap3d_setup( remap_zpencil,
-      		  	  in_ilo,  in_ihi,  in_jlo, in_jhi,  in_klo,  in_khi,
-				  out_ilo,  out_ihi,  out_jlo, out_jhi,  out_klo,  out_khi,
+      		  	  z_ilo,  z_ihi,  z_jlo, z_jhi,  z_klo,  z_khi,
+				  x_ilo,  x_ihi,  x_jlo, x_jhi,  x_klo,  x_khi,
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
   // Backward FFT#1
-  //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, scounts[rank], 0);
+  print_z_pencil( nz, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 0);
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   double timer_b1 = 0.0;
   timer_b1 -= MPI_Wtime();	
 *>
 
-FFT_x( u, localdim, 1)
+!FFT_x( u, localdim, 1)
 	
 <*
-  //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, scounts[rank], 0);
+  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, scounts[rank], 0);
   /*b_FFT( u, elem_per_proc, i_length );
   b_FFT( v, elem_per_proc, i_length );
   b_FFT( w, elem_per_proc, i_length );*/
@@ -39,18 +39,18 @@ FFT_x( u, localdim, 1)
   double timer_trasp_z = 0.0, TIMER_TRASP_z = 0.0;
   timer_trasp_z -= MPI_Wtime();
   remap3d_remap(remap_zpencil,u_,u_,sendbuf,recvbuf);
-  remap3d_remap(remap_zpencil,v,v,sendbuf,recvbuf);
-  remap3d_remap(remap_zpencil,w,w,sendbuf,recvbuf);
+  //remap3d_remap(remap_zpencil,v,v,sendbuf,recvbuf);
+  //remap3d_remap(remap_zpencil,w,w,sendbuf,recvbuf);
   MPI_Barrier(remap_comm); // @suppress("Symbol is not resolved")
   timer_trasp_z += MPI_Wtime();
 
   // Backward FFT#2
   double timer_b2 = 0.0;
   timer_b2 -= MPI_Wtime();
-  //print_z_pencil( nzd, in_ilo, in_ihi, in_jlo, u_, rank, scounts[rank], 0);
+  //print_z_pencil( nzd, x_ilo, x_ihi, x_jlo, u_, rank, scounts[rank], 0);
 *>
 
-FFT_z( u, localdim, 1)
+!FFT_z( u, localdim, 1)
 
 <*
 
@@ -63,7 +63,7 @@ FFT_z( u, localdim, 1)
 
   //Finalize plan
   remap3d_destroy(remap_zpencil);
-  //print_z_pencil( nzd, in_ilo, in_ihi, in_jlo, u_, rank, scounts[rank], 0);
+  //print_z_pencil( nzd, x_ilo, x_ihi, x_jlo, u_, rank, scounts[rank], 0);
 
 
   /************************************************ Convolutions *********************************************/
@@ -86,16 +86,16 @@ REPEAT LOOP
 	  uw[i] = u_[i]*w[i];
   } */
   timer_conv += MPI_Wtime();
-  //print_z_pencil( nzd, out_ilo, out_ihi, out_jlo, uu, rank, scounts[rank], 1);
+  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, uu, rank, scounts[rank], 1);
   if (rank == 0) printf("Completed\nStarting Forward transformations...\n");
 
   /************************************************ forward FFTs *********************************************/
   // ---------------------------------------- Setup x-Transpose -----------------------------------------
   remap3d_create( remap_comm , &remap_xpencil);
-  permute = 1; 		// From z-contiguous to x-contiguous arrays
+  permute = 2; 		// From x-contiguous to z-contiguous arrays
   remap3d_setup( remap_xpencil,
-		  	  	  out_klo,  out_khi, out_ilo,  out_ihi,  out_jlo, out_jhi,
-				  in_klo,  in_khi, in_ilo,  in_ihi,  in_jlo, in_jhi,
+		  	  	  x_klo,  x_khi, x_ilo,  x_ihi,  x_jlo, x_jhi,
+				  z_klo,  z_khi, z_ilo,  z_ihi,  z_jlo, z_jhi,
 				  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
   // Forward FFT#1
@@ -103,8 +103,9 @@ REPEAT LOOP
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f1 -= MPI_Wtime();
 *>
-FFT_z( uu, localdim, -1)
+!FFT_z( u, localdim, -1)
 <*
+//print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 1);
   //f_FFT( u, elem_per_proc, k_length );
  /* f_FFT( uu, elem_per_proc, k_length );
   f_FFT( uv, elem_per_proc, k_length );
@@ -120,24 +121,24 @@ FFT_z( uu, localdim, -1)
   double timer_trasp_x = 0.0, TIMER_TRASP_x = 0.0;
   timer_trasp_x -= MPI_Wtime();
   remap3d_remap(remap_xpencil,u_,u_,sendbuf,recvbuf);
-  remap3d_remap(remap_xpencil,uu_,uu_,sendbuf,recvbuf);
+ /* remap3d_remap(remap_xpencil,uu_,uu_,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,uv,uv,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,vv,vv,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,vw,vw,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,ww,ww,sendbuf,recvbuf);
-  remap3d_remap(remap_xpencil,uw,uw,sendbuf,recvbuf);
+  remap3d_remap(remap_xpencil,uw,uw,sendbuf,recvbuf);  */
   MPI_Barrier(remap_comm); // @suppress("Symbol is not resolved")
   timer_trasp_x += MPI_Wtime();
-//print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, scounts[rank], 0);
+//print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, scounts[rank], 0);
 
   // Forward FFT#2
   double timer_f2 = 0.0;
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f2 -= MPI_Wtime();
 *>
-FFT_x( uu, localdim, -1)
+!FFT_x( u, localdim, -1)
 <*
-	print_x_pencil(nxd, in_jlo, in_jhi, in_klo, uu_, rank, scounts[rank], 0);
+//print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, scounts[rank], 0);
   //f_FFT( u, elem_per_proc, i_length );
  /* f_FFT( uu, elem_per_proc, i_length );
   f_FFT( uv, elem_per_proc, i_length );
@@ -153,16 +154,16 @@ FFT_x( uu, localdim, -1)
   free(recvbuf);	 free(sendbuf);
 
   // De-alias locally
-  //print_x_pencil(nxd, in_jlo, in_jhi, in_klo, u_, rank, 2*nxd*(in_jhi-in_jlo+1)*(in_khi-in_klo+1), 0);
+  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, 2*nxd*(x_jhi-x_jlo+1)*(x_khi-x_klo+1), 0);
   double timer_aax = 0.0;
   timer_aax -= MPI_Wtime();
-  //x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, u);
+  /*x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, u);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uu_);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uv);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, vv);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, vw);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, ww);
-  x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uw);
+  x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uw);	*/
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_aax += MPI_Wtime();
   if (rank == 0) printf("Completed\nStarting dealiasing operations\n");
@@ -174,7 +175,7 @@ FFT_x( uu, localdim, -1)
   // Alloc memory for the global output
   FFT_SCALAR *UU, *UV, *VV, *VW, *WW, *UW;
 
-
+/*
   // Gather UU data on rank 0
   UU = (FFT_SCALAR*) malloc( nx*ny*nzd*2* sizeof(FFT_SCALAR));
   if( UU == NULL) {
@@ -183,7 +184,7 @@ FFT_x( uu, localdim, -1)
   		  abort();
   	  }
   }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nx, ny, nzd, UU, uu_, -1);
+  Alltoall( rank, size, x_jlo, x_jhi, x_klo, x_khi, nx, ny, nzd, UU, uu_, -1);
   MPI_Barrier(MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   if (rank == 0) {
 	  z_dealiasing( nx, ny, nz, nxd, nzd, UU);
@@ -203,7 +204,7 @@ FFT_x( uu, localdim, -1)
 		  abort();
 	  }
   }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nx, ny, nzd, UV, uv, -1);
+  Alltoall( rank, size, x_jlo, x_jhi, x_klo, x_khi, nx, ny, nzd, UV, uv, -1);
   MPI_Barrier(MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   if (rank == 0) {
 	  z_dealiasing( nx, ny, nz, nxd, nzd, UV);
@@ -223,7 +224,7 @@ FFT_x( uu, localdim, -1)
   		  abort();
   	  }
   }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nx, ny, nzd, VV, vv, -1);
+  Alltoall( rank, size, x_jlo, x_jhi, x_klo, x_khi, nx, ny, nzd, VV, vv, -1);
   MPI_Barrier(MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   if (rank == 0) {
 	  z_dealiasing( nx, ny, nz, nxd, nzd, VV);
@@ -243,7 +244,7 @@ FFT_x( uu, localdim, -1)
 		  abort();
 	  }
   }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nx, ny, nzd, VW, vw, -1);
+  Alltoall( rank, size, x_jlo, x_jhi, x_klo, x_khi, nx, ny, nzd, VW, vw, -1);
   MPI_Barrier(MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   if (rank == 0) {
 	  z_dealiasing( nx, ny, nz, nxd, nzd, VW);
@@ -263,7 +264,7 @@ FFT_x( uu, localdim, -1)
 		  abort();
 	  }
   }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nx, ny, nzd, WW, ww, -1);
+  Alltoall( rank, size, x_jlo, x_jhi, x_klo, x_khi, nx, ny, nzd, WW, ww, -1);
   MPI_Barrier(MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   if (rank == 0) {
 	  z_dealiasing( nx, ny, nz, nxd, nzd, WW);
@@ -283,7 +284,7 @@ FFT_x( uu, localdim, -1)
 		  abort();
 	  }
   }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nx, ny, nzd, UW, uw, -1);
+  Alltoall( rank, size, x_jlo, x_jhi, x_klo, x_khi, nx, ny, nzd, UW, uw, -1);
   MPI_Barrier(MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   if (rank == 0) {
 	  z_dealiasing( nx, ny, nz, nxd, nzd, UW);
@@ -325,10 +326,10 @@ FFT_x( uu, localdim, -1)
   	  printf("Process Ended\n");
   }
 
-  displs_ = displs_scat[rank];
-  scounts_ = scounts_scat[rank];
+ // displs_ = displs_scat[rank];
+ // scounts_ = scounts_scat[rank];
 *>
-
+!(
 WRITE
 REAL entry_uu, entry_uv, entry_vv, entry_vw, entry_ww, entry_uw, entry_u, entry_v, entry_w
 INTEGER displs, scounts, counter=0, mode_y=0, modes_xz, start_mode_z, mode_z, end_mode_z, start_mode_x, mode_x, end_mode_x
@@ -385,7 +386,7 @@ LOOP FOR mode_z = start_mode_z TO end_mode_z
 	loop_start_mode_x = 0
 REPEAT LOOP
 
-
+!)
 
 
 

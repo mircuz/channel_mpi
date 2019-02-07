@@ -35,9 +35,10 @@ WRITE
   }
   if (rank == 0) {
 	  read_data(nx, ny, nz, U_read, "u.dat");
-  	  apply_AA(nx, ny, nz, nxd, nzd, U, U_read);
+  	  //apply_AA(nz, ny, nx, nzd, nxd, U, U_read);
+		//INSERIRE QUI IL NUOVO AAz
   }
-  Alltoall( rank, size, in_jlo, in_jhi, in_klo, in_khi, nxd, ny, nzd, U, u_, 1);
+  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, ny, nx, U_read, u_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(U);
   if (rank == 0) transpose_on_rank0( nx, ny, nz, U_read);
@@ -47,7 +48,7 @@ WRITE
   if(rank == 0) free(U_read);
   MPI_Barrier(MPI_COMM_WORLD);
 
-  //V
+/*  //V
   V_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
   V = (FFT_SCALAR*) malloc( nxd*ny*nzd*2* sizeof(FFT_SCALAR));
   if( (V||V_read) == NULL) {
@@ -88,5 +89,5 @@ WRITE
   MPI_Barrier(MPI_COMM_WORLD);
   if(rank == 0) free(W_read);
   MPI_Barrier(MPI_COMM_WORLD);
-
+*/
 *>

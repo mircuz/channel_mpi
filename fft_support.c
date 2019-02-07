@@ -289,6 +289,26 @@ void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4])
 	}
 }
 
+void z_aliasing(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
+	int nz_left = 1+ (nz-1)/2; 	int reader=0;
+	 
+	for( int stride_x = 0; stride_x < 2*nzd*ny*nx; stride_x = stride_x + 2*nzd*ny) {
+		for( int stride_y = 0; stride_y < 2*nzd*ny; stride_y = stride_y + 2*nzd) {
+			for (int k= (nzd-nz_left)*2; k < nzd*2; k++){
+				U[stride_x + stride_y+k] = U_read[reader];
+				reader++;
+			}
+			for (int k= (nz_left-1)*2; k < (nzd-nz_left)*2; k++){
+				U[stride_x + stride_y+k]=0;
+			}
+			for (int k= 0; k < (nz_left-1)*2; k++){
+				U[stride_x + stride_y+k] = U_read[reader];
+				reader++;
+			}
+		}
+	}
+}
+
 void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read) {
 	/* First things first 0..nz modes are read.
 	 * Since the U_read start with negative nz modes we must skip the first 2*nx*ny*(nz_left+1) rows */
@@ -334,9 +354,9 @@ void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALA
 		last_index = stride_z + stride_y;
 		//printf("last %d\n", last_index);
 	}
-	/* for (int i =0; i < nxd*nzd*ny*2; i++) {
+	 for (int i =0; i < nxd*nzd*ny*2; i++) {
 	  		  printf("u[%d] = %g\n", i, U[i]);
-	  	  } */
+	  	  } 
 }
 
 void print_x_pencil(int nx, int in_jlo, int in_jhi, int in_klo,
@@ -453,11 +473,11 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_klo,
 		abort();
 	}
 	//Checking function
-	/*if (rank == 2){
+	if (rank == 2){
 		  for(int i = 0; i < recvcounts[0]; i++){
 			  printf("arr_recv[%d]= %f\n", i, arr_recv[i]);
 		  }
-	  }*/
+	  }
 
 	MPI_Type_free(vector);
 }

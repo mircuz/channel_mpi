@@ -58,45 +58,45 @@ WRITE
   int ipfast = rank % npfast;
   int ipmid = (rank/npfast) % npmid;
   int ipslow = rank / (npfast*npmid);
-  int in_ilo, in_ihi, in_jlo, in_jhi, in_klo, in_khi;
+  int x_ilo, x_ihi, x_jlo, x_jhi, x_klo, x_khi;
 
-  in_ilo = (int) 1.0*ipfast*nfast/npfast;						// I fast
-  in_ihi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
-  in_jlo = (int) 1.0*ipmid*nmid/npmid;							// J med
-  in_jhi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
-  in_klo = (int) 1.0*ipslow*nslow/npslow;						// K slow
-  in_khi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
+  x_ilo = (int) 1.0*ipfast*nfast/npfast;						// I fast
+  x_ihi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
+  x_jlo = (int) 1.0*ipmid*nmid/npmid;							// J med
+  x_jhi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
+  x_klo = (int) 1.0*ipslow*nslow/npslow;						// K slow
+  x_khi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
 
   printf("[X-PENCIL] (i,j,k order)\t"
 		  "On rank %d the coordinates are: "
-		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, in_ilo, in_jlo, in_klo, in_ihi, in_jhi, in_khi );
+		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, x_ilo, x_jlo, x_klo, x_ihi, x_jhi, x_khi );
 
   nfast = nzd;
   nmid = nxd;
   nslow = ny;
 
   // partitioning in z-pencil
-  int out_klo = (int) 1.0*ipfast*nfast/npfast;					// K fast
-  int out_khi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
-  int out_ilo = (int) 1.0*ipmid*nmid/npmid;						// I med
-  int out_ihi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
-  int out_jlo = (int) 1.0*ipslow*nslow/npslow;					// J slow
-  int out_jhi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
+  int z_klo = (int) 1.0*ipfast*nfast/npfast;					// K fast
+  int z_khi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
+  int z_ilo = (int) 1.0*ipmid*nmid/npmid;						// I med
+  int z_ihi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
+  int z_jlo = (int) 1.0*ipslow*nslow/npslow;					// J slow
+  int z_jhi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
 
   printf("[Z-PENCIL] (k,i,j order)\t"
 		  "On rank %d the coordinates are: "
-		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, out_ilo, out_jlo, out_klo, out_ihi, out_jhi, out_khi );
+		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, z_ilo, z_jlo, z_klo, z_ihi, z_jhi, z_khi );
 
   void *remap_zpencil, *remap_xpencil, *remap_ypencil;
   int nqty, permute, memoryflag, sendsize, recvsize;
   nqty = 2;			// Use couples of real numbers per grid point
-  permute = 2;  		// From x-contiguous to z-contiguous arrays
+  permute = 1;  		// From z-contiguous to x-contiguous arrays
   memoryflag = 1;		// Self-allocate the buffers
 
 
   /******************************************* Size Variables ******************************************/
-  int insize = (in_ihi-in_ilo+1) * (in_jhi-in_jlo+1) * (in_khi-in_klo+1);
-  int outsize = (out_ihi-out_ilo+1) * (out_jhi-out_jlo+1) * (out_khi-out_klo+1);
+  int insize = (z_ihi-z_ilo+1) * (z_jhi-z_jlo+1) * (z_khi-z_klo+1);
+  int outsize = (x_ihi-x_ilo+1) * (x_jhi-x_jlo+1) * (x_khi-x_klo+1);
   int remapsize = (insize > outsize) ? insize : outsize;
   int elem_per_proc = insize*2;
 
@@ -110,12 +110,12 @@ WRITE
 
   // Setup matrix
   int *modes_per_proc = (int *) malloc(sizeof(int)*size);
-  modes_per_proc[rank] = (in_jhi-in_jlo+1) * (in_khi-in_klo+1);
+  modes_per_proc[rank] = (z_jhi-z_jlo+1) * (z_ihi-z_ilo+1);
   MPI_Allgather(&modes_per_proc[rank],1,MPI_INT,modes_per_proc,1,MPI_INT, MPI_COMM_WORLD);
   // Scattering & Gathering parameters
   int offset=0;
   for (int i=0; i<size; ++i) {
-  	  scounts[i] = modes_per_proc[i]*nxd*2;
+  	  scounts[i] = modes_per_proc[i]*nzd*2;
   	  receive[i] = scounts[i];
   	  displs[i] = offset;
   	  offset += scounts[i];
