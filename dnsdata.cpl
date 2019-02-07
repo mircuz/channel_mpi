@@ -110,8 +110,8 @@ INTEGER nxd = (nx)*3 DIV 2 -1 ;	INTEGER nzd = 3*nz-1;
 DO INC nxd UNTIL FFTfit(nxd);	
 DO INC nzd UNTIL FFTfit(nzd);
 
-!// X-Backward FFT---------------------------------------------------------------------
-SUBROUTINE b_FFT_x(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc)
+!// X-FFT---------------------------------------------------------------------
+SUBROUTINE b_FFT_x(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)
 ARRAY(0..nxd-1) OF COMPLEX in
 	INTEGER count = 0, i=0;
 	LOOP WHILE ( count < elem_per_proc/(2*nxd))
@@ -121,18 +121,52 @@ ARRAY(0..nxd-1) OF COMPLEX in
 			INC i
 			in[n].IMAG = work[i];
 			INC i
-			IF rank = 0 THEN WRITE in[n]
 		REPEAT LOOP
-		RFT(in)
-		!n=0
-		!()LOOP FOR i = 0 TO 2*nxd
+		!// Execute FFT exploting symmetry
+		IF flag = 1 THEN RFT(in) ELSE IF flag = -1 THEN HFT(in) ELSE ERROR ".:Error: Check x-FFT flag:.		"
+		!IF rank = 0 THEN WRITE "in= "in
+		!// Push data inside original array
+		INTEGER n=0
+		LOOP FOR i = 0 TO 2*nxd-1
 			work[i+count*2*nxd] = in[n].REAL
-			INC n;	INC i
+			!IF rank = 0 THEN WRITE "work["i+count*2*nxd"]=" work[i+count*2*nxd]
+			INC i
 			work[i+count*2*nxd] = in[n].IMAG
-		REPEAT LOOP!)
+			!IF rank = 0 THEN WRITE "work["i+count*2*nxd"]=" work[i+count*2*nxd]
+			INC n
+		REPEAT LOOP
 		INC count
 	REPEAT LOOP
 END b_FFT_x
+
+!// Z-FFT---------------------------------------------------------------------
+SUBROUTINE b_FFT_z(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)
+ARRAY(0..nzd-1) OF COMPLEX in
+	INTEGER count = 0, i=0;
+	LOOP WHILE ( count < elem_per_proc/(2*nzd))
+		!// fill IN array
+		LOOP FOR n = 0 TO nzd-1
+			in[n].REAL = work[i];
+			INC i
+			in[n].IMAG = work[i];
+			INC i
+		REPEAT LOOP
+		!// Execute FFT exploting symmetry
+		IF flag = 1 THEN IFT(in) ELSE IF flag = -1 THEN FFT(in) ELSE ERROR ".:Error: Check z-FFT flag:.		"
+		!IF rank = 0 THEN WRITE "in= "in
+		!// Push data inside original array
+		INTEGER n=0
+		LOOP FOR i = 0 TO 2*nzd-1
+			work[i+count*2*nzd] = in[n].REAL
+			!IF rank = 0 THEN WRITE "work["i+count*2*nzd"]=" work[i+count*2*nzd]
+			INC i
+			work[i+count*2*nzd] = in[n].IMAG
+			!IF rank = 0 THEN WRITE "work["i+count*2*nzd"]=" work[i+count*2*nzd]
+			INC n
+		REPEAT LOOP
+		INC count
+	REPEAT LOOP
+END b_FFT_z
 
 
 !// Grid in y direction and compact finite differences operators-----------------------
