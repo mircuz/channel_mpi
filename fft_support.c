@@ -289,19 +289,19 @@ void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4])
 	}
 }
 
-void z_aliasing(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
+void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
 	int nz_left = 1+ (nz-1)/2; 	int reader=0;
 	 
 	for( int stride_x = 0; stride_x < 2*nzd*ny*nx; stride_x = stride_x + 2*nzd*ny) {
 		for( int stride_y = 0; stride_y < 2*nzd*ny; stride_y = stride_y + 2*nzd) {
-			for (int k= (nzd-nz_left)*2; k < nzd*2; k++){
+			for (int k= (nzd-nz_left+1)*2; k < nzd*2; k++){
 				U[stride_x + stride_y+k] = U_read[reader];
 				reader++;
 			}
 			for (int k= (nz_left-1)*2; k < (nzd-nz_left)*2; k++){
 				U[stride_x + stride_y+k]=0;
 			}
-			for (int k= 0; k < (nz_left-1)*2; k++){
+			for (int k= 0; k < (nz_left)*2; k++){
 				U[stride_x + stride_y+k] = U_read[reader];
 				reader++;
 			}
@@ -420,24 +420,24 @@ if (rank == desidered_rank) {
 }
 }
 
-void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_klo,
-					 int in_khi, int nxd, int ny, int nzd, FFT_SCALAR *arr, FFT_SCALAR *arr_recv, int flag){
+void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
+					 int in_ihi, int nz, int ny, FFT_SCALAR *arr, FFT_SCALAR *arr_recv, int flag){
 	/* Flag = 1 	=> 	Scatterw
 	 * Flag = -1 	=>	Gatherw */
 
 	int *contiguous_y = (int *) malloc(sizeof(int)*size);
-	int *contiguous_z = (int *) malloc(sizeof(int)*size);
+	int *contiguous_x = (int *) malloc(sizeof(int)*size);
 	int *sendcounts = (int *) malloc(sizeof(int)*size);
 	int *senddispls = (int *) malloc(sizeof(int)*size);
 	int *recvdispls = (int *) malloc(sizeof(int)*size);
 	int *recvcounts = (int *) malloc(sizeof(int)*size);
-	if (( contiguous_z||contiguous_y||senddispls||sendcounts||recvdispls||recvcounts ) == NULL) {
+	if (( contiguous_x||contiguous_y||senddispls||sendcounts||recvdispls||recvcounts ) == NULL) {
 		perror(".:Error while allocating memory for Alltoallw parameters:.\n");
 		abort();
 	}
 	MPI_Datatype recvtype[size];
 	contiguous_y[rank] = (in_jhi-in_jlo+1);
-	contiguous_z[rank] = (in_khi-in_klo+1);
+	contiguous_x[rank] = (in_ihi-in_ilo+1);
 	for (int i = 0; i < size; i++){
 		sendcounts[i] = 0;	recvdispls[i] = 0;		recvcounts[i] = 0;		recvtype[i] = MPI_DOUBLE;
 	}
@@ -447,18 +447,19 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_klo,
 			sendcounts[i] = 1;
 		}
 	}
-	senddispls[rank] = (2*nxd*in_jlo + 2*nxd*ny*in_klo )*sizeof(double);
-	recvcounts[0] = 2*nxd*(in_jhi-in_jlo+1)*(in_khi-in_klo+1);
+	senddispls[rank] = (2*nz*in_jlo + 2*nz*ny*in_ilo )*sizeof(double);
+	recvcounts[0] = 2*nz*(in_jhi-in_jlo+1)*(in_ihi-in_ilo+1);
+	//printf("RECV COUNTS %d\n", recvcounts[0]);
 	MPI_Allgather(&contiguous_y[rank],1,MPI_INT,contiguous_y,1,MPI_INT, MPI_COMM_WORLD);
-	MPI_Allgather(&contiguous_z[rank],1,MPI_INT,contiguous_z,1,MPI_INT, MPI_COMM_WORLD);
+	MPI_Allgather(&contiguous_x[rank],1,MPI_INT,contiguous_x,1,MPI_INT, MPI_COMM_WORLD);
 	MPI_Allgather(&senddispls[rank],1,MPI_INT,senddispls,1,MPI_INT, MPI_COMM_WORLD);
 
 	MPI_Datatype vector[size], contiguous[size];
-	int bytes_stride = sizeof(double)*2*nxd*ny;
+	int bytes_stride = sizeof(double)*2*nz*ny;
 
 	for (int i = 0; i < size; i++) {
-		MPI_Type_contiguous(2*nxd*contiguous_y[i], MPI_DOUBLE, &contiguous[i]);
-		MPI_Type_create_hvector(contiguous_z[i], 1, bytes_stride, contiguous[i], &vector[i]);
+		MPI_Type_contiguous(2*nz*contiguous_y[i], MPI_DOUBLE, &contiguous[i]);
+		MPI_Type_create_hvector(contiguous_x[i], 1, bytes_stride, contiguous[i], &vector[i]);
 		MPI_Type_commit(&vector[i]);
 	}
 
@@ -472,12 +473,12 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_klo,
 		perror(".:Invalid FLAG for Alltoall call:.\n\n");
 		abort();
 	}
-	//Checking function
-	if (rank == 2){
+	/*/Checking function
+	if (rank == 0){
 		  for(int i = 0; i < recvcounts[0]; i++){
 			  printf("arr_recv[%d]= %f\n", i, arr_recv[i]);
 		  }
 	  }
-
+*/
 	MPI_Type_free(vector);
 }

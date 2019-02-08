@@ -11,23 +11,27 @@ WRITE
   /************************************************ backward FFTs *********************************************/
   if (rank == 0) printf("Reading and Antialiasing completed...\nStarting Backward transformations...\n");
   // ------------------------------------------- Setup z-Transpose --------------------------------------------
-  remap3d_create( remap_comm , &remap_zpencil);
-  remap3d_setup( remap_zpencil,
+  remap3d_create( remap_comm , &remap_to_xpencil);
+  remap3d_setup( remap_to_xpencil,
       		  	  z_ilo,  z_ihi,  z_jlo, z_jhi,  z_klo,  z_khi,
 				  x_ilo,  x_ihi,  x_jlo, x_jhi,  x_klo,  x_khi,
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
+  // Apply AA in z direction
+  
+  z_aliasing( (z_ihi_s-z_ilo_s+1), (z_jhi-z_jlo+1), nz, nzd, u_, U);  
+  free(U);
   // Backward FFT#1
-  print_z_pencil( nz, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 0);
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   double timer_b1 = 0.0;
   timer_b1 -= MPI_Wtime();	
+  print_z_pencil( nzd, z_ilo_s, z_ihi_s, z_jlo_s, u_, rank, scounts[rank], 1);
 *>
 
-!FFT_x( u, localdim, 1)
+FFT_z( u, localdim, 1)
 	
 <*
-  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, scounts[rank], 0);
+  print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 1);
   /*b_FFT( u, elem_per_proc, i_length );
   b_FFT( v, elem_per_proc, i_length );
   b_FFT( w, elem_per_proc, i_length );*/
@@ -38,7 +42,7 @@ WRITE
   // Transpose in z-pencil
   double timer_trasp_z = 0.0, TIMER_TRASP_z = 0.0;
   timer_trasp_z -= MPI_Wtime();
-  remap3d_remap(remap_zpencil,u_,u_,sendbuf,recvbuf);
+  remap3d_remap(remap_to_xpencil,u_,u_,sendbuf,recvbuf);
   //remap3d_remap(remap_zpencil,v,v,sendbuf,recvbuf);
   //remap3d_remap(remap_zpencil,w,w,sendbuf,recvbuf);
   MPI_Barrier(remap_comm); // @suppress("Symbol is not resolved")
@@ -62,7 +66,7 @@ WRITE
 
 
   //Finalize plan
-  remap3d_destroy(remap_zpencil);
+  remap3d_destroy(remap_to_xpencil);
   //print_z_pencil( nzd, x_ilo, x_ihi, x_jlo, u_, rank, scounts[rank], 0);
 
 
@@ -91,9 +95,9 @@ REPEAT LOOP
 
   /************************************************ forward FFTs *********************************************/
   // ---------------------------------------- Setup x-Transpose -----------------------------------------
-  remap3d_create( remap_comm , &remap_xpencil);
+  remap3d_create( remap_comm , &remap_to_zpencil);
   permute = 2; 		// From x-contiguous to z-contiguous arrays
-  remap3d_setup( remap_xpencil,
+  remap3d_setup( remap_to_zpencil,
 		  	  	  x_klo,  x_khi, x_ilo,  x_ihi,  x_jlo, x_jhi,
 				  z_klo,  z_khi, z_ilo,  z_ihi,  z_jlo, z_jhi,
 				  nqty, permute, memoryflag, &sendsize, &recvsize);
@@ -120,7 +124,7 @@ REPEAT LOOP
   // Transpose to x-pencil
   double timer_trasp_x = 0.0, TIMER_TRASP_x = 0.0;
   timer_trasp_x -= MPI_Wtime();
-  remap3d_remap(remap_xpencil,u_,u_,sendbuf,recvbuf);
+  remap3d_remap(remap_to_zpencil,u_,u_,sendbuf,recvbuf);
  /* remap3d_remap(remap_xpencil,uu_,uu_,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,uv,uv,sendbuf,recvbuf);
   remap3d_remap(remap_xpencil,vv,vv,sendbuf,recvbuf);
@@ -150,7 +154,7 @@ REPEAT LOOP
   timer_f2 += MPI_Wtime();
 
   // Finalize plan
-  remap3d_destroy(remap_xpencil);
+  remap3d_destroy(remap_to_zpencil);
   free(recvbuf);	 free(sendbuf);
 
   // De-alias locally

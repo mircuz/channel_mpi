@@ -28,19 +28,16 @@ WRITE
   // Allocate mememory needed to Scatter data, only on the broadcaster
   // U
   U_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
-  U = (FFT_SCALAR*) malloc( nxd*ny*nzd*2* sizeof(FFT_SCALAR));
+  U = (FFT_SCALAR*) malloc( remapsize*2* sizeof(FFT_SCALAR));
   if( (U||U_read) == NULL) {
 	  perror(".:Error while allocatin broadcaster memory U:.\n");
 	  abort();
   }
   if (rank == 0) {
 	  read_data(nx, ny, nz, U_read, "u.dat");
-  	  //apply_AA(nz, ny, nx, nzd, nxd, U, U_read);
-		//INSERIRE QUI IL NUOVO AAz
   }
-  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, ny, nx, U_read, u_, 1);
+  Alltoall( rank, size, z_jlo_s, z_jhi_s, z_ilo_s, z_ihi_s, nz, ny, U_read, U, 1);
   MPI_Barrier(MPI_COMM_WORLD);
-  free(U);
   if (rank == 0) transpose_on_rank0( nx, ny, nz, U_read);
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Scatterv(U_read, scounts_scat, displs_scat, MPI_DOUBLE, u_read, receive_scat[rank] , MPI_DOUBLE, 0, MPI_COMM_WORLD);
