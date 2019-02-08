@@ -289,11 +289,14 @@ void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4])
 	}
 }
 
-void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
+/* APPLY AA Z PENCIL VERSION */
+void print_z_pencil(int nz, int in_ilo, int in_ihi, int in_jlo,
+		FFT_SCALAR *u, int rank, int scounts, int desidered_rank);
+void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
 	int nz_left = 1+ (nz-1)/2; 	int reader=0;
-	 
-	for( int stride_x = 0; stride_x < 2*nzd*ny*nx; stride_x = stride_x + 2*nzd*ny) {
-		for( int stride_y = 0; stride_y < 2*nzd*ny; stride_y = stride_y + 2*nzd) {
+	// z-AA
+	for( int stride_y = 0; stride_y < 2*nzd*nxd*ny; stride_y = stride_y + 2*nzd*nxd) {
+		for( int stride_x = 0; stride_x < 2*nzd*nx; stride_x = stride_x + 2*nzd) {
 			for (int k= (nzd-nz_left+1)*2; k < nzd*2; k++){
 				U[stride_x + stride_y+k] = U_read[reader];
 				reader++;
@@ -306,12 +309,17 @@ void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_re
 				reader++;
 			}
 		}
+		for (int stride_x = 2*nzd*nx; stride_x < 2*nzd*nxd; stride_x = stride_x + 2*nzd*nxd) {
+			for (int k= 0; k < nzd*2; k++){		
+				U[stride_x + stride_y+k]=0;
+			}
+		}
 	}
+	//print_z_pencil(nzd, 0, nxd-1, 0, U, 0, 2*nxd*ny*nzd, 0);
 }
 
+/*	APPLY AA X-PENCIL VERSION 
 void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read) {
-	/* First things first 0..nz modes are read.
-	 * Since the U_read start with negative nz modes we must skip the first 2*nx*ny*(nz_left+1) rows */
 	int nz_left = 1+ (nz-1)/2, reader= 2*nx*ny*(nz_left-1) ;
 	  	  //Fill the array with read values and zeros for AA
 	int i, stride_y, stride_z, last_index;
@@ -357,7 +365,7 @@ void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALA
 	 for (int i =0; i < nxd*nzd*ny*2; i++) {
 	  		  printf("u[%d] = %g\n", i, U[i]);
 	  	  } 
-}
+}*/
 
 void print_x_pencil(int nx, int in_jlo, int in_jhi, int in_klo,
 		FFT_SCALAR *u, int rank, int scounts, int desidered_rank) {
@@ -421,12 +429,12 @@ if (rank == desidered_rank) {
 }
 
 void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
-					 int in_ihi, int nz, int ny, FFT_SCALAR *arr, FFT_SCALAR *arr_recv, int flag){
+					 int in_ihi, int nz, int nx, FFT_SCALAR *arr, FFT_SCALAR *arr_recv, int flag){
 	/* Flag = 1 	=> 	Scatterw
 	 * Flag = -1 	=>	Gatherw */
 
-	int *contiguous_y = (int *) malloc(sizeof(int)*size);
 	int *contiguous_x = (int *) malloc(sizeof(int)*size);
+	int *contiguous_y = (int *) malloc(sizeof(int)*size);
 	int *sendcounts = (int *) malloc(sizeof(int)*size);
 	int *senddispls = (int *) malloc(sizeof(int)*size);
 	int *recvdispls = (int *) malloc(sizeof(int)*size);
@@ -447,7 +455,7 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 			sendcounts[i] = 1;
 		}
 	}
-	senddispls[rank] = (2*nz*in_jlo + 2*nz*ny*in_ilo )*sizeof(double);
+	senddispls[rank] = (2*nz*in_ilo + 2*nz*nx*in_jlo )*sizeof(double);
 	recvcounts[0] = 2*nz*(in_jhi-in_jlo+1)*(in_ihi-in_ilo+1);
 	//printf("RECV COUNTS %d\n", recvcounts[0]);
 	MPI_Allgather(&contiguous_y[rank],1,MPI_INT,contiguous_y,1,MPI_INT, MPI_COMM_WORLD);
@@ -455,11 +463,11 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	MPI_Allgather(&senddispls[rank],1,MPI_INT,senddispls,1,MPI_INT, MPI_COMM_WORLD);
 
 	MPI_Datatype vector[size], contiguous[size];
-	int bytes_stride = sizeof(double)*2*nz*ny;
+	int bytes_stride = sizeof(double)*2*nz*nx;
 
 	for (int i = 0; i < size; i++) {
-		MPI_Type_contiguous(2*nz*contiguous_y[i], MPI_DOUBLE, &contiguous[i]);
-		MPI_Type_create_hvector(contiguous_x[i], 1, bytes_stride, contiguous[i], &vector[i]);
+		MPI_Type_contiguous(2*nz*contiguous_x[i], MPI_DOUBLE, &contiguous[i]);
+		MPI_Type_create_hvector(contiguous_y[i], 1, bytes_stride, contiguous[i], &vector[i]);
 		MPI_Type_commit(&vector[i]);
 	}
 
@@ -479,6 +487,6 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 			  printf("arr_recv[%d]= %f\n", i, arr_recv[i]);
 		  }
 	  }
-*/
+	*/
 	MPI_Type_free(vector);
 }
