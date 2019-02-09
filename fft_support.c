@@ -490,3 +490,111 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	*/
 	MPI_Type_free(vector);
 }
+
+
+
+
+
+
+
+
+void proc3d(int arr[3], int me, int nprocs, int nx, int ny, int nz);
+void proc_setup( int rank, int size, int nx, int ny, int nz, int inpx, int inpy, int inpz, int outpx, int outpy, int outpz) {
+  int arr_in[3], arr_out[3];
+  proc3d(arr_in, rank, size, nx,ny,nz);
+  inpx = arr_in[0], inpy = arr_in[1], inpz = arr_in[2];
+  proc3d(arr_out, rank, size, nx,ny,nz);
+  outpx = arr_out[0], outpy = arr_out[1], outpz = arr_out[2];
+  //printf("inpx %d, inpy %d, inpz %d, outpx %d, outpy %d, outpz %d", inpx, inpy, inpz, outpx, outpy, outpz);
+
+  grid_setup( inpx, inpy, inpz, outpx, outpy, outpz, nx, ny, nz, rank);
+}
+
+void proc3d(int arr[3], int me, int nprocs, int nx, int ny, int nz) {
+  
+  int ipx,ipy,ipz,nremain;
+  int px=0, py=0, pz=0;
+  double boxx,boxy,boxz,surf;
+  double xprd = nx;
+  double yprd = ny;
+  double zprd = nz;
+  
+  double bestsurf = 2.0 * (xprd*yprd + yprd*zprd + zprd*xprd);
+  
+  // loop thru all possible factorizations of nprocs
+  // surf = surface area of a proc sub-domain
+  
+  ipx = 1;
+  while (ipx <= nprocs) {
+    if (nprocs % ipx == 0) {
+      nremain = nprocs/ipx;
+      ipy = 1;
+      while (ipy <= nremain) {
+        if (nremain % ipy == 0) {
+          ipz = nremain/ipy;
+          boxx = xprd/ipx;
+          boxy = yprd/ipy;
+          boxz = zprd/ipz;
+          surf = boxx*boxy + boxy*boxz + boxz*boxx;
+          if (surf < bestsurf) {
+            bestsurf = surf;
+            px = ipx;
+            py = ipy;
+            pz = ipz;
+          }
+        }
+        ipy++;
+      }
+    }
+    ipx++;
+  }
+  //printf("px %d, py %d, pz %d\n", px, py, pz);
+  if ((px)*(py)*(pz) != nprocs) 
+    perror("Computed proc grid does not match nprocs");
+
+  arr[0] = px; 	arr[1] = py; 	arr[2] = pz;
+}
+
+void grid_setup(int inpx, int inpy, int inpz, int outpx, int outpy, int outpz, int nx, int ny, int nz, int me){
+  /* inpx,inpy,inpz, outpx,outpy,outpz = subset of processor in that direction */
+  int ipx = me % inpx;
+  int ipy = (me/inpx) % inpy;
+  int ipz = me / (inpx*inpy);
+  int insize, outsize;
+  int inxlo,inxhi,inylo,inyhi,inzlo,inzhi;          // initial partition of grid
+  int outxlo,outxhi,outylo,outyhi,outzlo,outzhi; 	// final partition of grid
+  // nlo,nhi = lower/upper limits of the 3d brick I own
+
+  inxlo =  (1.0 * ipx * nx / inpx);
+  inxhi =  (1.0 * (ipx+1) * nx / inpx) - 1;
+
+  inylo =  (1.0 * ipy * ny / inpy);
+  inyhi =  (1.0 * (ipy+1) * ny / inpy) - 1;
+
+  inzlo =  (1.0 * ipz * nz / inpz);
+  inzhi =  (1.0 * (ipz+1) * nz / inpz) - 1;
+
+  insize = (inxhi-inxlo+1) * (inyhi-inylo+1) * (inzhi-inzlo+1);
+
+  // ipx,ipy,ipz = my position in output 3d grid of procs
+
+  ipx = me % outpx;
+  ipy = (me/outpx) % outpy;
+  ipz = me / (outpx*outpy);
+
+  // nlo,nhi = lower/upper limits of the 3d brick I own
+
+  outxlo =  (1.0 * ipx * nx / outpx);
+  outxhi =  (1.0 * (ipx+1) * nx / outpx) - 1;
+
+  outylo =  (1.0 * ipy * ny / outpy);
+  outyhi =  (1.0 * (ipy+1) * ny / outpy) - 1;
+
+  outzlo =  (1.0 * ipz * nz / outpz);
+  outzhi =  (1.0 * (ipz+1) * nz / outpz) - 1;
+
+  outsize = (outxhi-outxlo+1) * (outyhi-outylo+1) * (outzhi-outzlo+1);
+}
+
+
+

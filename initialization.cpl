@@ -20,11 +20,6 @@ WRITE
   int j_length = ny;
   int k_length = nzd;
 
-  // TOTAL Modes
-  nfast = nxd;
-  nmid = ny;
-  nslow = nzd;
-
   // Algorithm to factor Nprocs into roughly cube roots
   int npfast,npmid,npslow;
   npfast= 1;
@@ -36,7 +31,45 @@ WRITE
   }
   npslow = size / npfast / npmid;
 
+  /******************************************** Remap Variables *******************************************/
+  int ipfast = rank % npfast;
+  int ipmid = (rank/npfast) % npmid;
+  int ipslow = rank / (npfast*npmid);
 
+  // partitioning in z-pencil
+
+  nfast = nzd;
+  nmid = nxd;
+  nslow = ny;
+
+  int z_klo = (int) 1.0*ipfast*nfast/npfast;					// K fast
+  int z_khi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
+  int z_ilo = (int) 1.0*ipmid*nmid/npmid;						// I med
+  int z_ihi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
+  int z_jlo = (int) 1.0*ipslow*nslow/npslow;					// J slow
+  int z_jhi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
+
+  printf("[Z-PENCIL] (k,i,j order)\t"
+		  "On rank %d the coordinates are: "
+		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, z_ilo, z_jlo, z_klo, z_ihi, z_jhi, z_khi );
+
+  // partitioning in x-pencil
+  nfast = nxd;
+  nmid = ny;
+  nslow = nzd;
+
+  int x_ilo = (int) 1.0*ipfast*nfast/npfast;						// I fast
+  int x_ihi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
+  int x_jlo = (int) 1.0*ipmid*nmid/npmid;							// J med
+  int x_jhi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
+  int x_klo = (int) 1.0*ipslow*nslow/npslow;						// K slow
+  int x_khi = (int) 1.0*(ipslow+1)*nslow/npslow - 1; 
+
+  printf("[X-PENCIL] (i,j,k order)\t"
+		  "On rank %d the coordinates are: "
+		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, x_ilo, x_jlo, x_klo, x_ihi, x_jhi, x_khi );
+
+  
   if (rank == 0) {
   	  printf("\n========================================================================================\n"
   			  "\t2D FFT with %dx%dx%d total modes, %dx%dx%d investigated on %d procs, %dx%dx%d grid\t\n"
@@ -53,60 +86,15 @@ WRITE
  	  abort();
    }
 
-  /******************************************** Remap Variables *******************************************/
-  // partitioning in x-pencil
-  int ipfast = rank % npfast;
-  int ipmid = (rank/npfast) % npmid;
-  int ipslow = rank / (npfast*npmid);
 
-  int x_ilo = (int) 1.0*ipfast*nfast/npfast;						// I fast
-  int x_ihi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
-  int x_jlo = (int) 1.0*ipmid*nmid/npmid;							// J med
-  int x_jhi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
-  int x_klo = (int) 1.0*ipslow*nslow/npslow;						// K slow
-  int x_khi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
-  // Sending parameters
-  int x_ilo_s = (int) 1.0*ipfast*nx/npfast;							// I fast
-  int x_ihi_s = (int) 1.0*(ipfast+1)*nx/npfast - 1;
-  int x_jlo_s = (int) 1.0*ipmid*nmid/npmid;							// J med
-  int x_jhi_s = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
-  int x_klo_s = (int) 1.0*ipslow*nz/npslow;							// K slow
-  int x_khi_s = (int) 1.0*(ipslow+1)*nz/npslow - 1;
-
-  printf("[X-PENCIL] (i,j,k order)\t"
-		  "On rank %d the coordinates are: "
-		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, x_ilo, x_jlo, x_klo, x_ihi, x_jhi, x_khi );
-
-  nfast = nzd;
-  nmid = nxd;
-  nslow = ny;
-
-  // partitioning in z-pencil
-  int z_klo = (int) 1.0*ipfast*nfast/npfast;					// K fast
-  int z_khi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
-  int z_ilo = (int) 1.0*ipmid*nmid/npmid;						// I med
-  int z_ihi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
-  int z_jlo = (int) 1.0*ipslow*nslow/npslow;					// J slow
-  int z_jhi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
-  // Sending parameters
-  int z_klo_s = (int) 1.0*ipfast*nz/npfast;					// K fast
-  int z_khi_s = (int) 1.0*(ipfast+1)*nz/npfast - 1;
-  int z_ilo_s = (int) 1.0*ipmid*nx/npmid;						// I med
-  int z_ihi_s = (int) 1.0*(ipmid+1)*nx/npmid - 1;
-  int z_jlo_s = (int) 1.0*ipslow*nslow/npslow;					// J slow
-  int z_jhi_s = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
-
-  printf("[Z-PENCIL] (k,i,j order)\t"
-		  "On rank %d the coordinates are: "
-		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, z_ilo, z_jlo, z_klo, z_ihi, z_jhi, z_khi );
-
-  void *remap_to_zpencil, *remap_to_xpencil, *remap_ypencil;
+  void *remap_to_zpencil, *remap_to_xpencil;
   int nqty, permute, memoryflag, sendsize, recvsize;
   nqty = 2;			// Use couples of real numbers per grid point
   permute = 1;  		// From z-contiguous to x-contiguous arrays
   memoryflag = 1;		// Self-allocate the buffers
 
-
+  MPI_Barrier(MPI_COMM_WORLD);
+ 
   /******************************************* Size Variables ******************************************/
   int insize = (z_ihi-z_ilo+1) * (z_jhi-z_jlo+1) * (z_khi-z_klo+1);
   int outsize = (x_ihi-x_ilo+1) * (x_jhi-x_jlo+1) * (x_khi-x_klo+1);

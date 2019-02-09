@@ -13,8 +13,8 @@ WRITE
   // ------------------------------------------- Setup z-Transpose --------------------------------------------
   remap3d_create( remap_comm , &remap_to_xpencil);
   remap3d_setup( remap_to_xpencil,
-      		  	  z_ilo,  z_ihi,  z_jlo, z_jhi,  z_klo,  z_khi,
-				  x_ilo,  x_ihi,  x_jlo, x_jhi,  x_klo,  x_khi,
+      		  	  z_klo,  z_khi, z_ilo,  z_ihi, z_jlo, z_jhi,
+				  x_klo,  x_khi, x_ilo,  x_ihi,  x_jlo, x_jhi, 
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
   MPI_Barrier(MPI_COMM_WORLD);
@@ -28,9 +28,9 @@ WRITE
 FFT_z( u, localdim, 1)
 	
 <*
-  MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
+  MPI_Barrier( MPI_COMM_WORLD); 
   timer_b1 += MPI_Wtime();
-  print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 1); 
+  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 0); 
 
   // Transpose in x-pencil
   double timer_trasp_z = 0.0, TIMER_TRASP_z = 0.0;
@@ -42,15 +42,14 @@ FFT_z( u, localdim, 1)
   timer_trasp_z += MPI_Wtime();
 
   // Backward RFT
-  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, scounts[rank], 0);
   double timer_b2 = 0.0;
   timer_b2 -= MPI_Wtime();
 *>
 
-!FFT_x( u, localdim, 1)
+FFT_x( u, localdim, 1)
 
 <*
-
+  print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, scounts[rank], 0);
  /* b_FFT( u, elem_per_proc, k_length );
   b_FFT( v, elem_per_proc, k_length );
   b_FFT( w, elem_per_proc, k_length );*/
@@ -89,8 +88,8 @@ REPEAT LOOP
   remap3d_create( remap_comm , &remap_to_zpencil);
   permute = 2; 		// From x-contiguous to z-contiguous arrays
   remap3d_setup( remap_to_zpencil,
-		  	  	  x_klo,  x_khi, x_ilo,  x_ihi,  x_jlo, x_jhi,
-				  z_klo,  z_khi, z_ilo,  z_ihi,  z_jlo, z_jhi,
+		  	  	  x_ilo,  x_ihi, x_jlo,  x_jhi,  x_klo, x_khi,
+				  z_ilo,  z_ihi, z_jlo,  z_jhi,  z_klo, z_khi,
 				  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
   // Forward FFT#1
@@ -124,7 +123,7 @@ REPEAT LOOP
   remap3d_remap(remap_xpencil,uw,uw,sendbuf,recvbuf);  */
   MPI_Barrier(remap_comm); // @suppress("Symbol is not resolved")
   timer_trasp_x += MPI_Wtime();
-
+  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 0);
 
   // Forward FFT#2
   double timer_f2 = 0.0;
