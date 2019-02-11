@@ -235,14 +235,15 @@ void x_aliasing(int nx, int ny, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_r
 	}
 }
 
-void x_dealiasing(int scounts, int modes_per_proc, int nx, int nxd, FFT_SCALAR *u) {
-
+void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u) {
+	/* scounts = final number of ny*nz modes wanted */
 	int stride_x, placeholder=0;
-	for (int mode =0; mode < modes_per_proc; mode++) {
+	for (int mode =0; mode < scounts; mode++) {
 		stride_x = mode*nxd*2;
 		for (int i = 0; i < 2*nx; i++) {
 			u[placeholder] = u[stride_x+i];
 			placeholder++;
+			//printf("u[%d]= %g\n", placeholder, u[placeholder]);
 		}
 	}
 }
