@@ -142,10 +142,11 @@ WRITE
   }
   //printf("modes_ proc %d on rank %d\n", modes_per_proc[rank], rank);
   //printf("scoutn %d & disps %d on rank %d\n", scounts[rank], displs[rank], rank);
-	localdim_ = scounts[rank];
+	localdim_x_ = nxd*(z_jhi-z_jlo+1)*(z_khi-z_klo+1);
+	localdim_z_ = (x_ihi-x_ilo+1)*(x_jhi-x_jlo+1)*nzd;
 *>
 	
-POINTER TO ARRAY(0..localdim-1) OF REAL u
-POINTER TO ARRAY(0..localdim-1) OF REAL uu
+POINTER TO ARRAY(0..localdim_x-1) OF REAL u
+POINTER TO ARRAY(0..localdim_x-1) OF REAL uu
 
 

@@ -2,7 +2,7 @@
 WRITE
 <*
   /******************************************** Memory Alloc *******************************************/
-  u_ = (FFT_SCALAR *) malloc(2*nxd*(z_jhi-z_jlo+1)*nzd*sizeof(FFT_SCALAR));
+  u_ = (FFT_SCALAR *) malloc(2*localdim_z_*sizeof(FFT_SCALAR));
   FFT_SCALAR *v = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *w = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
   FFT_SCALAR *u_read = (FFT_SCALAR *) malloc(remapsize*sizeof(FFT_SCALAR)*2);
