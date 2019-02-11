@@ -1,4 +1,4 @@
-!USE rtchecks
+
 WRITE
 
 <*
@@ -39,7 +39,7 @@ WRITE
   // partitioning in z-pencil
 
   nfast = nzd;
-  nmid = nxd;
+  nmid = nx;
   nslow = ny;
 
   int z_klo = (int) 1.0*ipfast*nfast/npfast;					// K fast
@@ -54,7 +54,7 @@ WRITE
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, z_ilo, z_jlo, z_klo, z_ihi, z_jhi, z_khi );
 
   // partitioning in x-pencil
-  nfast = nxd;
+  nfast = nx;
   nmid = ny;
   nslow = nzd;
 

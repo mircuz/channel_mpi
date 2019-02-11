@@ -1,5 +1,5 @@
-!USE rtchecks
 WRITE
+
 <*	/****************************************************************************
 	 * 													      					*
 	 * 				2D FFT with Pencil Decomposition in MPI Space				*
@@ -17,20 +17,22 @@ WRITE
 				  x_klo,  x_khi, x_ilo,  x_ihi,  x_jlo, x_jhi, 
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
+  // Apply AA in z-direction locally
+  z_aliasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, u_, U);
   MPI_Barrier(MPI_COMM_WORLD);
   free(U);
   // Backward IFFT
-  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 0);
+  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 3);
   double timer_b1 = 0.0;
   timer_b1 -= MPI_Wtime();	
 *>
 
-FFT_z( u, localdim, 1)
+!FFT_z( u, localdim, 1)
 	
 <*
   MPI_Barrier( MPI_COMM_WORLD); 
   timer_b1 += MPI_Wtime();
-  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 0); 
+  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 1); 
 
   // Transpose in x-pencil
   double timer_trasp_z = 0.0, TIMER_TRASP_z = 0.0;
@@ -40,6 +42,10 @@ FFT_z( u, localdim, 1)
   //remap3d_remap(remap_zpencil,w,w,sendbuf,recvbuf);
   MPI_Barrier(remap_comm); // @suppress("Symbol is not resolved")
   timer_trasp_z += MPI_Wtime();
+
+  // Apply AA in x-direction locally
+  x_aliasing( nx, (x_jhi-x_jlo+1), (x_khi-x_klo+1), nxd, u_, u_);
+  print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, scounts[rank], 0);
 
   // Backward RFT
   double timer_b2 = 0.0;
@@ -128,7 +134,7 @@ FFT_x( uu, localdim, -1)
 *>
 FFT_z( uu, localdim, -1)
 <*
-  print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, uu_, rank, scounts[rank], 0);
+  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, uu_, rank, scounts[rank], 0);
   //f_FFT( u, elem_per_proc, i_length );
  /* f_FFT( uu, elem_per_proc, i_length );
   f_FFT( uv, elem_per_proc, i_length );

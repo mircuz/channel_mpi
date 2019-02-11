@@ -1,4 +1,4 @@
-!USE rtchecks
+
 USE fft
 USE rbmat
 

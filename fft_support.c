@@ -193,6 +193,45 @@ void generate_inputs(FFT_SCALAR *U, FFT_SCALAR *V, FFT_SCALAR *W, int nfast, int
 
 }
 
+void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
+		int nz_left = 1+ (nz-1)/2; 	int reader=0;
+	
+		for( int stride_x = 0; stride_x < 2*nzd*ny*nx; stride_x = stride_x + 2*nzd*ny) {
+			for( int stride_y = 0; stride_y < 2*nzd*ny; stride_y = stride_y + 2*nzd) {
+				for (int k= (nzd-nz_left+1)*2; k < nzd*2; k++){
+					U[stride_x + stride_y+k] = U_read[reader];
+					reader++;
+					//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
+				}
+				for (int k= (nz_left-1)*2; k < (nzd-nz_left)*2; k++){
+					U[stride_x + stride_y+k]=0;
+				}
+				for (int k= 0; k < (nz_left)*2; k++){
+					U[stride_x + stride_y+k] = U_read[reader];
+					reader++;
+					//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
+				}
+		}
+	}
+}
+
+void x_aliasing(int nx, int ny, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read){
+	int reader = nx*ny*nzd;
+	for( int stride_z = 2*nxd*ny*nzd; stride_z > 0 ; stride_z = stride_z - 2*nxd*ny) {			//Backward x evitare sovrascritture
+		for( int stride_y = 2*nxd*ny; stride_y > 0 ; stride_y = stride_y - 2*nxd) {
+			for( int i = nxd; i > nx; i--) {
+				U[stride_z + stride_y + i] = 0;		
+				//printf("U[%d] = %g\n", stride_z + stride_y+i, U[stride_z + stride_y + i]);	
+			}
+			for( int i = nx; i > 0; i--) {
+				U[stride_z + stride_y + i] = U_read[reader];
+				reader--;
+				//printf("U[%d] = %g\n", stride_z + stride_y+i, U[stride_z + stride_y + i]);			
+			}
+		}
+	}
+}
+
 void x_dealiasing(int scounts, int modes_per_proc, int nx, int nxd, FFT_SCALAR *u) {
 
 	int stride_x, placeholder=0;
@@ -482,7 +521,7 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 		abort();
 	}
 	/*/Checking function
-	if (rank == 0){
+	if (rank == 3){
 		  for(int i = 0; i < recvcounts[0]; i++){
 			  printf("arr_recv[%d]= %f\n", i, arr_recv[i]);
 		  }
