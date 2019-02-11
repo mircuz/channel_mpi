@@ -28,10 +28,6 @@ void transpose_on_rank0(int nx, int ny, int nz, FFT_SCALAR *U);
 void cores_handler( int modes, int size, int *modes_per_proc);
 void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 					 int in_ihi, int nz, int ny, FFT_SCALAR *arr, FFT_SCALAR *arr_recv, int flag);
-
-void proc_setup( int rank, int size, int nx, int ny, int nz, int inpx, int inpy, int inpz, int outpx, int outpy, int outpz);
-void proc3d(int arr[], int me, int nprocs, int nx, int ny, int nz);
-void grid_setup(int inpx, int inpy, int inpz, int outpx, int outpy, int outpz, int nx, int ny, int nz, int me);
 // No longer in use
 void check_results( double *work, double *work_ref, int elem_per_proc);
 void generate_inputs(FFT_SCALAR *U, FFT_SCALAR *V, FFT_SCALAR *W, int nfast, int nmid, int nslow, int rank) ;
