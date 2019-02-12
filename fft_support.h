@@ -24,7 +24,7 @@ void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALA
 void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read);
 void x_aliasing(int nx, int ny, int nzd,int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read);
 void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u);
-void z_dealiasing(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U);
+void z_dealiasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U);
 void transpose_on_rank0(int nx, int ny, int nz, FFT_SCALAR *U);
 void cores_handler( int modes, int size, int *modes_per_proc);
 void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,

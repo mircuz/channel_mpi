@@ -22,12 +22,12 @@ WRITE
   MPI_Barrier(MPI_COMM_WORLD);
   free(U);
   // Backward FFT
-  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 3);
+  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, localdim_z_, 0);
   double timer_b1 = 0.0;
   timer_b1 -= MPI_Wtime();	
 *>
 
-!FFT_z( u, localdim_z, 1)
+FFT_z( u, localdim_z, 1)
 	
 <*
   MPI_Barrier( MPI_COMM_WORLD); 
@@ -51,7 +51,7 @@ WRITE
   timer_b2 -= MPI_Wtime();
 *>
 
-!FFT_x( u, localdim_x, 1)
+FFT_x( u, localdim_x, 1)
 
 <*
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
@@ -103,11 +103,11 @@ FFT_x( uu, localdim_x, -1)
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_f1 += MPI_Wtime();
   
-// x-Dealiasing
+  // x-Dealiasing
   double timer_aax = 0.0;
   timer_aax -= MPI_Wtime();
-  x_dealiasing( localdim_z_/nxd, nx, nxd, u_);
-  x_dealiasing( localdim_z_/nxd, nx, nxd, uu_);
+  x_dealiasing( localdim_x_/nxd, nx, nxd, u_);
+  x_dealiasing( localdim_x_/nxd, nx, nxd, uu_);
   /*x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uu_);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uv);
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, vv);
@@ -116,7 +116,7 @@ FFT_x( uu, localdim_x, -1)
   x_dealiasing( scounts[rank], modes_per_proc[rank], nx, nxd, uw);	*/
   MPI_Barrier( MPI_COMM_WORLD); // @suppress("Symbol is not resolved")
   timer_aax += MPI_Wtime();
-  //print_x_pencil(nx, x_jlo, x_jhi, x_klo, uu_, rank, localdim_z_, 3);
+  //print_x_pencil(nx, x_jlo, x_jhi, x_klo, u_, rank, localdim_z_, 0);
 
   // Transpose to x-pencil
   double timer_trasp_x = 0.0, TIMER_TRASP_x = 0.0;
@@ -143,9 +143,9 @@ FFT_z( uu, localdim_z, -1)
   timer_f2 += MPI_Wtime();
 
   // z-Dealiasing
-  /*----*/
-
-  print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, scounts[rank], 0);
+  z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, u_);
+  z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, uu_);
+  print_z_pencil( nz, fz_ilo, fz_ihi, fz_jlo, uu_, rank, finaldim_z_, 3);
 
   // Finalize plan
   remap3d_destroy(remap_to_zpencil);

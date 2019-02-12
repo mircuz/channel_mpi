@@ -21,7 +21,7 @@ REAL u_conv, u0, un, w_conv, w0, wn, t0, tn
 REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0, maxtimelevels=1
 BOOLEAN time_from_restart
 STRING restart_file
-INTEGER localdim_x, localdim_z
+INTEGER localdim_x, localdim_z, finaldim_z
 
 
 !// Structures initialization--------------------------------------------------
@@ -114,7 +114,7 @@ DO INC nzd UNTIL FFTfit(nzd);
 SUBROUTINE FFT_x(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)
 ARRAY(0..nxd-1) OF COMPLEX in
 	INTEGER count = 0, n=0, i=0;
-	LOOP WHILE ( count < elem_per_proc/(nxd))
+	LOOP WHILE ( count < elem_per_proc/(2*nxd))
 		!// fill IN array
 		i=0
 		LOOP WHILE i < 2*nxd-1
@@ -140,7 +140,7 @@ END FFT_x
 SUBROUTINE FFT_z(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)
 ARRAY(0..nzd-1) OF COMPLEX in
 	INTEGER count = 0, n=0, i=0;
-	LOOP WHILE ( count < elem_per_proc/(nzd))
+	LOOP WHILE ( count < elem_per_proc/(2*nzd))
 		!// fill IN array
 		i=0
 		LOOP WHILE i < 2*nzd-1

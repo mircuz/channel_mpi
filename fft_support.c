@@ -236,7 +236,7 @@ void x_aliasing(int nx, int ny, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_r
 }
 
 void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u) {
-	/* scounts = final number of ny*nz modes wanted */
+	/* scounts = initial number of ny*nz modes */
 	int stride_x, placeholder=0;
 	for (int mode =0; mode < scounts; mode++) {
 		stride_x = mode*nxd*2;
@@ -248,21 +248,33 @@ void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u) {
 	}
 }
 
-void z_dealiasing(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U) {
 
-	/*for(int i = 0; i < 2*nx*ny*nz; i++) {
-			printf("U[%d]= %f\n", i, U[i]);
-	}*/
 
-	int nz_left = 1+ (nz-1)/2 ;
-	FFT_SCALAR *U_pos = (FFT_SCALAR*)malloc(sizeof(*U_pos) * (2*nx*ny*nz_left));
-	memmove(U_pos, U, sizeof(FFT_SCALAR)*2*nx*ny*(1+(nz-1)/2));
-	memmove(U, &U[2*nx*ny*(nzd-nz_left+1)], sizeof(FFT_SCALAR)*2*nx*ny*(nz_left-1));
-	memmove(&U[2*nx*ny*(nz_left-1)], U_pos, sizeof(FFT_SCALAR)*2*nx*ny*nz_left);
-	free(U_pos);
-	/*for(int i = 0; i < 2*nx*ny*nz; i++) {
-		printf("U[%d]= %f\n", i, U[i]);
-	}*/
+void z_dealiasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U) {
+	int writer=0;	int reader=0;	int nz_left = 1+(nz-1)/2;
+	FFT_SCALAR *temp = (FFT_SCALAR *) malloc(2*nz_left*sizeof(FFT_SCALAR));
+	if (temp == NULL) {
+		perror(".:Error while allocating temporary vector in z_dealiasing routine:.\n");
+		abort();
+	}
+	for (int stride_x = 0; stride_x < 2*nx*ny*nzd; stride_x = stride_x + 2*ny*nzd ) {
+		for (int stride_y = 0; stride_y < 2*ny*nzd; stride_y = stride_y + 2*nzd) {
+			reader=0;
+			for (int k= 0; k < 2*nz_left; k++) {
+				temp[reader] = U[stride_x + stride_y + k];
+				reader++;
+			}	
+			for (int k=2*(nzd-(nz_left-1)); k < 2*nzd; k++ ) {
+				U[writer] = U[stride_x + stride_y + k];
+				writer++;	
+			}	
+			reader=0;
+			for (int k = 2*(nz_left-1); k < 2*nz; k++) {
+				U[writer] = temp[reader];
+				writer++;	reader++;	
+			}
+		}		
+	}
 }
 
 void transpose_on_rank0(int nx, int ny, int nz, FFT_SCALAR *U) {

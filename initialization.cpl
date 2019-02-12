@@ -69,12 +69,33 @@ WRITE
 		  "On rank %d the coordinates are: "
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, x_ilo, x_jlo, x_klo, x_ihi, x_jhi, x_khi );
 
+// Final z-pencil
+
+  nfast = nz;
+  nmid = nx;
+  nslow = ny;
+
+  int fz_klo = (int) 1.0*ipfast*nfast/npfast;					// K fast
+  int fz_khi = (int) 1.0*(ipfast+1)*nfast/npfast - 1;
+  int fz_ilo = (int) 1.0*ipmid*nmid/npmid;						// I med
+  int fz_ihi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
+  int fz_jlo = (int) 1.0*ipslow*nslow/npslow;					// J slow
+  int fz_jhi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
+
+  printf("[FZ-PENCIL] (k,i,j order)\t"
+		  "On rank %d the coordinates are: "
+		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, fz_ilo, fz_jlo, fz_klo, fz_ihi, fz_jhi, fz_khi );
+
+
+
+
+
   
   if (rank == 0) {
   	  printf("\n========================================================================================\n"
   			  "\t2D FFT with %dx%dx%d total modes, %dx%dx%d investigated on %d procs, %dx%dx%d grid\t\n"
   			"========================================================================================\n\n",
-  			  nfast,nmid,nslow,nx,ny,nz,size,npfast,npmid,npslow);
+  			  nxd,ny,nzd,nx,ny,nz,size,npfast,npmid,npslow);
     }
 
   if ((ny/npmid) < 1) {
@@ -87,7 +108,7 @@ WRITE
    }
 
 
-  void *remap_to_zpencil, *remap_to_xpencil;
+  void *remap_to_zpencil, *remap_to_xpencil, *remap_to_ypencil;
   int nqty, permute, memoryflag, sendsize, recvsize;
   nqty = 2;			// Use couples of real numbers per grid point
   permute = 1;  		// From z-contiguous to x-contiguous arrays
@@ -142,11 +163,11 @@ WRITE
   }
   //printf("modes_ proc %d on rank %d\n", modes_per_proc[rank], rank);
   //printf("scoutn %d & disps %d on rank %d\n", scounts[rank], displs[rank], rank);
-	localdim_x_ = nxd*(z_jhi-z_jlo+1)*(z_khi-z_klo+1);
-	localdim_z_ = (x_ihi-x_ilo+1)*(x_jhi-x_jlo+1)*nzd;
+	localdim_x_ = 2*nxd*(x_jhi-x_jlo+1)*(x_khi-x_klo+1);
+	localdim_z_ = 2*(z_ihi-z_ilo+1)*(z_jhi-z_jlo+1)*nzd;
+	finaldim_z_ = 2*(fz_ihi-fz_ilo+1)*(fz_jhi-fz_jlo+1)*(fz_khi-fz_klo+1);
 *>
 	
 POINTER TO ARRAY(0..localdim_x-1) OF REAL u
 POINTER TO ARRAY(0..localdim_x-1) OF REAL uu
 
-WRITE "localdim x, z" localdim_x, localdim_z " on rank " rank
