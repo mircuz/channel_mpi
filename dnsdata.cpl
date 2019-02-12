@@ -114,7 +114,7 @@ DO INC nzd UNTIL FFTfit(nzd);
 SUBROUTINE FFT_x(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)
 ARRAY(0..nxd-1) OF COMPLEX in
 	INTEGER count = 0, n=0, i=0;
-	LOOP WHILE ( count < elem_per_proc/(2*nxd))
+	LOOP WHILE ( count < elem_per_proc/(nxd))
 		!// fill IN array
 		i=0
 		LOOP WHILE i < 2*nxd-1
@@ -140,7 +140,7 @@ END FFT_x
 SUBROUTINE FFT_z(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)
 ARRAY(0..nzd-1) OF COMPLEX in
 	INTEGER count = 0, n=0, i=0;
-	LOOP WHILE ( count < elem_per_proc/(2*nzd))
+	LOOP WHILE ( count < elem_per_proc/(nzd))
 		!// fill IN array
 		i=0
 		LOOP WHILE i < 2*nzd-1

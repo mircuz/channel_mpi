@@ -332,7 +332,7 @@ void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4])
 	}
 }
 
-/* APPLY AA Z PENCIL VERSION */
+/* APPLY GLOBAL AA Z PENCIL VERSION */
 void print_z_pencil(int nz, int in_ilo, int in_ihi, int in_jlo,
 		FFT_SCALAR *u, int rank, int scounts, int desidered_rank);
 void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
@@ -361,7 +361,7 @@ void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALA
 	//print_z_pencil(nzd, 0, nxd-1, 0, U, 0, 2*nxd*ny*nzd, 0);
 }
 
-/*	APPLY AA X-PENCIL VERSION 
+/*	APPLY GLOBAL AA X-PENCIL VERSION 
 void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read) {
 	int nz_left = 1+ (nz-1)/2, reader= 2*nx*ny*(nz_left-1) ;
 	  	  //Fill the array with read values and zeros for AA

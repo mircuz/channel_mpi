@@ -149,4 +149,4 @@ WRITE
 POINTER TO ARRAY(0..localdim_x-1) OF REAL u
 POINTER TO ARRAY(0..localdim_x-1) OF REAL uu
 
-
+WRITE "localdim x, z" localdim_x, localdim_z " on rank " rank
