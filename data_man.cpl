@@ -5,6 +5,9 @@ WRITE
   u_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   v_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   w_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  U_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  V_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  W_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   FFT_SCALAR *u_read = (FFT_SCALAR *) malloc(2*nx*ny*nz*sizeof(FFT_SCALAR));
   FFT_SCALAR *v_read = (FFT_SCALAR *) malloc(2*nx*ny*nz*sizeof(FFT_SCALAR));
   FFT_SCALAR *w_read = (FFT_SCALAR *) malloc(2*nx*ny*nz*sizeof(FFT_SCALAR));
@@ -23,13 +26,12 @@ WRITE
   }
 
   // Declare variables, on all procs, needed to Scatter data
-  FFT_SCALAR *V, *U, *W, *U_read, *V_read, *W_read;
+  FFT_SCALAR *U_read, *V_read, *W_read;
 
   // Allocate memory needed to Scatter data, only on the broadcaster
   // U
   U_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
-  U = (FFT_SCALAR*) malloc( 2*localdim_x_* sizeof(FFT_SCALAR));
-  if( (U||U_read) == NULL) {
+  if( (U_t_||U_read) == NULL) {
 	  perror(".:Error while allocating broadcaster memory U:.\n");
 	  abort();
   }
@@ -37,14 +39,13 @@ WRITE
 	  read_data(nx, ny, nz, U_read, "u.dat");
   }
   MPI_Barrier(MPI_COMM_WORLD);
-  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, U_read, U, 1);
+  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, U_read, U_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 0) free(U_read);
+  free(U_read);
 
   //V
   V_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
-  V = (FFT_SCALAR*) malloc( 2*localdim_x_* sizeof(FFT_SCALAR));
-  if( (V||V_read) == NULL) {
+  if( (V_t_||V_read) == NULL) {
 	  perror(".:Error while allocating broadcaster memory V:.\n");
 	  abort();
   }
@@ -52,14 +53,13 @@ WRITE
 	  read_data(nx, ny, nz, V_read, "v.dat");
   }
   MPI_Barrier(MPI_COMM_WORLD);
-  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, V_read, V, 1);
+  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, V_read, V_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 0) free(V_read);
+  free(V_read);
 
   //W
   W_read = (FFT_SCALAR*) malloc( nx*ny*nz*2* sizeof(FFT_SCALAR));
-  W = (FFT_SCALAR*) malloc( 2*localdim_x_* sizeof(FFT_SCALAR));
-  if( (W||W_read) == NULL) {
+  if( (W_t_||W_read) == NULL) {
 	  perror(".:Error while allocating broadcaster memory W:.\n");
 	  abort();
   }
@@ -67,14 +67,7 @@ WRITE
 	  read_data(nx, ny, nz, W_read, "w.dat");
   }
   MPI_Barrier(MPI_COMM_WORLD);
-  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W, 1);
+  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 0) free(W_read);
-
-
-  // Transpose in Y pencil u,v,w
-  /*
-
-	*/
-
+  free(W_read);
 *>

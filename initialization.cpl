@@ -138,6 +138,9 @@ WRITE
 POINTER TO ARRAY(0..localdim_x-1) OF REAL u
 POINTER TO ARRAY(0..localdim_x-1) OF REAL v
 POINTER TO ARRAY(0..localdim_x-1) OF REAL w
+POINTER TO ARRAY(0..localdim_x-1) OF REAL U_t
+POINTER TO ARRAY(0..localdim_x-1) OF REAL V_t
+POINTER TO ARRAY(0..localdim_x-1) OF REAL W_t
 POINTER TO ARRAY(0..localdim_x-1) OF REAL uu
 POINTER TO ARRAY(0..localdim_x-1) OF REAL uv
 POINTER TO ARRAY(0..localdim_x-1) OF REAL vv

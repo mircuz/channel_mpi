@@ -14,8 +14,9 @@ USE convol_trasp
 !//y_pencil_parser_mom( VV, start_mode_x, end_mode_x, start_mode_z, end_mode_z, 0)
 !//y_pencil_parser_vel( V, start_mode_x, end_mode_x, start_mode_z, end_mode_z, 3)
 
-<* 	free(u_);	free(v_);	free(w_);	free(u_read);	free(v_read);	free(w_read);
-  	free(uu_);	free(uv_);	free(vv_);	free(vw_);	free(ww_);	free(uw_); 	
-	free(recvbuf);	 free(sendbuf);  *>
-<*	MPI_Finalize();	*>
+<* 	free(u_);	free(v_);	free(w_);										//Worked uvw
+	free(U_t_);		free(V_t_);		free(W_t_);								//Local UVW copied into structure
+  	free(uu_);	free(uv_);	free(vv_);	free(vw_);	free(ww_);	free(uw_); 	//Local convols copied into structure
+	free(recvbuf);	 free(sendbuf);  										//Remap local arrays
+	MPI_Finalize();	*>
 

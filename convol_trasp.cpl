@@ -14,14 +14,13 @@ WRITE
       		  	  z_klo,  z_khi, z_ilo,  z_ihi, z_jlo, z_jhi,
 				  x_klo,  x_khi, x_ilo,  x_ihi,  x_jlo, x_jhi, 
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
-  // -----------------------------------------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------------------	
   // Apply AA in z-direction locally
   if (rank == 0) printf("Applying local z-antialiasing...\n");
-  z_aliasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, u_, U);
-  z_aliasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, v_, V);
-  z_aliasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, w_, W);
-  MPI_Barrier(MPI_COMM_WORLD);		free(U);		free(V);		free(W);
-
+  z_aliasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, u_, U_t_);
+  z_aliasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, v_, V_t_);
+  z_aliasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, w_, W_t_);
+ 
   // Backward FFT
   if (rank == 0) printf("\tAA applied\n\nStarting Backward transformations...\n");
   //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, localdim_z_, 0);
@@ -139,7 +138,7 @@ REPEAT LOOP
 	z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, vw_);
 	z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, uw_);
 	z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, ww_);
-  //print_z_pencil( nz, fz_ilo, fz_ihi, fz_jlo, uw_, rank, localdim_z_, 0);
+  //print_z_pencil( nz, fz_ilo, fz_ihi, fz_jlo, uu_, rank, localdim_z_, 0);
 
   MPI_Barrier(MPI_COMM_WORLD);
   remap3d_destroy(remap_to_zpencil);
@@ -151,10 +150,10 @@ REPEAT LOOP
   	  perror(".:Dimension mismatch among Z pencils:.");
 	  abort();
   }
-  // ------------------------------------------- Setup z-Transpose --------------------------------------------
+  // ------------------------------------------- Setup Y-Transpose --------------------------------------------
   remap3d_create( remap_comm , &remap_to_ypencil);
   permute = 2;  		// From z-contiguous to y-contiguous arrays
-  remap3d_setup( remap_to_xpencil,
+  remap3d_setup( remap_to_ypencil,
       		  	  fz_klo,  fz_khi, fz_ilo,  fz_ihi, fz_jlo, fz_jhi,
 				  y_klo,  y_khi, y_ilo,  y_ihi, y_jlo, y_jhi, 
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
@@ -162,7 +161,10 @@ REPEAT LOOP
   double timer_trasp_y = 0.0, TIMER_TRASP_y=0.0;
   MPI_Barrier(remap_comm);
   timer_trasp_y -= MPI_Wtime();
-  //remap3d_remap(remap_to_ypencil,u_,u_,sendbuf,recvbuf); 	
+    //remap3d_remap(remap_to_ypencil,u_,u_,sendbuf,recvbuf); 	
+	remap3d_remap(remap_to_ypencil,U_t_,U_t_,sendbuf,recvbuf); 	
+  	remap3d_remap(remap_to_ypencil,V_t_,V_t_,sendbuf,recvbuf);
+	remap3d_remap(remap_to_ypencil,W_t_,W_t_,sendbuf,recvbuf);
   	remap3d_remap(remap_to_ypencil,uu_,uu_,sendbuf,recvbuf);
 	remap3d_remap(remap_to_ypencil,uv_,uv_,sendbuf,recvbuf);
 	remap3d_remap(remap_to_ypencil,vv_,vv_,sendbuf,recvbuf);
@@ -199,68 +201,35 @@ REPEAT LOOP
   	  printf("%lgs employed to transpose in Y-pencils \n", TIMER_TRASP_y);
   	  printf("-----------------------------------------------------------\n\n");
   	  printf("Process Ended\n");
-  }
+  } 
+ 
+  ilo_ = y_ilo; 	jlo_ = y_jlo;	klo_ = y_klo;
+  ihi_ = y_ihi;		jhi_ = y_jhi;	khi_ = y_khi;	*>
 
-*>
-!(
 WRITE
-REAL entry_uu, entry_uv, entry_vv, entry_vw, entry_ww, entry_uw, entry_u, entry_v, entry_w
-INTEGER displs, scounts, counter=0, mode_y=0, modes_xz, start_mode_z, mode_z, end_mode_z, start_mode_x, mode_x, end_mode_x
-
-!// Read starting modes
-modes_xz = displs DIV ((ny+3)*2)
-start_mode_z = modes_xz DIV (nx+1);
-start_mode_x = modes_xz - start_mode_z*(nx+1);	
+INTEGER counter=0
 !// Take into account the negative modes
-start_mode_z = start_mode_z - nz;
+klo = klo - nz;		khi = khi - nz;
+jlo = jlo - 1;		jhi = jhi - 1;
 
-!// Calculate ending mode_z & mode_x
-modes_xz = (displs+scounts) DIV ((ny+3)*2)
-end_mode_z = modes_xz DIV (nx+1);
-end_mode_x = modes_xz - end_mode_z*(nx+1); 			
-end_mode_z = end_mode_z -nz;
-
-INTEGER loop_end_mode_x = nx; INTEGER loop_start_mode_x = start_mode_x
-!// Allocate and fill the local array VV
-ARRAY(0..nx, start_mode_z..end_mode_z,-1..ny+1) OF MOMFLUX VV 
-ARRAY(0..nx, start_mode_z..end_mode_z,-1..ny+1) OF VELOCITY V 
-LOOP FOR mode_z = start_mode_z TO end_mode_z
-	IF mode_z = end_mode_z THEN loop_end_mode_x = end_mode_x
-	LOOP FOR mode_x = loop_start_mode_x TO loop_end_mode_x	
+!// Allocate and fill the local array VV & V
+ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF MOMFLUX VV 
+ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF VELOCITY V 
+LOOP FOR mode_x = ilo TO ihi
+	LOOP FOR mode_z = klo TO khi
 		LOOP FOR mode_y = -1 TO ny+1	
-		<*	entry_uu_  =dnsdata_10move_data(uu_,counter_);
-			entry_uv_  =dnsdata_10move_data(uv,counter_);
-			entry_vv_  =dnsdata_10move_data(vv,counter_);
-			entry_vw_  =dnsdata_10move_data(vw,counter_);
-			entry_ww_  =dnsdata_10move_data(ww,counter_);
-			entry_uw_  =dnsdata_10move_data(uw,counter_);
-			entry_u_  =dnsdata_10move_data(u_read,counter_);
-			entry_v_  =dnsdata_10move_data(v_read,counter_);
-			entry_w_  =dnsdata_10move_data(w_read,counter_);
- 			counter_++;		*> 
-			VV(mode_x,mode_z,mode_y).uu.REAL= entry_uu;	VV(mode_x,mode_z,mode_y).vv.REAL= entry_vv;	VV(mode_x,mode_z,mode_y).ww.REAL= entry_ww;
-			VV(mode_x,mode_z,mode_y).uv.REAL= entry_uv;	VV(mode_x,mode_z,mode_y).vw.REAL= entry_vw;	VV(mode_x,mode_z,mode_y).uw.REAL= entry_uw;
-			V(mode_x,mode_z,mode_y).u.REAL= entry_u;	V(mode_x,mode_z,mode_y).v.REAL= entry_v;	V(mode_x,mode_z,mode_y).w.REAL= entry_w;
-		<*	entry_uu_  =dnsdata_10move_data(uu_,counter_);
-			entry_uv_  =dnsdata_10move_data(uv,counter_);
-			entry_vv_  =dnsdata_10move_data(vv,counter_);
-			entry_vw_  =dnsdata_10move_data(vw,counter_);
-			entry_ww_  =dnsdata_10move_data(ww,counter_);
-			entry_uw_  =dnsdata_10move_data(uw,counter_);
-			entry_u_  =dnsdata_10move_data(u_read,counter_);
-			entry_v_  =dnsdata_10move_data(v_read,counter_);
-			entry_w_  =dnsdata_10move_data(w_read,counter_);
-			counter_++;		*> 
-			VV(mode_x,mode_z,mode_y).uu.IMAG= entry_uu;	VV(mode_x,mode_z,mode_y).vv.IMAG= entry_vv;	VV(mode_x,mode_z,mode_y).ww.IMAG= entry_ww;
-			VV(mode_x,mode_z,mode_y).uv.IMAG= entry_uv;	VV(mode_x,mode_z,mode_y).vw.IMAG= entry_vw;	VV(mode_x,mode_z,mode_y).uw.IMAG= entry_uw;
-			V(mode_x,mode_z,mode_y).u.IMAG= entry_u;	V(mode_x,mode_z,mode_y).v.IMAG= entry_v;	V(mode_x,mode_z,mode_y).w.IMAG= entry_w;
+			VV(mode_x,mode_z,mode_y).uu.REAL= uu[counter];	VV(mode_x,mode_z,mode_y).vv.REAL= vv[counter];	
+			VV(mode_x,mode_z,mode_y).ww.REAL= ww[counter];	VV(mode_x,mode_z,mode_y).uv.REAL= uv[counter];	
+			VV(mode_x,mode_z,mode_y).vw.REAL= vw[counter];	VV(mode_x,mode_z,mode_y).uw.REAL= uw[counter];
+			V(mode_x,mode_z,mode_y).u.REAL = U_t[counter];	
+			V(mode_x,mode_z,mode_y).v.REAL = V_t[counter];	
+			V(mode_x,mode_z,mode_y).w.REAL = W_t[counter];	INC counter
+			VV(mode_x,mode_z,mode_y).uu.IMAG= uu[counter];	VV(mode_x,mode_z,mode_y).vv.IMAG= vv[counter];	
+			VV(mode_x,mode_z,mode_y).ww.IMAG= ww[counter];	VV(mode_x,mode_z,mode_y).uv.IMAG= uv[counter];	
+			VV(mode_x,mode_z,mode_y).vw.IMAG= vw[counter];	VV(mode_x,mode_z,mode_y).uw.IMAG= uw[counter];
+			V(mode_x,mode_z,mode_y).u.IMAG = U_t[counter];	
+			V(mode_x,mode_z,mode_y).v.IMAG = V_t[counter];	
+			V(mode_x,mode_z,mode_y).w.IMAG = W_t[counter];	INC counter
 		REPEAT LOOP
 	REPEAT LOOP
-	loop_start_mode_x = 0
 REPEAT LOOP
-
-!)
-
-
-
-
