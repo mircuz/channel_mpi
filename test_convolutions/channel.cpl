@@ -1,0 +1,54 @@
+!USE rtchecks
+!#define bodyforce
+!#define scalar
+gamma=0
+USE dnsdata
+USE dnsdirect
+read_restart_file; cont=FLOOR(time/dt_field)
+!outstats()
+WRITE BY NAME nx,nxd, nz,nzd
+
+!ARRAY(0..4,-4..4,-1..9) OF REAL u
+ARRAY(0..1000) OF REAL U
+ARRAY(0..1000) OF REAL W
+FILE u_dat;		u_dat = OPEN("u.dat")
+FILE w_dat;		w_dat = OPEN("w.dat")
+READ FROM u_dat U
+READ FROM w_dat W
+
+INTEGER n=0
+
+LOOP FOR j=-1 TO 9
+	LOOP FOR i=0 TO 4
+		LOOP FOR k=-4 TO 4	
+			V.u(i,k,j).REAL= U[n]
+			V.w(i,k,j).REAL= W[n]
+			INC n
+			V.u(i,k,j).IMAG= U[n]
+			V.w(i,k,j).IMAG= W[n]
+			INC n
+		REPEAT LOOP
+	REPEAT LOOP
+REPEAT LOOP
+!WRITE V.w(0,-4,*)
+!buildrhs(RK1_rai)
+
+!WRITE V(4,3,*).u
+convolutions(V(*,*,-1),VVd(*,*,0))
+WRITE VVd(0,4,0).uu
+
+
+
+!(LOOP forward WHILE time < t_max-deltat/2
+  time=~+2/RK1_rai_coeff*deltat
+  buildrhs(RK1_rai);linsolve(RK1_rai_coeff/deltat)
+  vetaTOuvw; computeflowrate(RK1_rai_coeff/deltat)
+  time=~+2/RK2_rai_coeff*deltat
+  buildrhs(RK2_rai);linsolve(RK2_rai_coeff/deltat)
+  vetaTOuvw; computeflowrate(RK2_rai_coeff/deltat)
+  time=~+2/RK3_rai_coeff*deltat
+  buildrhs(RK3_rai);linsolve(RK3_rai_coeff/deltat)
+  vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat)
+  outstats()
+  IF reread THEN read_initial_data; reread=NO
+REPEAT forward!)
