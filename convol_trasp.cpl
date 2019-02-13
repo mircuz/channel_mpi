@@ -1,12 +1,10 @@
 WRITE
-
 <*	/****************************************************************************
 	 * 													      					*
 	 * 				2D FFT with Pencil Decomposition in MPI Space				*
 	 * 													      					*
 	 ****************************************************************************
 											     	   Author: Dr. Mirco Meazzo */
-
 
   /************************************************ backward FFTs *********************************************/
   // ------------------------------------------- Setup z-Transpose --------------------------------------------
@@ -32,11 +30,11 @@ WRITE
 	FFT_z( u, localdim_z, 1)
 	FFT_z( v, localdim_z, 1)
 	FFT_z( w, localdim_z, 1)
-<*MPI_Barrier( MPI_COMM_WORLD); 
-  timer_b1 += MPI_Wtime();
+<*timer_b1 += MPI_Wtime();
 
   // Transpose in x-pencil
   double timer_trasp_z = 0.0, TIMER_TRASP_z = 0.0;
+  MPI_Barrier(remap_comm);
   timer_trasp_z -= MPI_Wtime();
     remap3d_remap(remap_to_xpencil,u_,u_,sendbuf,recvbuf);
     remap3d_remap(remap_to_xpencil,v_,v_,sendbuf,recvbuf);
@@ -56,10 +54,9 @@ WRITE
 	FFT_x( u, localdim_x, 1)
 	FFT_x( v, localdim_x, 1)
 	FFT_x( w, localdim_x, 1)
-<*MPI_Barrier( MPI_COMM_WORLD); 
-  timer_b2 += MPI_Wtime();
-  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, u_, rank, localdim_x_, 3);
-
+<*timer_b2 += MPI_Wtime();
+  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, w_, rank, localdim_x_, 0);
+  MPI_Barrier(MPI_COMM_WORLD);
   remap3d_destroy(remap_to_xpencil);
 
   /************************************************ Convolutions *********************************************/
@@ -75,7 +72,7 @@ LOOP FOR i=0 TO localdim_x
 REPEAT LOOP
 <*timer_conv += MPI_Wtime();
   if (rank == 0) printf("\tBackward FFTs completed\n\nStarting Forward transformations...\n");
-  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, uu_, rank, localdim_x_, 3);
+  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, ww_, rank, localdim_x_, 0);
 
   /************************************************ forward FFTs *********************************************/
   // -------------------------------------------- Setup x-Transpose -----------------------------------------
@@ -87,8 +84,7 @@ REPEAT LOOP
 				  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
   // Forward HFT
-  double timer_f1 = 0.0;
-  MPI_Barrier( MPI_COMM_WORLD);  
+  double timer_f1 = 0.0;  
   timer_f1 -= MPI_Wtime();  *>
 	FFT_x( uu, localdim_x, -1)
 	FFT_x( uv, localdim_x, -1)
@@ -96,9 +92,8 @@ REPEAT LOOP
 	FFT_x( vw, localdim_x, -1)
 	FFT_x( uw, localdim_x, -1)
 	FFT_x( ww, localdim_x, -1)
-<*MPI_Barrier( MPI_COMM_WORLD);  
-  timer_f1 += MPI_Wtime();
-  
+<*timer_f1 += MPI_Wtime();
+  //print_x_pencil(nxd, x_jlo, x_jhi, x_klo, uu_, rank, localdim_x_, 0);
   // x-Dealiasing
   if (rank == 0) printf("\tRemoving alias in x direction\n");
   //x_dealiasing( localdim_x_/nxd, nx, nxd, u_);
@@ -108,13 +103,13 @@ REPEAT LOOP
 	x_dealiasing( localdim_x_/nxd, nx, nxd, vw_);
 	x_dealiasing( localdim_x_/nxd, nx, nxd, uw_);
 	x_dealiasing( localdim_x_/nxd, nx, nxd, ww_);
-  MPI_Barrier( MPI_COMM_WORLD);  
-  //print_x_pencil(nx, x_jlo, x_jhi, x_klo, u_, rank, localdim_z_, 0);
+  //print_x_pencil(nx, x_jlo, x_jhi, x_klo, ww_, rank, localdim_z_, 0);
 
   // Transpose to x-pencil
   double timer_trasp_x = 0.0, TIMER_TRASP_x = 0.0;
+  MPI_Barrier(remap_comm);
   timer_trasp_x -= MPI_Wtime();
-  //remap3d_remap(remap_to_zpencil,u_,u_,sendbuf,recvbuf); 				//Attenzione a cosa si rimappa!!
+  //remap3d_remap(remap_to_zpencil,u_,u_,sendbuf,recvbuf); 				//Fino a qui tutto ok
     remap3d_remap(remap_to_zpencil,uu_,uu_,sendbuf,recvbuf);
     remap3d_remap(remap_to_zpencil,uv_,uv_,sendbuf,recvbuf);
     remap3d_remap(remap_to_zpencil,vv_,vv_,sendbuf,recvbuf);
@@ -127,18 +122,14 @@ REPEAT LOOP
 
   // Forward FFT
   double timer_f2 = 0.0;
-  MPI_Barrier( MPI_COMM_WORLD);  
-  timer_f2 -= MPI_Wtime();
-*>
+  timer_f2 -= MPI_Wtime();  *>
 	FFT_z( uu, localdim_z, -1)
 	FFT_z( uv, localdim_z, -1)
 	FFT_z( vv, localdim_z, -1)
 	FFT_z( vw, localdim_z, -1)
 	FFT_z( uw, localdim_z, -1)
 	FFT_z( ww, localdim_z, -1)
-<*
-  MPI_Barrier( MPI_COMM_WORLD);  
-  timer_f2 += MPI_Wtime();
+<*timer_f2 += MPI_Wtime();
 
   // z-Dealiasing
   //z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, u_);
@@ -148,8 +139,9 @@ REPEAT LOOP
 	z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, vw_);
 	z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, uw_);
 	z_dealiasing( (z_ihi-z_ilo+1), (z_jhi-z_jlo+1), nz, nzd, ww_);
-  //print_z_pencil( nz, fz_ilo, fz_ihi, fz_jlo, uu_, rank, finaldim_z_, 3);
+  //print_z_pencil( nz, fz_ilo, fz_ihi, fz_jlo, uw_, rank, localdim_z_, 0);
 
+  MPI_Barrier(MPI_COMM_WORLD);
   remap3d_destroy(remap_to_zpencil);
 
   /*********************************************** Y Transpose ********************************************/
@@ -168,6 +160,7 @@ REPEAT LOOP
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
   double timer_trasp_y = 0.0, TIMER_TRASP_y=0.0;
+  MPI_Barrier(remap_comm);
   timer_trasp_y -= MPI_Wtime();
   //remap3d_remap(remap_to_ypencil,u_,u_,sendbuf,recvbuf); 	
   	remap3d_remap(remap_to_ypencil,uu_,uu_,sendbuf,recvbuf);
@@ -176,10 +169,10 @@ REPEAT LOOP
 	remap3d_remap(remap_to_ypencil,vw_,vw_,sendbuf,recvbuf);
 	remap3d_remap(remap_to_ypencil,uw_,uw_,sendbuf,recvbuf);
 	remap3d_remap(remap_to_ypencil,ww_,ww_,sendbuf,recvbuf);
-  timer_trasp_y += MPI_Wtime();
   MPI_Barrier(remap_comm);
-  print_y_pencil( ny, y_ilo, y_khi, y_klo, u_, rank, dim_y_, 0);
-  
+  timer_trasp_y += MPI_Wtime();
+  //print_y_pencil( ny, y_ilo, y_khi, y_klo, uu_, rank, dim_y_, 0);
+
   remap3d_destroy(remap_to_ypencil);
 
   /************************************************ Print Stats *********************************************/

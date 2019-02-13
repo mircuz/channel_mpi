@@ -36,6 +36,7 @@ WRITE
   if (rank == 0) {
 	  read_data(nx, ny, nz, U_read, "u.dat");
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, U_read, U, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   if(rank == 0) free(U_read);
@@ -50,6 +51,7 @@ WRITE
   if (rank == 0) {
 	  read_data(nx, ny, nz, V_read, "v.dat");
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, V_read, V, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   if(rank == 0) free(V_read);
@@ -64,6 +66,7 @@ WRITE
   if (rank == 0) {
 	  read_data(nx, ny, nz, W_read, "w.dat");
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   if(rank == 0) free(W_read);
