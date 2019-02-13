@@ -16,15 +16,15 @@ compilation:
 	$(CC) -O3 -fPIC -c data_man.c
 	$(CC) -O3 -fPIC -c channel_mpi.c
 	$(CC) -O3 -fPIC -c dnsdata.c
+	$(CC) -O3 -fPIC -c dnsdirect.c
 	
-	$(CC) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o -lfft3dmpi -lm 
-		#Ricordarsi dnsdirect.o !!
-
+	$(CC) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o -lfft3dmpi -lm 
+		#--> Executable ready <--
+		#--> run as mpiexec -n "procs number" exe <--
 
 clean: 
-	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c
+	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c
 	rm *.o
 	rm *.d
 	rm exe
-	rm Runtimedata
 

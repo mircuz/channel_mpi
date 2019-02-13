@@ -1,0 +1,75 @@
+!USE rtchecks
+SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme] FOLLOWS
+
+
+MODULE dnsdirect
+  
+INLINE REAL FUNCTION D0(REAL f(*)) = d0(-2)*f(-2)+d0(-1)*f(-1)+d0(0)*f(0)+d0(1)*f(1)+d0(2)*f(2)
+INLINE REAL FUNCTION D1(REAL f(*)) = d1(-2)*f(-2)+d1(-1)*f(-1)+d1(0)*f(0)+d1(1)*f(1)+d1(2)*f(2)
+INLINE REAL FUNCTION D2(REAL f(*)) = d2(-2)*f(-2)+d2(-1)*f(-1)+d2(0)*f(0)+d2(1)*f(1)+d2(2)*f(2)
+INLINE REAL FUNCTION D4(REAL f(*)) = d4(-2)*f(-2)+d4(-1)*f(-1)+d4(0)*f(0)+d4(1)*f(1)+d4(2)*f(2)
+INLINE COMPLEX FUNCTION D0(COMPLEX f(*)) = D0(f.REAL)+I*D0(f.IMAG)
+INLINE COMPLEX FUNCTION D1(COMPLEX f(*)) = D1(f.REAL)+I*D1(f.IMAG)
+INLINE COMPLEX FUNCTION D2(COMPLEX f(*)) = D2(f.REAL)+I*D2(f.IMAG)
+INLINE COMPLEX FUNCTION D4(COMPLEX f(*)) = D4(f.REAL)+I*D4(f.IMAG)
+
+SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme]
+	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
+		LOOP FOR iy=-1 TO ny+1
+   			IF iy>=1 THEN
+				WITH derivatives(iy) 
+				alfa=alfa0*ix; beta=beta0*iz
+    			ialfa==I*alfa; ibeta==I*beta
+    			k2=alfa^2+beta^2
+      			POINTER TO MOMFLUX VVm2,VVm1,VV0,VV1,VV2              
+        		VVm2=VV(ix,iz,(iy-2));VVm1=VV(ix,iz,imod(iy-1));VV0=VV(ix,iz,imod(iy));VV1=VV(ix,iz,imod(iy+1));VV2=VV(ix,iz,imod(iy+2))
+				#define D(d,f) d(-2)*VVm2.f+d(-1)*VVm1.f+d(0)*VV0.f+d(1)*VV1.f+d(2)*VV2.f
+      			WITH V(ix,iz,iy+(-2..2)):
+      			D0_uw_=D(d0,uw)
+      			D1_uw_=D(d1,uw)
+      			rhsu=-ialfa*D(d0,uu)-D(d1,uv)-ibeta*D0_uw_
+      			rhsv=-ialfa*D(d0,uv)-D(d1,vv)-ibeta*D(d0,vw)
+      			rhsw=-ialfa*D0_uw_-D(d1,vw)-ibeta*D(d0,ww)
+
+				COMPLEX expl = ialfa*[ialfa*D(d1,uu)+D(d2,uv)+ibeta*D1_uw_]+
+     					 ibeta*[ialfa*D1_uw_+D(d2,vw)+ibeta*D(d1,ww)]-k2*rhsv
+
+      			timescheme{newrhs(ix,iz,iy).D2v,oldrhs(ix,iz,iy).D2v,D2(v)-k2*D0(v),
+      					 (SUM OS(iy,i)*v(i) FOR ALL i),expl}
+
+
+    			IF ix=0 AND iz=0 THEN
+       			!// u media conservata in eta.REAL e w media in eta.IMAG
+      
+				expl = rhsu.REAL+px+[rhsw.REAL+pz]*I
+       
+     			timescheme{newrhs(0,0,iy).eta,oldrhs(0,0,iy).eta,D0(u.REAL)+D0(w.REAL)*I,
+                  										 ni*[D2(u.REAL)]+ni*D2(w.REAL)*I,
+							!                 0.5*[D2(u.REAL)]+0.5*D2(w.REAL)*I, !Vittori
+                 																	expl}
+      			ELSE
+     		 	expl = ibeta*rhsu-ialfa*rhsw
+      
+				timescheme{newrhs(ix,iz,iy).eta,oldrhs(ix,iz,iy).eta,ibeta*D0(u)-ialfa*D0(w),
+        	   								(SUM SQ(iy,i)*[ibeta*u(i)-ialfa*w(i)] FOR ALL i),
+                   																		expl}
+      			END IF
+
+   			END IF
+		REPEAT
+  		!END IF
+  
+		IF iy-2>=1 THEN
+    		DO WITH V(ix,iz,iy-2),newrhs(ix,iz,iy-2): u=eta; v=D2v
+			FOR ix=ilo TO ihi AND iz=klo TO khi
+			REPEAT
+	REPEAT
+END buildrhs
+
+INLINE FUNCTION D20(ARRAY(*) OF COMPLEX f)=d240(-2)*f(-1)+d240(-1)*f(0)+d240(0)*f(1)+d240(1)*f(2)+d240(2)*f(3)
+
+INLINE FUNCTION D2n(ARRAY(*) OF COMPLEX f)=d24n(-2)*f(ny-3)+d24n(-1)*f(ny-2)+d24n(0)*f(ny-1)+d24n(1)*f(ny)+d24n(2)*f(ny+1)
+
+
+
+END dnsdirect

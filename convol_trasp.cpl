@@ -201,20 +201,10 @@ REPEAT LOOP
   	  printf("%lgs employed to transpose in Y-pencils \n", TIMER_TRASP_y);
   	  printf("-----------------------------------------------------------\n\n");
   	  printf("Process Ended\n");
-  } 
- 
-  ilo_ = y_ilo; 	jlo_ = y_jlo;	klo_ = y_klo;
-  ihi_ = y_ihi;		jhi_ = y_jhi;	khi_ = y_khi;	*>
+  } *>
 
 WRITE
 INTEGER counter=0
-!// Take into account the negative modes
-klo = klo - nz;		khi = khi - nz;
-jlo = jlo - 1;		jhi = jhi - 1;
-
-!// Allocate and fill the local array VV & V
-ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF MOMFLUX VV 
-ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF VELOCITY V 
 LOOP FOR mode_x = ilo TO ihi
 	LOOP FOR mode_z = klo TO khi
 		LOOP FOR mode_y = -1 TO ny+1	

@@ -2,7 +2,7 @@
 USE fft
 USE rbmat
 
-!// Parallel - initialization--------------------------------------------------
+!// Parallel - initialization---------------------------------------------------------------------------
 WRITE 
 <*/* Initialize MPI */
 MPI_Init(&argc,&argv);
@@ -14,17 +14,16 @@ MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 rank_ = rank;
 *>
 
-!// Variables initialization---------------------------------------------------
+!// Variables initialization-----------------------------------------------------------------------------
 INTEGER ny,nx,nz
 REAL alfa0, beta0, a, ymin, ymax, t_max, dt_field, dt_save
 REAL u_conv, u0, un, w_conv, w0, wn, t0, tn
-REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0, maxtimelevels=1
+REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0, timelevels=1
 BOOLEAN time_from_restart
 STRING restart_file
 INTEGER localdim_x, localdim_z, dim_z, dim_y, ilo,ihi,jlo,jhi,klo,khi
 
-
-!// Structures initialization--------------------------------------------------
+!// Structures initialization----------------------------------------------------------------------------
 VELOCITY=STRUCTURE(COMPLEX u,v,w)
 MOMFLUX=STRUCTURE(COMPLEX uu,uv,vv,vw,ww,uw)
 ARRAY(0..1023) OF CHAR header
@@ -33,6 +32,9 @@ INLINE FUNCTION OS(INTEGER iy,i)=ni*[d4(i)-2*k2*d2(i)+k2*k2*d0(i)]
 INLINE FUNCTION SQ(INTEGER iy,i)=ni*[d2(i)-k2*d0(i)]
 rhstype=STRUCTURE(COMPLEX eta,D2v)
 VETA=STRUCTURE(COMPLEX v,eta)
+INLINE FUNCTION newrhs(INTEGER ix,iz,iy)=memrhs(ix,iz,(iy+1000)MOD(3))
+INLINE FUNCTION imod(INTEGER iy)=(iy+1000)MOD(5)
+REAL u1zero=0, w1zero=0
 
 !// Function to copy data from C to structure MOMFLUX----------------------------------------------------
 REAL FUNCTION move_data( POINTER TO REAL work; INTEGER index  )
@@ -42,7 +44,7 @@ REAL FUNCTION move_data( POINTER TO REAL work; INTEGER index  )
 *>
 END move_data
 
-!// Routine to read data from the structure MOMFLUX	
+!// Routine to read data from the structure MOMFLUX------------------------------------------------------	
 SUBROUTINE y_pencil_parser_mom( POINTER TO ARRAY(*,*,*) OF MOMFLUX VV; INTEGER start_mode_x; INTEGER end_mode_x;
 				  INTEGER start_mode_z; INTEGER end_mode_z; INTEGER desidered_rank)
 	IF rank = desidered_rank THEN 
@@ -60,7 +62,7 @@ SUBROUTINE y_pencil_parser_mom( POINTER TO ARRAY(*,*,*) OF MOMFLUX VV; INTEGER s
 	END IF
 END y_pencil_parser_mom
 
-!// Routine to read data from the structure VELOCITY	
+!// Routine to read data from the structure VELOCITY-----------------------------------------------------	
 SUBROUTINE y_pencil_parser_vel( POINTER TO ARRAY(*,*,*) OF VELOCITY VV; INTEGER start_mode_x; INTEGER end_mode_x;
 				  INTEGER start_mode_z; INTEGER end_mode_z; INTEGER desidered_rank)
 	IF rank = desidered_rank THEN 
@@ -78,7 +80,7 @@ SUBROUTINE y_pencil_parser_vel( POINTER TO ARRAY(*,*,*) OF VELOCITY VV; INTEGER 
 	END IF
 END y_pencil_parser_vel
 
-!// Routine to initialize constants
+!// read_initial_data------------------------------------------------------------------------------------
 SUBROUTINE read_initial_data
 FILE in_data=OPEN("dns.in")
 READ BY NAME FROM in_data ny,nx,nz,alfa0,beta0,ymin,ymax,a,ni,pr; ni=1/ni; pr=1/pr
@@ -104,13 +106,14 @@ SUBROUTINE kill_received(INTEGER signum)
 	reread=YES
 END kill_received
 
-!// Read initial data------------------------------------------------------------------
 read_initial_data; signal(SIGUSR2,kill_received)
+
+!// FFT Dimensions---------------------------------------------------------------------------------------
 INTEGER nxd = (nx)*3 DIV 2 -1 ;	INTEGER nzd = 3*nz-1;
 DO INC nxd UNTIL FFTfit(nxd);	
 DO INC nzd UNTIL FFTfit(nzd);
 
-!// X-FFT---------------------------------------------------------------------
+!// X-FFT------------------------------------------------------------------------------------------------
 SUBROUTINE FFT_x(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)
 ARRAY(0..nxd-1) OF COMPLEX in
 	INTEGER count = 0, n=0, i=0;
@@ -136,7 +139,7 @@ ARRAY(0..nxd-1) OF COMPLEX in
 	REPEAT LOOP
 END FFT_x
 
-!// Z-FFT---------------------------------------------------------------------
+!// Z-FFT------------------------------------------------------------------------------------------------
 SUBROUTINE FFT_z(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)
 ARRAY(0..nzd-1) OF COMPLEX in
 	INTEGER count = 0, n=0, i=0;
@@ -162,17 +165,16 @@ ARRAY(0..nzd-1) OF COMPLEX in
 	REPEAT LOOP
 END FFT_z
 
-
-!// Grid in y direction and compact finite differences operators-----------------------
+!// Grid in y direction and compact finite differences operators----------------------------------------
 REAL y(-1..ny+1)
 !DO y(i)=ymin+(ymax-ymin)*i/ny FOR ALL i !Mesh equispaziata
 !DO y(i)=ymin+(ymax-ymin)*[tanh(a*(i/ny-1))/tanh(a)+1] FOR ALL i !Boundary layer
 DO y(i)=ymin+0.5*(ymax-ymin)*[tanh(a*(2*i/ny-1))/tanh(a)+0.5*(ymax-ymin)] FOR ALL i !Channel
 
-
 STRUCTURE[ARRAY(-2..2) OF REAL d0,d1,d2,d4] derivatives(1..ny-1) 
 ARRAY(-2..2) OF REAL d040,d140,d240,d340,d14m1,d24m1, d04n,d14n,d24n,d14np1,d24np1
-!// Setup derivatives------------------------------------------------------------------
+
+!// Setup derivatives-----------------------------------------------------------------------------------
 MODULE setup_derivatives
 REAL M(0..4,0..4),t(0..4)
 LOOP FOR iy=1 TO ny-1 WITH derivatives(iy)
@@ -217,8 +219,8 @@ d24np1(-2+(*))=M\t
 
 END setup_derivatives
 
-!// Setup Boundary conditions variables----------------------------------------------------
-ARRAY(-nz..nz,1..ny-1,-2..2) OF REAL D2vmat=0, etamat=0		
+!// Setup Boundary conditions variables---------------------------------------------------------------------
+ARRAY(klo..khi,1..ny-1,-2..2) OF REAL D2vmat=0, etamat=0				
 ARRAY(1..ny-1,-2..2) OF REAL D0mat=0
 D0mat(1..ny-1)=derivatives.d0; LUdecomp D0mat
 ARRAY(-2..2) OF REAL v0bc(-1..0)=0,vnbc(0..1)=0,eta0bc(-1..0)=0,etanbc(0..1)=0
@@ -234,7 +236,7 @@ etanbc(1)=derivatives(ny-1).d4
 DO vnbc(0)(i)=~-vnbc(0)(2)*vnbc(1)(i)/vnbc(1)(2) FOR i= -2 TO 1
 DO etanbc(0)(i)=~-etanbc(0)(2)*etanbc(1)(i)/etanbc(1)(2) FOR i= -2 TO 1
 
-!// Function to applay Boundary conditions----------------------------------------------------
+!// Function to apply Boundary conditions------------------------------------------------------------------
 SUBROUTINE applybc_0(ARRAY(*) OF REAL eq^(*); ARRAY(-1..0,-2..2) OF REAL bc) 
   	DO eq(1,i)=~-eq(1,-2)*bc(-1,i)/bc(-1,-2) FOR i=-1 TO 2
   	DO eq(1,i)=~-eq(1,-1)*bc(0,i)/bc(0,-1) FOR i=0 TO 2
@@ -246,3 +248,68 @@ SUBROUTINE applybc_n(ARRAY(*) OF REAL eq^(*); ARRAY(0..1,-2..2) OF REAL bc)
   	DO eq(ny-2,i+1)=~-eq(ny-2,2)*bc(0,i)/bc(0,1) FOR i=-2 TO 0
 END applybc_n
 
+!// Integral in y direction-------------------------------------------------------------------------------
+SUBROUTINE yintegr(REAL RESULT^, f(*))
+  LOOP FOR iy=1 TO ny-1 BY 2 
+   yp1=y(iy+1)-y(iy); ym1=y(iy-1)-y(iy) 
+   a1=-1/3*ym1+1/6*yp1+1/6*yp1*yp1/ym1
+   a3=+1/3*yp1-1/6*ym1-1/6*ym1*ym1/yp1
+   a2=yp1-ym1-a1-a3
+   RESULT=~+a1*f(iy-1) + a2*f(iy) + a3*f(iy+1)    
+  REPEAT
+END yintegr
+
+
+
+
+!// Coefficients library---------------------------------------------------------------------------------
+SUBROUTINE simple(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=unkn/deltat+expl
+END simple
+CONSTANT INTEGER simple_coeff=1
+
+SUBROUTINE CN_AB(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=2/deltat*unkn+impl+3*expl-old(1)
+  old(1)=expl
+END CN_AB
+CONSTANT INTEGER CN_AB_coeff=2
+
+SUBROUTINE RK1_rai(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=120/32/deltat*unkn+impl+2*expl
+  old(1)=expl
+END RK1_rai
+CONSTANT REAL RK1_rai_coeff=120/32
+
+SUBROUTINE RK2_rai(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=120/(8*deltat)*unkn+impl+50/8*expl-34/8*old(1)
+  old(1)=expl
+END RK2_rai
+CONSTANT REAL RK2_rai_coeff=120/8
+
+SUBROUTINE RK3_rai(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=120/(20*deltat)*unkn+impl+90/20*expl-50/20*old(1)
+END RK3_rai
+CONSTANT REAL RK3_rai_coeff=120/20      
+
+SUBROUTINE RK1_kom(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=1020/240/deltat*unkn+impl+2*expl
+  old(1)=expl
+END RK1_kom
+CONSTANT REAL RK1_kom_coeff=1020/240
+
+SUBROUTINE RK2_kom(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=1020/(32*deltat)*unkn+impl+289/32*expl-225/32*old(1)
+  old(1)=expl
+END RK2_kom
+CONSTANT REAL RK2_kom_coeff=1020/32
+
+SUBROUTINE RK3_kom(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=1020/(68*deltat)*unkn+impl+25/4*expl-17/4*old(1)
+  old(1)=expl
+END RK3_kom
+CONSTANT REAL RK3_kom_coeff=1020/68
+
+SUBROUTINE RK4_kom(COMPLEX rhs^,old^(*),unkn,impl,expl)
+  rhs=1020/(170*deltat)*unkn+impl+9/2*expl-5/2*old(1)
+END RK4_kom
+CONSTANT REAL RK4_kom_coeff=1020/170  

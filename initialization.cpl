@@ -100,10 +100,9 @@ WRITE
   int fz_jlo = (int) 1.0*ipslow*nslow/npslow;					// J slow
   int fz_jhi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
 
-  printf("[FZ-PENCIL] (k,i,j order)\t"
+ /* printf("[FZ-PENCIL] (k,i,j order)\t"
 		  "On rank %d the coordinates are: "
-		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, fz_ilo, fz_jlo, fz_klo, fz_ihi, fz_jhi, fz_khi );
-
+		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, fz_ilo, fz_jlo, fz_klo, fz_ihi, fz_jhi, fz_khi ); */
 
   // Final y-pencil
   nfast = ny;
@@ -133,8 +132,19 @@ WRITE
   localdim_z_ = 2*(z_ihi-z_ilo+1)*(z_jhi-z_jlo+1)*nzd;
   dim_z_ = 2*(fz_ihi-fz_ilo+1)*(fz_jhi-fz_jlo+1)*(fz_khi-fz_klo+1);
   dim_y_ = 2*(y_ihi-y_ilo+1)*(y_jhi-y_jlo+1)*(y_khi-y_klo+1);
+  ilo_ = y_ilo; 	jlo_ = y_jlo;	klo_ = y_klo;
+  ihi_ = y_ihi;		jhi_ = y_jhi;	khi_ = y_khi;
 *>
-	
+!// Take into account the negative modes
+klo = klo - nz;		khi = khi - nz;
+jlo = jlo - 1;		jhi = jhi - 1;
+
+!// Fill the local array VV & V
+ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF MOMFLUX VV 
+ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF VELOCITY V 
+ARRAY(ilo..ihi,klo..khi,1..(ny-1)) OF rhstype oldrhs
+rhstype memrhs(ilo..ihi,klo..khi,0..2)
+ARRAY(ilo..ihi,klo..khi) OF STRUCTURE(COMPLEX u,v,w,vy,eta) bc0=0, bcn=0
 POINTER TO ARRAY(0..localdim_x-1) OF REAL u
 POINTER TO ARRAY(0..localdim_x-1) OF REAL v
 POINTER TO ARRAY(0..localdim_x-1) OF REAL w
@@ -147,4 +157,3 @@ POINTER TO ARRAY(0..localdim_x-1) OF REAL vv
 POINTER TO ARRAY(0..localdim_x-1) OF REAL vw
 POINTER TO ARRAY(0..localdim_x-1) OF REAL uw
 POINTER TO ARRAY(0..localdim_x-1) OF REAL ww
-
