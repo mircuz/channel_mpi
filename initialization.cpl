@@ -142,12 +142,13 @@ jlo = jlo - 1;		jhi = jhi - 1;
 !// Fill the local array VV & V
 ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF MOMFLUX VV 
 ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF VELOCITY V 
-ARRAY(ilo..ihi,klo..khi,1..(ny-1)) OF rhstype oldrhs
-rhstype memrhs(ilo..ihi,klo..khi,0..2)
+ARRAY(ilo..ihi, klo..khi,1..(ny-1),1..maxtimelevels) OF rhstype oldrhs
+rhstype memrhs(ilo..ihi,klo..khi,1..(ny-1))
+INLINE FUNCTION newrhs(INTEGER ix,iz,iy)=memrhs(ix,iz,(iy+1000)MOD(3))
 ARRAY(ilo..ihi,klo..khi) OF STRUCTURE(COMPLEX u,v,w,vy,eta) bc0=0, bcn=0
-POINTER TO ARRAY(0..localdim_x-1) OF REAL u
-POINTER TO ARRAY(0..localdim_x-1) OF REAL v
-POINTER TO ARRAY(0..localdim_x-1) OF REAL w
+POINTER TO ARRAY(0..localdim_x-1) OF REAL u_convol
+POINTER TO ARRAY(0..localdim_x-1) OF REAL v_convol
+POINTER TO ARRAY(0..localdim_x-1) OF REAL w_convol
 POINTER TO ARRAY(0..localdim_x-1) OF REAL U_t
 POINTER TO ARRAY(0..localdim_x-1) OF REAL V_t
 POINTER TO ARRAY(0..localdim_x-1) OF REAL W_t

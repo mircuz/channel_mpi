@@ -2,8 +2,9 @@
 SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme] FOLLOWS
 
 
-MODULE dnsdirect
-  
+
+!MODULE dnsdirect
+
 INLINE REAL FUNCTION D0(REAL f(*)) = d0(-2)*f(-2)+d0(-1)*f(-1)+d0(0)*f(0)+d0(1)*f(1)+d0(2)*f(2)
 INLINE REAL FUNCTION D1(REAL f(*)) = d1(-2)*f(-2)+d1(-1)*f(-1)+d1(0)*f(0)+d1(1)*f(1)+d1(2)*f(2)
 INLINE REAL FUNCTION D2(REAL f(*)) = d2(-2)*f(-2)+d2(-1)*f(-1)+d2(0)*f(0)+d2(1)*f(1)+d2(2)*f(2)
@@ -14,17 +15,19 @@ INLINE COMPLEX FUNCTION D2(COMPLEX f(*)) = D2(f.REAL)+I*D2(f.IMAG)
 INLINE COMPLEX FUNCTION D4(COMPLEX f(*)) = D4(f.REAL)+I*D4(f.IMAG)
 
 SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme]
+
 	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
+		alfa=alfa0*ix; beta=beta0*iz
+    	ialfa==I*alfa; ibeta==I*beta
+   		k2=alfa^2+beta^2
 		LOOP FOR iy=-1 TO ny+1
+			IF iy < ny-1 THEN
    			IF iy>=1 THEN
-				WITH derivatives(iy) 
-				alfa=alfa0*ix; beta=beta0*iz
-    			ialfa==I*alfa; ibeta==I*beta
-    			k2=alfa^2+beta^2
+				WITH derivatives(iy)
       			POINTER TO MOMFLUX VVm2,VVm1,VV0,VV1,VV2              
-        		VVm2=VV(ix,iz,(iy-2));VVm1=VV(ix,iz,imod(iy-1));VV0=VV(ix,iz,imod(iy));VV1=VV(ix,iz,imod(iy+1));VV2=VV(ix,iz,imod(iy+2))
+        		VVm2=VV(ix,iz,(iy-2));VVm1=VV(ix,iz,(iy-1));VV0=VV(ix,iz,(iy));VV1=VV(ix,iz,(iy+1));VV2=VV(ix,iz,(iy+2))
 				#define D(d,f) d(-2)*VVm2.f+d(-1)*VVm1.f+d(0)*VV0.f+d(1)*VV1.f+d(2)*VV2.f
-      			WITH V(ix,iz,iy+(-2..2)):
+				WITH V(ix,iz,iy+(-2..2)):	
       			D0_uw_=D(d0,uw)
       			D1_uw_=D(d1,uw)
       			rhsu=-ialfa*D(d0,uu)-D(d1,uv)-ibeta*D0_uw_
@@ -34,35 +37,32 @@ SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explic
 				COMPLEX expl = ialfa*[ialfa*D(d1,uu)+D(d2,uv)+ibeta*D1_uw_]+
      					 ibeta*[ialfa*D1_uw_+D(d2,vw)+ibeta*D(d1,ww)]-k2*rhsv
 
-      			timescheme{newrhs(ix,iz,iy).D2v,oldrhs(ix,iz,iy).D2v,D2(v)-k2*D0(v),
-      					 (SUM OS(iy,i)*v(i) FOR ALL i),expl}
+				timescheme{ memrhs(ix,iz,iy).D2v,oldrhs(ix,iz,iy).D2v,D2(v)-k2*D0(v),(SUM OS(iy,i)*v(i) FOR ALL i),expl}
 
+WRITE "("ix","iz","iy") newrhs: " memrhs(ix,iz,iy)
+WRITE "("ix","iz","iy") oldrhs: " oldrhs(ix,iz,iy)
 
     			IF ix=0 AND iz=0 THEN
        			!// u media conservata in eta.REAL e w media in eta.IMAG
-      
-				expl = rhsu.REAL+px+[rhsw.REAL+pz]*I
-       
-     			timescheme{newrhs(0,0,iy).eta,oldrhs(0,0,iy).eta,D0(u.REAL)+D0(w.REAL)*I,
+					expl = rhsu.REAL+px+[rhsw.REAL+pz]*I
+		   			timescheme{newrhs(0,0,iy).eta,oldrhs(0,0,iy).eta,D0(u.REAL)+D0(w.REAL)*I,
                   										 ni*[D2(u.REAL)]+ni*D2(w.REAL)*I,
-							!                 0.5*[D2(u.REAL)]+0.5*D2(w.REAL)*I, !Vittori
-                 																	expl}
+							                 !0.5*[D2(u.REAL)]+0.5*D2(w.REAL)*I, !Vittori
+                 																	expl} 
       			ELSE
-     		 	expl = ibeta*rhsu-ialfa*rhsw
-      
-				timescheme{newrhs(ix,iz,iy).eta,oldrhs(ix,iz,iy).eta,ibeta*D0(u)-ialfa*D0(w),
+     		 		expl = ibeta*rhsu-ialfa*rhsw
+     				timescheme{newrhs(ix,iz,iy).eta,oldrhs(ix,iz,iy).eta,ibeta*D0(u)-ialfa*D0(w),
         	   								(SUM SQ(iy,i)*[ibeta*u(i)-ialfa*w(i)] FOR ALL i),
-                   																		expl}
+                   																		expl} 
       			END IF
 
-   			END IF
-		REPEAT
-  		!END IF
-  
-		IF iy-2>=1 THEN
-    		DO WITH V(ix,iz,iy-2),newrhs(ix,iz,iy-2): u=eta; v=D2v
+  		END IF
+  		END IF
+		IF (iy-2)>=1 THEN
+    		DO WITH V(ix,iz,iy-2),memrhs(ix,iz,iy-2): u=eta; v=D2v
 			FOR ix=ilo TO ihi AND iz=klo TO khi
-			REPEAT
+		END IF
+		REPEAT
 	REPEAT
 END buildrhs
 
@@ -72,4 +72,4 @@ INLINE FUNCTION D2n(ARRAY(*) OF COMPLEX f)=d24n(-2)*f(ny-3)+d24n(-1)*f(ny-2)+d24
 
 
 
-END dnsdirect
+!END dnsdirect

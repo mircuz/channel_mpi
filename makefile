@@ -20,7 +20,7 @@ compilation:
 	
 	$(CC) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o -lfft3dmpi -lm 
 		#--> Executable ready <--
-		#--> run as mpiexec -n "procs number" exe <--
+		#--> run as mpiexec -n "#procs" exe <--
 
 clean: 
 	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c

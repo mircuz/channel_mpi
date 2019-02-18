@@ -9,14 +9,18 @@ INTEGER rank
 USE dnsdata
 USE initialization
 USE data_man
-!USE dnsdirect
+USE dnsdirect
 
 !// Timeloop
 USE convol_trasp
 
+buildrhs(RK1_rai)
+
+
+
 !// Loop end
 
-<* 	free(u_);	free(v_);	free(w_);										//Worked uvw
+<* 	free(u_convol_);	free(v_convol_);	free(w_convol_);										//Worked uvw
 	free(U_t_);		free(V_t_);		free(W_t_);								//Local UVW copied into structure
   	free(uu_);	free(uv_);	free(vv_);	free(vw_);	free(ww_);	free(uw_); 	//Local convols copied into structure
 	free(recvbuf);	 free(sendbuf);  										//Remap local arrays

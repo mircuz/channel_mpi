@@ -2,9 +2,9 @@
 WRITE
 <*
   /******************************************** Memory Alloc *******************************************/
-  u_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  v_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  w_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  u_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  v_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  w_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   U_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   V_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   W_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
@@ -20,7 +20,7 @@ WRITE
   FFT_SCALAR *sendbuf = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
 
-  if ((u_||u_read||v_||v_read||w_||w_read||uu_||uv_||vv_||vw_||ww_||uw_||sendbuf||recvbuf) == NULL) {
+  if ((u_convol_||u_read||v_convol_||v_read||w_convol_||w_read||uu_||uv_||vv_||vw_||ww_||uw_||sendbuf||recvbuf) == NULL) {
 	  perror(".:Error while allocating memory for remapping variables:.\n");
 	  abort();
   }
