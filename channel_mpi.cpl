@@ -22,7 +22,9 @@ LOOP FOR i=ilo TO ihi
 	REPEAT LOOP
 REPEAT LOOP
 
-buildrhs(RK1_rai, VV, V)
+time=~+2/RK1_rai_coeff*deltat
+buildrhs(RK1_rai, VV, V);linsolve(RK1_rai_coeff/deltat)
+
 
 
 

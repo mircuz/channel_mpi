@@ -217,8 +217,7 @@ d24np1(-2+(*))=M\t
 
 END setup_derivatives
 
-!// Setup Boundary conditions variables---------------------------------------------------------------------
-ARRAY(klo..khi,1..ny-1,-2..2) OF REAL D2vmat=0, etamat=0				
+!// Setup Boundary conditions variables---------------------------------------------------------------------		
 ARRAY(1..ny-1,-2..2) OF REAL D0mat=0
 D0mat(1..ny-1)=derivatives.d0; LUdecomp D0mat
 ARRAY(-2..2) OF REAL v0bc(-1..0)=0,vnbc(0..1)=0,eta0bc(-1..0)=0,etanbc(0..1)=0
@@ -257,9 +256,6 @@ SUBROUTINE yintegr(REAL RESULT^, f(*))
   REPEAT
 END yintegr
 
-
-
-
 !// Coefficients library---------------------------------------------------------------------------------
 SUBROUTINE simple(COMPLEX rhs^,old^(*),unkn,impl,expl)
   rhs=unkn/deltat+expl
@@ -275,7 +271,6 @@ CONSTANT INTEGER CN_AB_coeff=2
 SUBROUTINE RK1_rai(COMPLEX rhs^,old^(*),unkn,impl,expl)
   rhs=120/32/deltat*unkn+impl+2*expl
   old(1)=expl
-	WRITE rhs
 END RK1_rai
 CONSTANT REAL RK1_rai_coeff=120/32
 
