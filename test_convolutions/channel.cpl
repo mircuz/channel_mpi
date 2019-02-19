@@ -8,7 +8,7 @@ read_restart_file; cont=FLOOR(time/dt_field)
 !outstats()
 WRITE BY NAME nx,nxd, nz,nzd
 
-!ARRAY(0..4,-4..4,-1..9) OF REAL u
+
 ARRAY(0..1000) OF REAL U
 ARRAY(0..1000) OF REAL W
 FILE u_dat;		u_dat = OPEN("u.dat")
