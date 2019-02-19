@@ -275,6 +275,7 @@ CONSTANT INTEGER CN_AB_coeff=2
 SUBROUTINE RK1_rai(COMPLEX rhs^,old^(*),unkn,impl,expl)
   rhs=120/32/deltat*unkn+impl+2*expl
   old(1)=expl
+	WRITE rhs
 END RK1_rai
 CONSTANT REAL RK1_rai_coeff=120/32
 
