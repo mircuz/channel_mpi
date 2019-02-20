@@ -143,9 +143,6 @@ LOOP FOR ix=ilo TO ihi
 
   LOOP FOR ALL iz
     WITH V(ix,iz,*):
-	
-	WRITE "("ix","iz")"  u  
-	WRITE
     v(ny)  =(bcn(ix,iz).v  -SUM v(ny-1+i)*vnbc(0,i) FOR i=-2 TO 0)/vnbc(0,1)
     v(ny+1)=(bcn(ix,iz).vy -SUM v(ny-1+i)*vnbc(1,i) FOR i=-2 TO 1)/vnbc(1,2)
     u(ny)=(bcn(ix,iz).eta-SUM u(ny-1+i)*etanbc(0,i) FOR i=-2 TO 0)/etanbc(0,1)
@@ -154,7 +151,8 @@ LOOP FOR ix=ilo TO ihi
     v(-1)=(bc0(ix,iz).vy-SUM v(1+i)*v0bc(-1,i) FOR i=-1 TO 2)/v0bc(-1,-2)
     u(0) =(bc0(ix,iz).eta-SUM u(1+i)*eta0bc(0,i) FOR i=0 TO 2)/eta0bc(0,-1)
     u(-1)=(-SUM u(1+i)*eta0bc(-1,i) FOR i=-1 TO 2)/eta0bc(-1,-2)
-
+	WRITE "("ix","iz")"  u  
+	WRITE
   REPEAT
 REPEAT 
 END linsolve			!// Controllare la possibilità di ridurre le bc up e dw ad un solo IF statment
