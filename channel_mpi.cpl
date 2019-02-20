@@ -14,17 +14,9 @@ USE dnsdirect
 !// Timeloop
 USE convol_trasp
 
-LOOP FOR i=ilo TO ihi
-	LOOP FOR k=klo TO khi
-		LOOP FOR j=-1 TO 9
-			!WRITE "["rank"]  ("i","k","j")  " V(i,k,j)
-		REPEAT LOOP
-	REPEAT LOOP
-REPEAT LOOP
-
 time=~+2/RK1_rai_coeff*deltat
-buildrhs(RK1_rai, VV, V);linsolve(RK1_rai_coeff/deltat)
-
+buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat); 	
+vetaTOuvw
 
 
 

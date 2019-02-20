@@ -2,7 +2,8 @@
 SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme; 
 						POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRAY(*,*,*) OF VELOCITY Vd] FOLLOWS
 SUBROUTINE linsolve(REAL lambda) FOLLOWS
-
+SUBROUTINE deriv(ARRAY(*) OF REAL f0,f1^) FOLLOWS
+SUBROUTINE vetaTOuvw FOLLOWS
 
 MODULE dnsdirect
 
@@ -16,7 +17,6 @@ INLINE COMPLEX FUNCTION D2(COMPLEX f(*)) = D2(f.REAL)+I*D2(f.IMAG)
 INLINE COMPLEX FUNCTION D4(COMPLEX f(*)) = D4(f.REAL)+I*D4(f.IMAG)
 
 !//--------------------------------------------------------------------------------------------------------------------------
-
 SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme;
 						POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRAY(*,*,*) OF VELOCITY Vd]
 	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
@@ -66,23 +66,11 @@ SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explic
 END buildrhs
 
 !//--------------------------------------------------------------------------------------------------------------------------
-
 INLINE FUNCTION D20(ARRAY(*) OF COMPLEX f)=d240(-2)*f(-1)+d240(-1)*f(0)+d240(0)*f(1)+d240(1)*f(2)+d240(2)*f(3)
 INLINE FUNCTION D2n(ARRAY(*) OF COMPLEX f)=d24n(-2)*f(ny-3)+d24n(-1)*f(ny-2)+d24n(0)*f(ny-1)+d24n(1)*f(ny)+d24n(2)*f(ny+1)
 
-
-
-
-
-
-
-
-
-
 !//--------------------------------------------------------------------------------------------------------------------------
-
 SUBROUTINE linsolve(REAL lambda)
-
 LOOP FOR ix=ilo TO ihi
 	alfa=alfa0*ix; ialfa==I*alfa
   	LOOP FOR iz=klo TO khi
@@ -129,7 +117,6 @@ LOOP FOR ix=ilo TO ihi
       	V(ix,iz,ny-1).u=~-etamat(iz,ny-1,1)*eta/etanbc(0,1)
       	V(ix,iz,ny-2).u=~-etamat(iz,ny-2,2)*eta/etanbc(0,1)   
 
-
 		!// Solve
     	LUdecomp D2vmat(iz); LUdecomp etamat(iz)  
     	WITH V(ix,iz,*)
@@ -137,25 +124,78 @@ LOOP FOR ix=ilo TO ihi
   		LeftLUDiv(v_temp(iz,*).IMAG,D2vmat(iz),v.IMAG)  
    	 	LeftLUDiv(u_temp(iz,*).REAL,etamat(iz),u.REAL)       
     	LeftLUDiv(u_temp(iz,*).IMAG,etamat(iz),u.IMAG)  
+
   	REPEAT
 	WITH V(ix,*,1..ny-1):
 	v = v_temp(*,*);	u = u_temp(*,*)
-
-  LOOP FOR ALL iz
-    WITH V(ix,iz,*):
-    v(ny)  =(bcn(ix,iz).v  -SUM v(ny-1+i)*vnbc(0,i) FOR i=-2 TO 0)/vnbc(0,1)
-    v(ny+1)=(bcn(ix,iz).vy -SUM v(ny-1+i)*vnbc(1,i) FOR i=-2 TO 1)/vnbc(1,2)
-    u(ny)=(bcn(ix,iz).eta-SUM u(ny-1+i)*etanbc(0,i) FOR i=-2 TO 0)/etanbc(0,1)
-    u(ny+1)=(-SUM u(ny-1+i)*etanbc(1,i) FOR i=-2 TO 1)/etanbc(1,2)
-    v(0) =(bc0(ix,iz).v-SUM v(1+i)*v0bc(0,i) FOR i=0 TO 2)/v0bc(0,-1)
-    v(-1)=(bc0(ix,iz).vy-SUM v(1+i)*v0bc(-1,i) FOR i=-1 TO 2)/v0bc(-1,-2)
-    u(0) =(bc0(ix,iz).eta-SUM u(1+i)*eta0bc(0,i) FOR i=0 TO 2)/eta0bc(0,-1)
-    u(-1)=(-SUM u(1+i)*eta0bc(-1,i) FOR i=-1 TO 2)/eta0bc(-1,-2)
-	WRITE "("ix","iz")"  u  
-	WRITE
-  REPEAT
+  	LOOP FOR ALL iz
+    	WITH V(ix,iz,*):
+    	v(ny)  =(bcn(ix,iz).v  -SUM v(ny-1+i)*vnbc(0,i) FOR i=-2 TO 0)/vnbc(0,1)
+    	v(ny+1)=(bcn(ix,iz).vy -SUM v(ny-1+i)*vnbc(1,i) FOR i=-2 TO 1)/vnbc(1,2)
+    	u(ny)=(bcn(ix,iz).eta-SUM u(ny-1+i)*etanbc(0,i) FOR i=-2 TO 0)/etanbc(0,1)
+   	 	u(ny+1)=(-SUM u(ny-1+i)*etanbc(1,i) FOR i=-2 TO 1)/etanbc(1,2)
+    	v(0) =(bc0(ix,iz).v-SUM v(1+i)*v0bc(0,i) FOR i=0 TO 2)/v0bc(0,-1)
+    	v(-1)=(bc0(ix,iz).vy-SUM v(1+i)*v0bc(-1,i) FOR i=-1 TO 2)/v0bc(-1,-2)
+    	u(0) =(bc0(ix,iz).eta-SUM u(1+i)*eta0bc(0,i) FOR i=0 TO 2)/eta0bc(0,-1)
+    	u(-1)=(-SUM u(1+i)*eta0bc(-1,i) FOR i=-1 TO 2)/eta0bc(-1,-2)
+  	REPEAT
 REPEAT 
-END linsolve			!// Controllare la possibilità di ridurre le bc up e dw ad un solo IF statment
+END linsolve
 
+SUBROUTINE LeftLUDivStep1(POINTER TO ARRAY(*) OF REAL x; ARRAY(*,-2..2) OF REAL A; ARRAY(*) OF REAL t)
+  LOOP FOR i=A.HI1-A.HI2 DOWN TO A.LO1
+    POINTER INTO A(i,*),x(i+*) j=A.HI2
+    REAL sum=t(i)
+    LOOP FOR A.HI2 TIMES: sum=~-A(i,j)*x(i+j); DEC j
+    x(i+j)=sum*A(i,j)
+  REPEAT LOOP
+END LeftLUDivStep1
+
+
+
+!//--------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE deriv(ARRAY(*) OF REAL f0,f1^)
+f1(0)=SUM d140(i)*f0(1+i) FOR i=-2 TO 2
+f1(-1)=SUM d14m1(i)*f0(1+i) FOR i=-2 TO 2
+f1(ny)=SUM d14n(i)*f0(ny-1+i) FOR i=-2 TO 2
+f1(ny+1)=SUM d14np1(i)*f0(ny-1+i) FOR i=-2 TO 2
+DO WITH derivatives(i) f1(i)=D1(f0(i+(*))) FOR i=1 TO ny-1
+WITH derivatives(1): f1(1)=~-(d0(-1)*f1(0)+d0(-2)*f1(-1))
+WITH derivatives(2): f1(2)=~-d0(-2)*f1(0)
+WITH derivatives(ny-1): f1(ny-1)=~-(d0(1)*f1(ny)+d0(2)*f1(ny+1))
+WITH derivatives(ny-2): f1(ny-2)=~-d0(2)*f1(ny)
+ARRAY(-1..ny+1) OF REAL res = f1
+LeftLUDivStep1(f1,D0mat,f1)
+!//WRITE f1			
+END deriv
+
+!//Remember: eta=+I*beta*u-I*alfa*w---------------------------------------------------------------------------------------- 
+SUBROUTINE vetaTOuvw
+WITH V(0,0,*): w.REAL=u.IMAG; u.IMAG=0; w.IMAG=0
+LOOP FOR ix=ilo TO ihi AND iz=klo TO khi EXCEPT ix=0 AND iz=0
+  	WITH V(ix,iz,*):
+!WRITE "("ix","iz")   "
+  	deriv(v.REAL,w.REAL)
+	WRITE "("ix","iz")   " v.REAL
+  	!deriv(v.IMAG,w.IMAG)
+REPEAT
+
+!(FlushStep1
+LOOP FOR ALL ix
+  alfa=alfa0*ix
+  LOOP FOR ALL iz EXCEPT ix=0 AND iz=0
+    WITH V(ix,iz,*):
+    LeftLUDivStep2(w.REAL,D0mat)
+    LeftLUDivStep2(w.IMAG,D0mat)
+    FlushStep2
+    beta=beta0*iz; k2=alfa^2+beta^2
+    DO temp=I*(alfa*w(iy)-beta*u(iy))/k2
+      w(iy)=I*(beta*w(iy)+alfa*u(iy))/k2 
+      u(iy)=temp
+    FOR ALL iy
+  REPEAT
+REPEAT
+FlushStep2 !)
+END vetaTOuvw
 
 END dnsdirect
