@@ -143,16 +143,6 @@ REPEAT
 END linsolve
 
 !//--------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE LeftLUDivStep1(POINTER TO ARRAY(*) OF REAL x; ARRAY(*,-2..2) OF REAL A; ARRAY(*) OF REAL t)
-  LOOP FOR i=A.HI1 DOWN TO A.LO1		!// Rimosso -A.HI2
-    POINTER INTO A(i,*),x(i+*) j=A.HI2
-    REAL sum=t(i)
-    LOOP FOR A.HI2 TIMES: sum=~-A(i,j)*x(i+j); DEC j
-    x(i+j)=sum*A(i,j)
-  REPEAT LOOP
-END LeftLUDivStep1
-
-!//--------------------------------------------------------------------------------------------------------------------------
 SUBROUTINE deriv(ARRAY(*) OF REAL f0,f1^)
 f1(0)=SUM d140(i)*f0(1+i) FOR i=-2 TO 2
 f1(-1)=SUM d14m1(i)*f0(1+i) FOR i=-2 TO 2
@@ -163,34 +153,25 @@ WITH derivatives(1): f1(1)=~-(d0(-1)*f1(0)+d0(-2)*f1(-1))
 WITH derivatives(2): f1(2)=~-d0(-2)*f1(0)
 WITH derivatives(ny-1): f1(ny-1)=~-(d0(1)*f1(ny)+d0(2)*f1(ny+1))
 WITH derivatives(ny-2): f1(ny-2)=~-d0(2)*f1(ny)	
-LeftLUDivStep1(f1,D0mat,f1)
+LeftLUDiv(f1,D0mat,f1)
 END deriv
 
 !//Remember: eta=+I*beta*u-I*alfa*w---------------------------------------------------------------------------------------- 
 SUBROUTINE vetaTOuvw
 WITH V(0,0,*): w.REAL=u.IMAG; u.IMAG=0; w.IMAG=0
-LOOP FOR ix=ilo TO ihi AND iz=klo TO khi EXCEPT ix=0 AND iz=0
-  	WITH V(ix,iz,*):
-  	deriv(v.REAL,w.REAL)
-  	deriv(v.IMAG,w.IMAG)
-REPEAT
-
-!(FlushStep1
-LOOP FOR ALL ix
-  alfa=alfa0*ix
-  LOOP FOR ALL iz EXCEPT ix=0 AND iz=0
-    WITH V(ix,iz,*):
-    LeftLUDivStep2(w.REAL,D0mat)
-    LeftLUDivStep2(w.IMAG,D0mat)
-    FlushStep2
-    beta=beta0*iz; k2=alfa^2+beta^2
-    DO temp=I*(alfa*w(iy)-beta*u(iy))/k2
-      w(iy)=I*(beta*w(iy)+alfa*u(iy))/k2 
-      u(iy)=temp
-    FOR ALL iy
-  REPEAT
-REPEAT
-FlushStep2 !)
+LOOP FOR ix=ilo TO ihi 
+	alfa=alfa0*ix
+	LOOP FOR iz=klo TO khi EXCEPT ix=0 AND iz=0
+  		WITH V(ix,iz,*):
+  		deriv(v.REAL,w.REAL)
+  		deriv(v.IMAG,w.IMAG)
+		beta=beta0*iz; k2=alfa^2+beta^2
+    	DO temp=I*(alfa*w(iy)-beta*u(iy))/k2
+     		w(iy)=I*(beta*w(iy)+alfa*u(iy))/k2 
+      		u(iy)=temp
+    	FOR ALL iy
+	REPEAT
+REPEAT 
 END vetaTOuvw
 
 END dnsdirect
