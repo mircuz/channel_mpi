@@ -6,6 +6,7 @@
 #include "remap3d_wrap.h"
 
 INTEGER rank
+gamma=0
 USE dnsdata
 USE initialization
 USE data_man

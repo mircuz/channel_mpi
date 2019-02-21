@@ -194,45 +194,44 @@ SUBROUTINE computeflowrate(REAL lambda)
    			ucorr(ny+1)=(-SUM ucorr(ny-1+i)*etanbc(1)(i) FOR i=-2 TO 1)/etanbc(1)(2)
     		ucorr(0) =(-SUM ucorr(1+i)*eta0bc(0)(i) FOR i=0 TO 2)/eta0bc(0)(-1)
     		ucorr(-1)=(-SUM ucorr(1+i)*eta0bc(-1)(i) FOR i=-1 TO 2)/eta0bc(-1)(-2)
+
+			LOOP FOR ix=ilo TO ihi
+				IF ix=0 THEN
+					STRUCTURE(REAL u,w,uc,wc) fr   
+  					WITH V(0, 0, *) 
+  					DO v(iy)=0 FOR ALL iy
+  					yintegr(fr.u, u.REAL)
+  					yintegr(fr.w, w.REAL)
+  					yintegr(fr.uc, ucorr) 
+					px = (1-gamma)*6*ni/fr.u   !Constant Power Input
+					!pz = (1-gamma)*6*ni/fr.w   !Constant Power Input
+					IF meanflowx # -99 THEN 
+    					px=0; corrpx=(meanflowx+u_conv*(ymax-ymin)-fr.u)/fr.uc ! Constant Q
+    					u.REAL=~+corrpx*ucorr
+  					END IF
+  					IF meanflowz # -99 THEN 
+    					pz=0; corrpz=(meanflowz+w_conv*(ymax-ymin)-fr.w)/fr.uc  ! Constant Q
+    					w.REAL=~+corrpz*ucorr
+  					END IF
+
+
+
+  					IF meanpx # -99 THEN px = meanpx ! Constant Px
+  					IF meanpz # -99 THEN pz = meanpz ! Constant Pz
+  					yintegr(fr.u, u.REAL)
+  					yintegr(fr.w, w.REAL)
+  					yintegr(fr.uc, ucorr)      
+  					flowx=fr.u-u_conv*(ymax-ymin); flowz=fr.w-w_conv*(ymax-ymin)
+     				u1zero=SUM d140(i)*V(0, 0, i+1).u.REAL FOR i=-2 TO 2
+     				w1zero=SUM d140(i)*V(0, 0, i+1).w.REAL FOR i=-2 TO 2
+
+				END IF
+			REPEAT LOOP
 		END IF
   	REPEAT LOOP
 
+  
 
-!(
-  STRUCTURE(REAL u,w,uc,wc) fr   
-  WITH V(0, 0, *) 
-  DO v(iy)=0 FOR ALL iy
-  IF NOT first THEN READ BINARY FROM prev fr ELSE fr=0
-  yintegr(fr.u, u.REAL)
-  yintegr(fr.w, w.REAL)
-  yintegr(fr.uc, ucorr)      
-  IF NOT last THEN WRITE BINARY TO next fr; FLUSH next; READ BINARY FROM next fr
-  IF NOT first THEN WRITE BINARY TO prev fr; FLUSH prev
-  px = (1-gamma)*6*ni/fr.u   !Constant Power Input
-!  pz = (1-gamma)*6*ni/fr.w   !Constant Power Input
-  IF meanflowx # -99 THEN 
-    px=0; corrpx=(meanflowx+u_conv*(ymax-ymin)-fr.u)/fr.uc ! Constant Q
-    u.REAL=~+corrpx*ucorr
-  END IF
-  IF meanflowz # -99 THEN 
-    pz=0; corrpz=(meanflowz+w_conv*(ymax-ymin)-fr.w)/fr.uc  ! Constant Q
-    w.REAL=~+corrpz*ucorr
-  END IF
-  IF meanpx # -99 THEN px = meanpx ! Constant Px
-  IF meanpz # -99 THEN pz = meanpz ! Constant Pz
-  IF NOT first THEN READ BINARY FROM prev fr ELSE fr=0
-  yintegr(fr.u, u.REAL)
-  yintegr(fr.w, w.REAL)
-  yintegr(fr.uc, ucorr)      
-  IF NOT last THEN WRITE BINARY TO next fr; FLUSH next; READ BINARY FROM next fr
-  IF NOT first THEN WRITE BINARY TO prev fr; FLUSH prev
-  flowx=fr.u-u_conv*(ymax-ymin); flowz=fr.w-w_conv*(ymax-ymin)
-  IF first THEN 
-     u1zero=SUM d140(i)*V(0, 0, i+1).u.REAL FOR i=-2 TO 2
-     w1zero=SUM d140(i)*V(0, 0, i+1).w.REAL FOR i=-2 TO 2
-  END IF
-  IF NOT first THEN READ BINARY FROM prev u1zero, w1zero; FLUSH prev
-  IF NOT last  THEN WRITE BINARY TO next u1zero, w1zero; FLUSH next !)
 END computeflowrate
 
 END dnsdirect
