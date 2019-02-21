@@ -35,10 +35,9 @@ INLINE FUNCTION imod(INTEGER iy)=(iy+1000)MOD(5)
 REAL u1zero=0, w1zero=0
 
 !// Function to copy data from C to structure MOMFLUX----------------------------------------------------
-REAL FUNCTION move_data( POINTER TO REAL work; INTEGER index  )
+SUBROUTINE move_data( POINTER TO REAL work; REAL U_t  )
 <*		
-	double value = work_[index_];
-	return value;
+	U_t_ = *work_;
 *>
 END move_data
 
@@ -223,11 +222,6 @@ D0mat(1..ny-1)=derivatives.d0; LUdecomp D0mat
 D0mat(1,-2..-1) = 0; 	D0mat(2,-2) = 0
 D0mat(ny-1,1..2) = 0; 	D0mat(ny-2,2) = 0
 ARRAY(-2..2) OF REAL v0bc(-1..0)=0,vnbc(0..1)=0,eta0bc(-1..0)=0,etanbc(0..1)=0
-
-!(LOOP FOR ALL i
-WRITE "("i")   "D0mat(i)
-REPEAT LOOP !)
-
 
 v0bc(0)=d040; v0bc(-1)=d140; eta0bc(0)=d040
 eta0bc(-1)=derivatives(1).d4

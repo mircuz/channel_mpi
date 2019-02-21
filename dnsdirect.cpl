@@ -227,3 +227,27 @@ SUBROUTINE computeflowrate(REAL lambda)
 END computeflowrate
 
 END dnsdirect
+
+SUBROUTINE ytoz_pencil
+INTEGER counter=0
+LOOP FOR i=ilo TO ihi
+	LOOP FOR k=klo TO khi
+		LOOP FOR j=-1 TO 9
+			U_t[counter]= V(i,k,j).u.REAL
+			INC counter
+			!move_data( V(i,k,j).u.REAL, U_t, counter  ) ;		INC counter
+			!move_data( V(i,k,j).u.IMAG, U_t, counter  ) ;		INC counter
+		REPEAT
+	REPEAT
+REPEAT 
+<*
+	/*MPI_Barrier(remap_comm);
+    remap3d_remap(remap_ytoz_pencil,u_convol_,u_convol_,sendbuf,recvbuf);
+    remap3d_remap(remap_ytoz_pencil,v_convol_,v_convol_,sendbuf,recvbuf);
+    remap3d_remap(remap_ytoz_pencil,w_convol_,w_convol_,sendbuf,recvbuf);
+  MPI_Barrier(remap_comm); */
+for (int i = 0; i < 100; i++) {
+	//printf("[%d]	u[%d]= %f\n", rank_, U_t_[i]);
+}
+*>
+END ytoz_pencil

@@ -16,14 +16,30 @@ USE dnsdirect
 USE convol_trasp
 
 time=~+2/RK1_rai_coeff*deltat
-buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat); 	
+buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
 vetaTOuvw; computeflowrate(RK1_rai_coeff/deltat)
+ytoz_pencil
 
-
+counter = 0
+REAL u_transfer
+IF rank = 0 THEN
+LOOP FOR i=ilo TO ihi
+	LOOP FOR k=klo TO khi
+		LOOP FOR j=-1 TO 9
+			!WRITE "("i","k","j")   " V(i,k,j)
+			 u_transfer= V(i,k,j).u.REAL
+			!move_data( V(i,k,j).u.IMAG, U_t[counter]  ) ;		INC counter
+			WRITE u_transfer	
+			<*printf("U_t= %g \n", u_transfer_);*>
+		REPEAT
+	REPEAT
+REPEAT 
+END IF
 
 !// Loop end
 
-<* 	free(u_convol_);	free(v_convol_);	free(w_convol_);										//Worked uvw
+<* 	MPI_Barrier(MPI_COMM_WORLD);
+	free(u_convol_);	free(v_convol_);	free(w_convol_);				//Worked uvw
 	free(U_t_);		free(V_t_);		free(W_t_);								//Local UVW copied into structure
   	free(uu_);	free(uv_);	free(vv_);	free(vw_);	free(ww_);	free(uw_); 	//Local convols copied into structure
 	free(recvbuf);	 free(sendbuf);  										//Remap local arrays

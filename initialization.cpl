@@ -121,7 +121,7 @@ WRITE
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, y_ilo, y_jlo, y_klo, y_ihi, y_jhi, y_khi );
 
 
-  void *remap_to_zpencil, *remap_to_xpencil, *remap_to_ypencil;
+  void *remap_to_zpencil, *remap_to_xpencil, *remap_to_ypencil, *remap_ytoz_pencil;
   int nqty, permute, memoryflag, sendsize, recvsize;
   nqty = 2;			// Use couples of real numbers per grid point
   memoryflag = 1;		// Self-allocate the buffers

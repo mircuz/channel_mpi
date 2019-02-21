@@ -1,6 +1,6 @@
 	/******************************************************************************************************
 	 * 																									  *
-	 * 						Functions developed in order to perform 2D FFT in MPI						  *
+	 * 						Functions developed to perform 2D FFT in MPI Space							  *
 	 * 																									  *
 	 ******************************************************************************************************
 																				 Author: Dr. Mirco Meazzo */
@@ -285,7 +285,7 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	for (int i = 0; i < size; i++){
 		sendcounts[i] = 0;	recvdispls[i] = 0;		recvcounts[i] = 0;		recvtype[i] = MPI_DOUBLE;
 	}
-	// Broadcaster is the only one who send something
+	// Broadcaster is the only one that send something
 	if (rank == 0) {
 		for (int i  = 0; i < size; i++){
 			sendcounts[i] = 1;
