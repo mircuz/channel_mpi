@@ -197,7 +197,7 @@ SUBROUTINE computeflowrate(REAL lambda)
 
 			LOOP FOR ix=ilo TO ihi
 				IF ix=0 THEN
-					STRUCTURE(REAL u,w,uc,wc) fr   
+					STRUCTURE(REAL u,w,uc,wc) fr=0   
   					WITH V(0, 0, *) 
   					DO v(iy)=0 FOR ALL iy
   					yintegr(fr.u, u.REAL)
@@ -208,30 +208,22 @@ SUBROUTINE computeflowrate(REAL lambda)
 					IF meanflowx # -99 THEN 
     					px=0; corrpx=(meanflowx+u_conv*(ymax-ymin)-fr.u)/fr.uc ! Constant Q
     					u.REAL=~+corrpx*ucorr
+						fr.u = meanflowx
   					END IF
   					IF meanflowz # -99 THEN 
     					pz=0; corrpz=(meanflowz+w_conv*(ymax-ymin)-fr.w)/fr.uc  ! Constant Q
     					w.REAL=~+corrpz*ucorr
+						fr.w = meanflowz
   					END IF
-
-
-
   					IF meanpx # -99 THEN px = meanpx ! Constant Px
   					IF meanpz # -99 THEN pz = meanpz ! Constant Pz
-  					yintegr(fr.u, u.REAL)
-  					yintegr(fr.w, w.REAL)
-  					yintegr(fr.uc, ucorr)      
   					flowx=fr.u-u_conv*(ymax-ymin); flowz=fr.w-w_conv*(ymax-ymin)
      				u1zero=SUM d140(i)*V(0, 0, i+1).u.REAL FOR i=-2 TO 2
      				w1zero=SUM d140(i)*V(0, 0, i+1).w.REAL FOR i=-2 TO 2
-
 				END IF
 			REPEAT LOOP
 		END IF
-  	REPEAT LOOP
-
-  
-
+  	REPEAT LOOP  
 END computeflowrate
 
 END dnsdirect
