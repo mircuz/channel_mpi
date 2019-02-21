@@ -215,17 +215,19 @@ d14np1(-2+(*))=M\t
 t=0; t(2)=2
 d24np1(-2+(*))=M\t
 
-!(WITH derivatives(1):	d0(-2) = 0	 d0(-1) = 0 
-WITH derivatives(ny-1): d0(2)  = 0	 d0(1)  = 0
-derivatives(2).d0(-2) = 0
-derivatives(ny-2).d0(2) = 0 !)
-
 END setup_derivatives
 
 !// Setup Boundary conditions variables---------------------------------------------------------------------		
 ARRAY(1..ny-1,-2..2) OF REAL D0mat=0
 D0mat(1..ny-1)=derivatives.d0; LUdecomp D0mat
+D0mat(1,-2..-1) = 0; 	D0mat(2,-2) = 0
+D0mat(ny-1,1..2) = 0; 	D0mat(ny-2,2) = 0
 ARRAY(-2..2) OF REAL v0bc(-1..0)=0,vnbc(0..1)=0,eta0bc(-1..0)=0,etanbc(0..1)=0
+
+!(LOOP FOR ALL i
+WRITE "("i")   "D0mat(i)
+REPEAT LOOP !)
+
 
 v0bc(0)=d040; v0bc(-1)=d140; eta0bc(0)=d040
 eta0bc(-1)=derivatives(1).d4
