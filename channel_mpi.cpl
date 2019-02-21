@@ -16,7 +16,7 @@ USE convol_trasp
 
 time=~+2/RK1_rai_coeff*deltat
 buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat); 	
-vetaTOuvw
+vetaTOuvw; computeflowrate(RK1_rai_coeff/deltat)
 
 
 
