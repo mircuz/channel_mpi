@@ -23,7 +23,7 @@ WRITE
  
   // Backward FFT
   if (rank == 0) printf("\tAA applied\n\nStarting Backward transformations...\n");
-  //print_z_pencil( nzd, z_ilo, z_ihi, z_jlo, u_, rank, localdim_z_, 0);
+  //print_z_pencil( nz, z_ilo, z_ihi, z_jlo, U_t_, rank, localdim_z_, 0); 
   double timer_b1 = 0.0;
   timer_b1 -= MPI_Wtime();	*>
 	FFT_z( u_convol, localdim_z, 1)

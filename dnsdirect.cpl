@@ -5,7 +5,7 @@ SUBROUTINE linsolve(REAL lambda) FOLLOWS
 SUBROUTINE deriv(ARRAY(*) OF REAL f0,f1^) FOLLOWS
 SUBROUTINE vetaTOuvw FOLLOWS
 SUBROUTINE computeflowrate(REAL lambda) FOLLOWS
-
+#include <string.h>
 MODULE dnsdirect
 
 INLINE REAL FUNCTION D0(REAL f(*)) = d0(-2)*f(-2)+d0(-1)*f(-1)+d0(0)*f(0)+d0(1)*f(1)+d0(2)*f(2)
@@ -145,16 +145,16 @@ END linsolve
 
 !//--------------------------------------------------------------------------------------------------------------------------
 SUBROUTINE deriv(ARRAY(*) OF REAL f0,f1^)
-f1(0)=SUM d140(i)*f0(1+i) FOR i=-2 TO 2
-f1(-1)=SUM d14m1(i)*f0(1+i) FOR i=-2 TO 2
-f1(ny)=SUM d14n(i)*f0(ny-1+i) FOR i=-2 TO 2
-f1(ny+1)=SUM d14np1(i)*f0(ny-1+i) FOR i=-2 TO 2
-DO WITH derivatives(i) f1(i)=D1(f0(i+(*))) FOR i=1 TO ny-1
-WITH derivatives(1): f1(1)=~-(d0(-1)*f1(0)+d0(-2)*f1(-1))
-WITH derivatives(2): f1(2)=~-d0(-2)*f1(0)
-WITH derivatives(ny-1): f1(ny-1)=~-(d0(1)*f1(ny)+d0(2)*f1(ny+1))
-WITH derivatives(ny-2): f1(ny-2)=~-d0(2)*f1(ny)	
-LeftLUDiv(f1,D0mat,f1)
+	f1(0)=SUM d140(i)*f0(1+i) FOR i=-2 TO 2
+	f1(-1)=SUM d14m1(i)*f0(1+i) FOR i=-2 TO 2
+	f1(ny)=SUM d14n(i)*f0(ny-1+i) FOR i=-2 TO 2
+	f1(ny+1)=SUM d14np1(i)*f0(ny-1+i) FOR i=-2 TO 2
+	DO WITH derivatives(i) f1(i)=D1(f0(i+(*))) FOR i=1 TO ny-1
+	WITH derivatives(1): f1(1)=~-(d0(-1)*f1(0)+d0(-2)*f1(-1))
+	WITH derivatives(2): f1(2)=~-d0(-2)*f1(0)
+	WITH derivatives(ny-1): f1(ny-1)=~-(d0(1)*f1(ny)+d0(2)*f1(ny+1))
+	WITH derivatives(ny-2): f1(ny-2)=~-d0(2)*f1(ny)	
+	LeftLUDiv(f1,D0mat,f1)
 END deriv
 
 !//Remember: eta=+I*beta*u-I*alfa*w----------------------------------------------------------------------------------------- 
@@ -228,59 +228,16 @@ END computeflowrate
 
 END dnsdirect
 
-
-
-
-
 !// Function to copy data from the structure to C--------------------------------------------------------
 SUBROUTINE move_data
-<* U_t_ = (double *) malloc(2*localdim_x_*sizeof(double));
-double u_transf2, v_transf2, w_transf2; *>
-INTEGER counter = 0
-POINTER TO REAL u_transfer, v_transfer, w_transfer
-IF rank = 0 THEN
-
-LOOP FOR i=ilo TO ihi
-	LOOP FOR k=klo TO khi
-		LOOP FOR j=-1 TO ny+1
-			!WRITE "("i","k","j")   " V(i,k,j)
-			u_transfer= V(i,k,j).u.REAL;		v_transfer= V(i,k,j).v.REAL;		w_transfer= V(i,k,j).w.REAL
-		<*  memmove(&u_transf2, u_transfer_, sizeof(double));
-			memmove(&v_transf2, u_transfer_, sizeof(double));
-			memmove(&w_transf2, u_transfer_, sizeof(double));
-		*>;		
-		!<* 	printf("u_transfer = %f\n", u_transfer_); *>
-		<*	printf("U_t1= %f \n", u_transf2);*>
-			INC counter
-	INC counter
+	INTEGER counter = 0
+	LOOP FOR i=ilo TO ihi
+		LOOP FOR k=klo TO khi
+			LOOP FOR j=-1 TO ny+1
+				!WRITE "("i","k","j")   " V(i,k,j)
+				U_t[counter]= V(i,k,j).u.REAL;		V_t[counter]= V(i,k,j).v.REAL;		W_t[counter]= V(i,k,j).w.REAL;		INC counter;
+				U_t[counter]= V(i,k,j).u.IMAG;		V_t[counter]= V(i,k,j).v.IMAG;		W_t[counter]= V(i,k,j).w.IMAG;		INC counter;
+			REPEAT
 		REPEAT
-	REPEAT
-REPEAT 
-
-END IF
-	
+	REPEAT 	
 END move_data
-
-SUBROUTINE ytoz_pencil
-INTEGER counter=0
-LOOP FOR i=ilo TO ihi
-	LOOP FOR k=klo TO khi
-		LOOP FOR j=-1 TO ny+1
-			U_t[counter]= V(i,k,j).u.REAL
-			INC counter
-			!move_data( V(i,k,j).u.REAL, U_t, counter  ) ;		INC counter
-			!move_data( V(i,k,j).u.IMAG, U_t, counter  ) ;		INC counter
-		REPEAT
-	REPEAT
-REPEAT 
-<*
-	/*MPI_Barrier(remap_comm);
-    remap3d_remap(remap_ytoz_pencil,u_convol_,u_convol_,sendbuf,recvbuf);
-    remap3d_remap(remap_ytoz_pencil,v_convol_,v_convol_,sendbuf,recvbuf);
-    remap3d_remap(remap_ytoz_pencil,w_convol_,w_convol_,sendbuf,recvbuf);
-  MPI_Barrier(remap_comm); */
-for (int i = 0; i < 100; i++) {
-	//printf("[%d]	u[%d]= %f\n", rank_, U_t_[i]);
-}
-*>
-END ytoz_pencil

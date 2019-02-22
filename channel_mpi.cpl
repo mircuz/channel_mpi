@@ -18,32 +18,13 @@ USE convol_trasp
 time=~+2/RK1_rai_coeff*deltat
 buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
 vetaTOuvw; computeflowrate(RK1_rai_coeff/deltat)
-ytoz_pencil
-
-!(counter = 0
-REAL u_transfer, v_transfer, w_transfer
-IF rank = 0 THEN
-LOOP FOR i=ilo TO ihi
-	LOOP FOR k=klo TO khi
-		LOOP FOR j=-1 TO ny+1
-			u_transfer= V(i,k,j).u.REAL;	v_transfer= V(i,k,j).v.REAL;	w_transfer= V(i,k,j).w.REAL
-			WRITE "("i","k","j")   " V(i,k,j).u
-			WRITE u_transfer
-		<*  //printf("U_t= %g \n", w_transfer_);
-			U_t_[counter_]= u_transfer_;	V_t_[counter_]= v_transfer_;	W_t_[counter_]= w_transfer_;	*>
-			printf("U_t[%d]= %f \\n", counter_, U_t_[counter_]);
-			INC counter
-		REPEAT
-	REPEAT
-REPEAT !)
+!IF rank = 0 THEN WRITE U_t
+USE ytoz
+!USE convol_trasp
 
 
-!(<* for (int counter_ = 0; counter_ < localdim_x_; counter_++) {
-	printf("U[%d]= %f\n", counter_, (*(double *)(counter_*(ssize_t)sizeof(double)+U_t_)));		
-} *> 
 
-END IF !)
-move_data
+IF rank = 0 THEN WRITE U_t
 
 !// Loop end
 
