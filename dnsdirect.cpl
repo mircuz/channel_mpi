@@ -228,11 +228,44 @@ END computeflowrate
 
 END dnsdirect
 
+
+
+
+
+!// Function to copy data from the structure to C--------------------------------------------------------
+SUBROUTINE move_data
+<* U_t_ = (double *) malloc(2*localdim_x_*sizeof(double));
+double u_transf2, v_transf2, w_transf2; *>
+INTEGER counter = 0
+POINTER TO REAL u_transfer, v_transfer, w_transfer
+IF rank = 0 THEN
+
+LOOP FOR i=ilo TO ihi
+	LOOP FOR k=klo TO khi
+		LOOP FOR j=-1 TO ny+1
+			!WRITE "("i","k","j")   " V(i,k,j)
+			u_transfer= V(i,k,j).u.REAL;		v_transfer= V(i,k,j).v.REAL;		w_transfer= V(i,k,j).w.REAL
+		<*  memmove(&u_transf2, u_transfer_, sizeof(double));
+			memmove(&v_transf2, u_transfer_, sizeof(double));
+			memmove(&w_transf2, u_transfer_, sizeof(double));
+		*>;		
+		!<* 	printf("u_transfer = %f\n", u_transfer_); *>
+		<*	printf("U_t1= %f \n", u_transf2);*>
+			INC counter
+	INC counter
+		REPEAT
+	REPEAT
+REPEAT 
+
+END IF
+	
+END move_data
+
 SUBROUTINE ytoz_pencil
 INTEGER counter=0
 LOOP FOR i=ilo TO ihi
 	LOOP FOR k=klo TO khi
-		LOOP FOR j=-1 TO 9
+		LOOP FOR j=-1 TO ny+1
 			U_t[counter]= V(i,k,j).u.REAL
 			INC counter
 			!move_data( V(i,k,j).u.REAL, U_t, counter  ) ;		INC counter

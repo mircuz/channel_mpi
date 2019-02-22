@@ -34,13 +34,6 @@ VETA=STRUCTURE(COMPLEX v,eta)
 INLINE FUNCTION imod(INTEGER iy)=(iy+1000)MOD(5)
 REAL u1zero=0, w1zero=0
 
-!// Function to copy data from C to structure MOMFLUX----------------------------------------------------
-SUBROUTINE move_data( POINTER TO REAL work; REAL U_t  )
-<*		
-	U_t_ = *work_;
-*>
-END move_data
-
 !// Routine to read data from the structure MOMFLUX------------------------------------------------------	
 SUBROUTINE y_pencil_parser_mom( POINTER TO ARRAY(*,*,*) OF MOMFLUX VV; INTEGER start_mode_x; INTEGER end_mode_x;
 				  INTEGER start_mode_z; INTEGER end_mode_z; INTEGER desidered_rank)
