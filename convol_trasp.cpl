@@ -234,22 +234,24 @@ REPEAT LOOP
 END convol_trasp
 
 SUBROUTINE ytoz
-!(move_data
-IF rank = 0 THEN WRITE U_t
-<*
-	MPI_Barrier(MPI_COMM_WORLD);
+	move_data
+<*	MPI_Barrier(MPI_COMM_WORLD);
+	int nqty, permute, memoryflag, sendsize, recvsize;
+	void *remap_ytoz_pencil;
+	nqty=2, memoryflag=1;
 	// ------------------------------------------- Setup YZ-Transpose --------------------------------------------
-  	remap3d_create( remap_comm , &remap_ytoz_pencil);
+  	remap3d_create( MPI_COMM_WORLD , &remap_ytoz_pencil);
   	permute = 1;  		// From y-contiguous to z-contiguous arrays
   	remap3d_setup( remap_ytoz_pencil,
-	  		  	  y_jlo, y_jhi, y_klo, y_khi, y_ilo, y_ihi,
-				  fz_jlo, fz_jhi, fz_klo, fz_khi, fz_ilo, fz_ihi,
+	  		  	  y_jlo_, y_jhi_, y_klo_, y_khi_, y_ilo_, y_ihi_,
+				  fz_jlo_, fz_jhi_, fz_klo_, fz_khi_, fz_ilo_, fz_ihi_,
 	  			  nqty, permute, memoryflag, &sendsize, &recvsize);
   // -----------------------------------------------------------------------------------------------------------
-	MPI_Barrier(remap_comm);
-	remap3d_remap(remap_ytoz_pencil,U_t_,U_t_,sendbuf,recvbuf);
-	remap3d_remap(remap_ytoz_pencil,V_t_,V_t_,sendbuf,recvbuf);
-	remap3d_remap(remap_ytoz_pencil,W_t_,W_t_,sendbuf,recvbuf);
-  	MPI_Barrier(remap_comm);
-*>!)
+	MPI_Barrier(MPI_COMM_WORLD);
+	remap3d_remap(remap_ytoz_pencil,U_t_,U_t_,sendbuf_,recvbuf_);
+	remap3d_remap(remap_ytoz_pencil,V_t_,V_t_,sendbuf_,recvbuf_);
+	remap3d_remap(remap_ytoz_pencil,W_t_,W_t_,sendbuf_,recvbuf_);
+  	MPI_Barrier(MPI_COMM_WORLD);  
+	remap3d_destroy(remap_ytoz_pencil);	*>
+!IF rank= 2 THEN WRITE U_t
 END ytoz

@@ -231,7 +231,7 @@ END computeflowrate
 END dnsdirect
 
 !// Function to copy data from the structure to C--------------------------------------------------------
-!(SUBROUTINE move_data
+SUBROUTINE move_data
 	INTEGER counter = 0
 	LOOP FOR i=ilo TO ihi
 		LOOP FOR k=klo TO khi
@@ -242,4 +242,4 @@ END dnsdirect
 			REPEAT
 		REPEAT
 	REPEAT 	
-END move_data !)
+END move_data 
