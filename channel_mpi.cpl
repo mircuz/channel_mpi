@@ -17,9 +17,7 @@ USE convol_trasp
 time=~+2/RK1_rai_coeff*deltat
 convol_trasp(VV,V);		buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
 vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);
-
-!IF rank = 0 THEN WRITE U_t
-!    USE ytoz
+IF rank =7 THEN WRITE V(4,4,*)
 
 
 
@@ -31,6 +29,6 @@ vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);
 	free(u_convol_);	free(v_convol_);	free(w_convol_);				//Worked uvw
 	free(U_t_);		free(V_t_);		free(W_t_);								//Local UVW copied into structure
   	free(uu_);	free(uv_);	free(vv_);	free(vw_);	free(ww_);	free(uw_); 	//Local convols copied into structure
-	free(recvbuf);	 free(sendbuf);  										//Remap local arrays
+	free(recvbuf_);	 free(sendbuf_);  										//Remap local arrays
 	MPI_Finalize();	*>
 

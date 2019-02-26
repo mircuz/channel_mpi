@@ -159,20 +159,22 @@ END deriv
 
 !//Remember: eta=+I*beta*u-I*alfa*w----------------------------------------------------------------------------------------- 
 SUBROUTINE vetaTOuvw
-WITH V(0,0,*): w.REAL=u.IMAG; u.IMAG=0; w.IMAG=0
-LOOP FOR ix=ilo TO ihi 
-	alfa=alfa0*ix
-	LOOP FOR iz=klo TO khi EXCEPT ix=0 AND iz=0
-  		WITH V(ix,iz,*):
-  		deriv(v.REAL,w.REAL)
-  		deriv(v.IMAG,w.IMAG)
-		beta=beta0*iz; k2=alfa^2+beta^2
-    	DO temp=I*(alfa*w(iy)-beta*u(iy))/k2
-     		w(iy)=I*(beta*w(iy)+alfa*u(iy))/k2 
-      		u(iy)=temp
-    	FOR ALL iy
-	REPEAT
-REPEAT 
+	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
+		IF ix=0 AND iz=0 THEN WITH V(0,0,*): w.REAL=u.IMAG; u.IMAG=0; w.IMAG=0
+	REPEAT LOOP
+	LOOP FOR ix=ilo TO ihi 
+		alfa=alfa0*ix
+		LOOP FOR iz=klo TO khi EXCEPT ix=0 AND iz=0
+  			WITH V(ix,iz,*):
+  			deriv(v.REAL,w.REAL)
+  			deriv(v.IMAG,w.IMAG)
+			beta=beta0*iz; k2=alfa^2+beta^2
+    		DO temp=I*(alfa*w(iy)-beta*u(iy))/k2
+     			w(iy)=I*(beta*w(iy)+alfa*u(iy))/k2 
+      			u(iy)=temp
+    		FOR ALL iy
+		REPEAT
+	REPEAT 
 END vetaTOuvw
 
 !//--------------------------------------------------------------------------------------------------------------------------
@@ -229,7 +231,7 @@ END computeflowrate
 END dnsdirect
 
 !// Function to copy data from the structure to C--------------------------------------------------------
-SUBROUTINE move_data
+!(SUBROUTINE move_data
 	INTEGER counter = 0
 	LOOP FOR i=ilo TO ihi
 		LOOP FOR k=klo TO khi
@@ -240,4 +242,4 @@ SUBROUTINE move_data
 			REPEAT
 		REPEAT
 	REPEAT 	
-END move_data
+END move_data !)

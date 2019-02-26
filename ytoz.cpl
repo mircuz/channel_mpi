@@ -1,6 +1,6 @@
 WRITE
 move_data
-!IF rank = 0 THEN WRITE U_t
+!(IF rank = 0 THEN WRITE U_t
 <*
 	MPI_Barrier(MPI_COMM_WORLD);
 	// ------------------------------------------- Setup YZ-Transpose --------------------------------------------
@@ -16,5 +16,5 @@ move_data
 	remap3d_remap(remap_ytoz_pencil,V_t_,V_t_,sendbuf,recvbuf);
 	remap3d_remap(remap_ytoz_pencil,W_t_,W_t_,sendbuf,recvbuf);
   	MPI_Barrier(remap_comm);
-*>
+*>!)
 
