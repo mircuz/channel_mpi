@@ -29,6 +29,7 @@ SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explic
 			WITH derivatives(iy)
       		POINTER TO MOMFLUX VVm2,VVm1,VV0,VV1,VV2              
         	VVm2=VVd(ix,iz,(iy-2));VVm1=VVd(ix,iz,(iy-1));VV0=VVd(ix,iz,(iy));VV1=VVd(ix,iz,(iy+1));VV2=VVd(ix,iz,(iy+2))
+		!	IF rank=0 THEN WRITE "("ix","iz","iy"): " VVm2.uu, VVm1.uu, VV0.uu, VV1.uu, VV2.uu
 			#define D(d,f) d(-2)*VVm2.f+d(-1)*VVm1.f+d(0)*VV0.f+d(1)*VV1.f+d(2)*VV2.f
 			WITH Vd(ix,iz,iy+(-2..2)):	
       		D0_uw_=D(d0,uw)
@@ -81,7 +82,6 @@ LOOP FOR ix=ilo TO ihi
     		D2vmat(iz,iy,i)=lambda*[d2(i)-k2*d0(i)]-OS(iy,i)
       		etamat(iz,iy,i)=lambda*d0(i)-SQ(iy,i)
     	REPEAT 
-
  		!// Lower BCs
 		WITH bc0(ix,iz)
     	IF ix=0 AND iz=0 THEN
@@ -95,6 +95,8 @@ LOOP FOR ix=ilo TO ihi
       	v=~-v0bc(0,-2)*vy/v0bc(-1,-2) 
       	applybc_0(D2vmat(iz),v0bc)
       	applybc_0(etamat(iz),eta0bc)
+
+!// CODICE CORRETTO FIN QUI!
       	V(ix,iz,1).v=~-D2vmat(iz,1,-2)*vy/v0bc(-1,-2)-D2vmat(iz,1,-1)*v/v0bc(0,-1)
       	V(ix,iz,2).v=~-D2vmat(iz,2,-2)*v/v0bc(0,-1)
       	V(ix,iz,1).u=~-etamat(iz,1,-1)*eta/eta0bc(0,-1)          
