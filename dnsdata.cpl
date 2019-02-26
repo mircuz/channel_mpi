@@ -20,8 +20,10 @@ REAL u_conv, u0, un, w_conv, w0, wn, t0, tn
 REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0 
 BOOLEAN time_from_restart
 STRING restart_file
-INTEGER localdim_x, localdim_z, dim_z, dim_y, ilo,ihi,jlo,jhi,klo,khi
-
+INTEGER localdim_x, localdim_z, dim_z, dim_y, ilo,ihi,jlo,jhi,klo,khi,  x_ilo,x_ihi,x_jlo,x_jhi,x_klo,x_khi,
+																		y_ilo,y_ihi,y_jlo,y_jhi,y_klo,y_khi,
+																		z_ilo,z_ihi,z_jlo,z_jhi,z_klo,z_khi,
+																		fz_ilo,fz_ihi,fz_jlo,fz_jhi,fz_klo,fz_khi
 !// Structures initialization----------------------------------------------------------------------------
 VELOCITY=STRUCTURE(COMPLEX u,v,w)
 MOMFLUX=STRUCTURE(COMPLEX uu,uv,vv,vw,ww,uw)

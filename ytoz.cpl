@@ -1,6 +1,6 @@
 WRITE
 move_data
-IF rank = 0 THEN WRITE U_t
+!IF rank = 0 THEN WRITE U_t
 <*
 	MPI_Barrier(MPI_COMM_WORLD);
 	// ------------------------------------------- Setup YZ-Transpose --------------------------------------------

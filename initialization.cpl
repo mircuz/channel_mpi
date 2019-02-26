@@ -119,12 +119,6 @@ WRITE
   printf("[Y-PENCIL] (j,k,i order)\t"
 		  "On rank %d the coordinates are: "
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, y_ilo, y_jlo, y_klo, y_ihi, y_jhi, y_khi );
-
-
-  void *remap_to_zpencil, *remap_to_xpencil, *remap_to_ypencil, *remap_ytoz_pencil;
-  int nqty, permute, memoryflag, sendsize, recvsize;
-  nqty = 2;			// Use couples of real numbers per grid point
-  memoryflag = 1;		// Self-allocate the buffers
   MPI_Barrier(MPI_COMM_WORLD);
  
   /******************************************* Size Variables ******************************************/
@@ -134,6 +128,12 @@ WRITE
   dim_y_ = 2*(y_ihi-y_ilo+1)*(y_jhi-y_jlo+1)*(y_khi-y_klo+1);
   ilo_ = y_ilo; 	jlo_ = y_jlo;	klo_ = y_klo;
   ihi_ = y_ihi;		jhi_ = y_jhi;	khi_ = y_khi;
+
+  x_ilo_ = x_ilo, x_ihi_ = x_ihi, x_jlo_ = x_jlo, x_jhi_ = x_jhi, x_klo_ = x_klo, x_khi_ = x_khi;
+  y_ilo_ = y_ilo, y_ihi_ = y_ihi, y_jlo_ = y_jlo, y_jhi_ = y_jhi, y_klo_ = y_klo, y_khi_ = y_khi;
+  z_ilo_ = z_ilo, z_ihi_ = z_ihi, z_jlo_ = z_jlo, z_jhi_ = z_jhi, z_klo_ = z_klo, z_khi_ = z_khi;
+  fz_ilo_=fz_ilo, fz_ihi_=fz_ihi, fz_jlo_=fz_jlo, fz_jhi_=fz_jhi, fz_klo_=fz_klo, fz_khi_=fz_khi;
+  
 *>
 !// Take into account the negative modes
 klo = klo - nz;		khi = khi - nz;
@@ -160,3 +160,5 @@ POINTER TO ARRAY(0..localdim_x-1) OF REAL vv
 POINTER TO ARRAY(0..localdim_x-1) OF REAL vw
 POINTER TO ARRAY(0..localdim_x-1) OF REAL uw
 POINTER TO ARRAY(0..localdim_x-1) OF REAL ww
+POINTER TO ARRAY(0..localdim_x-1) OF REAL sendbuf
+POINTER TO ARRAY(0..localdim_x-1) OF REAL recvbuf

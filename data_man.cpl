@@ -5,7 +5,7 @@ WRITE
   u_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   v_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   w_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  U_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  U_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   V_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   W_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   FFT_SCALAR *u_read = (FFT_SCALAR *) malloc(2*nx*ny*nz*sizeof(FFT_SCALAR));
