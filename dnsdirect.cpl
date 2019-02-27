@@ -95,8 +95,6 @@ LOOP FOR ix=ilo TO ihi
       	v=~-v0bc(0,-2)*vy/v0bc(-1,-2) 
       	applybc_0(D2vmat(iz),v0bc)
       	applybc_0(etamat(iz),eta0bc)
-
-!// CODICE CORRETTO FIN QUI!
       	V(ix,iz,1).v=~-D2vmat(iz,1,-2)*vy/v0bc(-1,-2)-D2vmat(iz,1,-1)*v/v0bc(0,-1)
       	V(ix,iz,2).v=~-D2vmat(iz,2,-2)*v/v0bc(0,-1)
       	V(ix,iz,1).u=~-etamat(iz,1,-1)*eta/eta0bc(0,-1)          
@@ -121,16 +119,19 @@ LOOP FOR ix=ilo TO ihi
       	V(ix,iz,ny-2).u=~-etamat(iz,ny-2,2)*eta/etanbc(0,1)   
 
 		!// Solve
-    	LUdecomp D2vmat(iz); LUdecomp etamat(iz)  
+    	LUdecomp D2vmat(iz); LUdecomp etamat(iz) 
+		D2vmat(iz,1,-2..-1) = 0; 	etamat(iz,1,-2..-1) = 0
+		D2vmat(iz,2,-2) = 0;		etamat(iz,2,-2) = 0
+		D2vmat(iz,ny-1,1..2)= 0; 	etamat(iz,ny-1,1..2)= 0
+		D2vmat(iz,ny-2,2)=0;		etamat(iz,ny-2,2)=0	
     	WITH V(ix,iz,*)
-    	LeftLUDiv(v_temp(iz,*).REAL,D2vmat(iz),v.REAL)
-  		LeftLUDiv(v_temp(iz,*).IMAG,D2vmat(iz),v.IMAG)  
-   	 	LeftLUDiv(u_temp(iz,*).REAL,etamat(iz),u.REAL)       
-    	LeftLUDiv(u_temp(iz,*).IMAG,etamat(iz),u.IMAG)  
+		LeftLUDiv(v.REAL,D2vmat(iz),v.REAL)
+		LeftLUDiv(v.IMAG,D2vmat(iz),v.IMAG) 
+   	 	LeftLUDiv(u.REAL,etamat(iz),u.REAL)       
+    	LeftLUDiv(u.IMAG,etamat(iz),u.IMAG)  
 
   	REPEAT
-	WITH V(ix,*,1..ny-1):
-	v = v_temp(*,*);	u = u_temp(*,*)
+	!WITH V(ix,*,1..ny-1):
   	LOOP FOR ALL iz
     	WITH V(ix,iz,*):
     	v(ny)  =(bcn(ix,iz).v  -SUM v(ny-1+i)*vnbc(0,i) FOR i=-2 TO 0)/vnbc(0,1)
