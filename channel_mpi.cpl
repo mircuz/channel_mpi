@@ -17,26 +17,26 @@ USE convol_trasp
 time=~+2/RK1_rai_coeff*deltat
 convol_trasp(VV,V);		buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
 vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);	ytoz
-IF rank=1 THEN WRITE "(0,0)   " V(0,0,*).u
+!(IF rank=1 THEN WRITE "(0,0)   " V(0,0,*).u
 IF rank=0 THEN WRITE "(1,-2)" V(1,-2,*).u
-!IF rank=1 THEN WRITE "(1,1)" V(1,1,*).u
-IF rank=2 THEN WRITE "(3,-4)" V(3,-4,*).u
+IF rank=1 THEN WRITE "(1,1)" V(1,1,*).u
+IF rank=2 THEN WRITE "(3,-4)" V(3,-4,*).u !)
 
 time=~+2/RK2_rai_coeff*deltat
 convol_trasp(VV,V);		buildrhs(RK2_rai, VV, V);	linsolve(RK2_rai_coeff/deltat)
 vetaTOuvw; computeflowrate(RK2_rai_coeff/deltat); 	ytoz
-IF rank=1 THEN WRITE "(0,0)   " V(0,0,*).u
+!(IF rank=1 THEN WRITE "(0,0)   " V(0,0,*).u
 IF rank=0 THEN WRITE "(1,-2)" V(1,-2,*).u
-!IF rank=1 THEN WRITE "(1,1)" V(1,1,*).u
-IF rank=2 THEN WRITE "(3,-4)" V(3,-4,*).u
+IF rank=1 THEN WRITE "(1,1)" V(1,1,*).u
+IF rank=2 THEN WRITE "(3,-4)" V(3,-4,*).u !)
 
-time=~+2/RK3_rai_coeff*deltat
+!(time=~+2/RK3_rai_coeff*deltat
 convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
 vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	ytoz
 IF rank=1 THEN WRITE "(0,0)   " V(0,0,*).u
 IF rank=0 THEN WRITE "(1,-2)" V(1,-2,*).u
-!IF rank=1 THEN WRITE "(1,1)" V(1,1,*).u
-IF rank=2 THEN WRITE "(3,-4)" V(3,-4,*).u
+IF rank=1 THEN WRITE "(1,1)" V(1,1,*).u
+IF rank=2 THEN WRITE "(3,-4)" V(3,-4,*).u !)
 
 
 !// Loop end

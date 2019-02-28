@@ -131,7 +131,6 @@ LOOP FOR ix=ilo TO ihi
     	LeftLUDiv(u.IMAG,etamat(iz),u.IMAG)  
 
   	REPEAT
-	!WITH V(ix,*,1..ny-1):
   	LOOP FOR ALL iz
     	WITH V(ix,iz,*):
     	v(ny)  =(bcn(ix,iz).v  -SUM v(ny-1+i)*vnbc(0,i) FOR i=-2 TO 0)/vnbc(0,1)
@@ -188,10 +187,12 @@ SUBROUTINE computeflowrate(REAL lambda)
 		IF iz=0 THEN  
   			LOOP FOR iy=1 TO ny-1 WITH derivatives(iy)
      			etamat(0,iy)=lambda*d0-ni*d2
-  			REPEAT   
+  			REPEAT 
   			applybc_0(etamat(0),eta0bc)
   			applybc_n(etamat(0),etanbc)
   			LUdecomp etamat(0)
+			etamat(0,1,-2..-1) = 0;	etamat(0,2,-2) = 0
+			etamat(0,ny-1,1..2)= 0;	etamat(0,ny-2,2)=0
 			etamat(0,1,-2..-1) = 0;		etamat(0,2,-2) = 0
 			etamat(0,ny-1,1..2)= 0;		etamat(0,ny-2,2)=0
   			LeftLUDiv(ucorr,etamat(0),ucorr) 
@@ -199,7 +200,6 @@ SUBROUTINE computeflowrate(REAL lambda)
    			ucorr(ny+1)=(-SUM ucorr(ny-1+i)*etanbc(1)(i) FOR i=-2 TO 1)/etanbc(1)(2)
     		ucorr(0) =(-SUM ucorr(1+i)*eta0bc(0)(i) FOR i=0 TO 2)/eta0bc(0)(-1)
     		ucorr(-1)=(-SUM ucorr(1+i)*eta0bc(-1)(i) FOR i=-1 TO 2)/eta0bc(-1)(-2)
-
 			LOOP FOR ix=ilo TO ihi
 				IF ix=0 THEN
 					STRUCTURE(REAL u,w,uc,wc) fr=0   
