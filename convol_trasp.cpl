@@ -1,6 +1,5 @@
 WRITE
 SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRAY(*,*,*) OF VELOCITY Vd )
-u_convol_ = U_t_; v_convol_ = V_t_;	w_convol_ = W_t_
 <*
 	/****************************************************************************
 	 * 													      					*
@@ -31,7 +30,7 @@ u_convol_ = U_t_; v_convol_ = V_t_;	w_convol_ = W_t_
   z_aliasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, w_convol_, W_t_);
  
   // Backward FFT
-  //print_z_pencil( nzd, z_ilo_, z_ihi_, z_jlo_, v_convol_, rank, localdim_z_, 0); 
+  print_z_pencil( nzd, z_ilo_, z_ihi_, z_jlo_, w_convol_, rank, localdim_z_, 0); 
   if (rank == 0) printf("\tAA applied\n\nStarting Backward transformations...\n");
   double timer_b1 = 0.0;
   timer_b1 -= MPI_Wtime();	*>
@@ -39,6 +38,7 @@ u_convol_ = U_t_; v_convol_ = V_t_;	w_convol_ = W_t_
 	FFT_z( v_convol, localdim_z, 1)
 	FFT_z( w_convol, localdim_z, 1)
 <*timer_b1 += MPI_Wtime();
+//print_z_pencil( nzd, z_ilo_, z_ihi_, z_jlo_, u_convol_, rank, localdim_z_, 0); 
 
   // Transpose in x-pencil
   double timer_trasp_z = 0.0, TIMER_TRASP_z = 0.0;
@@ -228,6 +228,7 @@ LOOP FOR mode_x = ilo TO ihi
 			Vd(mode_x,mode_z,mode_y).u.IMAG = U_t[counter];	
 			Vd(mode_x,mode_z,mode_y).v.IMAG = V_t[counter];	
 			Vd(mode_x,mode_z,mode_y).w.IMAG = W_t[counter];	INC counter
+			!IF rank=0 THEN WRITE "("mode_x","mode_z","mode_y")  " Vd(mode_x,mode_z,mode_y).u
 		REPEAT LOOP
 	REPEAT LOOP
 REPEAT LOOP
@@ -235,8 +236,7 @@ END convol_trasp
 
 SUBROUTINE ytoz
 	move_data
-<*	MPI_Barrier(MPI_COMM_WORLD);
-	int nqty, permute, memoryflag, sendsize, recvsize;
+<*	int nqty, permute, memoryflag, sendsize, recvsize;
 	void *remap_ytoz_pencil;
 	nqty=2, memoryflag=1;
 	// ------------------------------------------- Setup YZ-Transpose --------------------------------------------
@@ -253,5 +253,4 @@ SUBROUTINE ytoz
 	remap3d_remap(remap_ytoz_pencil,W_t_,W_t_,sendbuf_,recvbuf_);
   	MPI_Barrier(MPI_COMM_WORLD);  
 	remap3d_destroy(remap_ytoz_pencil);	*>
-!IF rank= 2 THEN WRITE U_t
 END ytoz
