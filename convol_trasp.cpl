@@ -30,10 +30,16 @@ SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRA
   z_aliasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, w_convol_, W_t_);
  
   // Backward FFT
-  print_z_pencil( nzd, z_ilo_, z_ihi_, z_jlo_, w_convol_, rank, localdim_z_, 0); 
+  print_z_pencil( nzd, z_ilo_, z_ihi_, z_jlo_, u_convol_, rank, localdim_z_, 0); 
   if (rank == 0) printf("\tAA applied\n\nStarting Backward transformations...\n");
   double timer_b1 = 0.0;
   timer_b1 -= MPI_Wtime();	*>
+	
+
+	FILE u_out;		u_out = OPEN("u_out.dat")
+	WRITE TO u_out u_convol
+
+
 	FFT_z( u_convol, localdim_z, 1)
 	FFT_z( v_convol, localdim_z, 1)
 	FFT_z( w_convol, localdim_z, 1)
