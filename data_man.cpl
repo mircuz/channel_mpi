@@ -2,6 +2,7 @@
 WRITE
 <*
   /******************************************** Memory Alloc *******************************************/
+  MPI_Barrier(MPI_COMM_WORLD);
   u_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   v_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   w_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
@@ -19,6 +20,7 @@ WRITE
   uw_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   FFT_SCALAR *sendbuf = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  MPI_Barrier(MPI_COMM_WORLD);
 
   if ((u_convol_||u_read||v_convol_||v_read||w_convol_||w_read||uu_||uv_||vv_||vw_||ww_||uw_||sendbuf||recvbuf) == NULL) {
 	  perror(".:Error while allocating memory for remapping variables:.\n");
@@ -35,6 +37,7 @@ WRITE
 	  perror(".:Error while allocating broadcaster memory U:.\n");
 	  abort();
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
 	  read_data(nx, ny, nz, U_read, "u.dat");
   }
@@ -49,6 +52,7 @@ WRITE
 	  perror(".:Error while allocating broadcaster memory V:.\n");
 	  abort();
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
 	  read_data(nx, ny, nz, V_read, "v.dat");
   }
@@ -63,6 +67,7 @@ WRITE
 	  perror(".:Error while allocating broadcaster memory W:.\n");
 	  abort();
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
 	  read_data(nx, ny, nz, W_read, "w.dat");
   }

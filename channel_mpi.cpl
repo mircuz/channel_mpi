@@ -13,24 +13,22 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
-!// Timeloop
-time=~+2/RK1_rai_coeff*deltat
-convol_trasp(VV,V);		buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
-vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);	ytoz
+!LOOP forward WHILE time < t_max-deltat/2
+	time=~+2/RK1_rai_coeff*deltat
+	convol_trasp(VV,V);	buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
+	vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);	ytoz
 
 
-time=~+2/RK2_rai_coeff*deltat
-convol_trasp(VV,V);		buildrhs(RK2_rai, VV, V);	linsolve(RK2_rai_coeff/deltat)
-vetaTOuvw; computeflowrate(RK2_rai_coeff/deltat); 	ytoz
+	time=~+2/RK2_rai_coeff*deltat
+	convol_trasp(VV,V);		buildrhs(RK2_rai, VV, V);	linsolve(RK2_rai_coeff/deltat)
+	vetaTOuvw; computeflowrate(RK2_rai_coeff/deltat); 	ytoz
 
+	time=~+2/RK3_rai_coeff*deltat
+	convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
+	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	ytoz
+IF rank=0 THEN WRITE "(4,1)" V(1,-55,*).u
+!REPEAT forward
 
-time=~+2/RK3_rai_coeff*deltat
-convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
-vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	ytoz
-
-
-
-!// Loop end
 
 <* 	MPI_Barrier(MPI_COMM_WORLD);
 	free(u_convol_);	free(v_convol_);	free(w_convol_);				//Worked uvw

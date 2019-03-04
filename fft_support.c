@@ -294,10 +294,11 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	senddispls[rank] = (2*nz*in_ilo + 2*nz*nx*in_jlo )*sizeof(double);
 	recvcounts[0] = 2*nz*(in_jhi-in_jlo+1)*(in_ihi-in_ilo+1);
 	//printf("RECV COUNTS %d\n", recvcounts[0]);
+	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Allgather(&contiguous_y[rank],1,MPI_INT,contiguous_y,1,MPI_INT, MPI_COMM_WORLD);
 	MPI_Allgather(&contiguous_x[rank],1,MPI_INT,contiguous_x,1,MPI_INT, MPI_COMM_WORLD);
 	MPI_Allgather(&senddispls[rank],1,MPI_INT,senddispls,1,MPI_INT, MPI_COMM_WORLD);
-
+	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Datatype vector[size], contiguous[size];
 	int bytes_stride = sizeof(double)*2*nz*nx;
 
@@ -306,12 +307,15 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 		MPI_Type_create_hvector(contiguous_y[i], 1, bytes_stride, contiguous[i], &vector[i]);
 		MPI_Type_commit(&vector[i]);
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 
 	if (flag == 1) {
 		MPI_Alltoallw(&arr[0], sendcounts, senddispls, vector, &arr_recv[0], recvcounts, recvdispls, recvtype, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
 	}
 	else if (flag == -1) {
 		MPI_Alltoallw(&arr_recv[0], recvcounts, recvdispls, recvtype, &arr[0], sendcounts, senddispls, vector, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
 	}
 	else {
 		perror(".:Invalid FLAG for Alltoall call:.\n\n");
