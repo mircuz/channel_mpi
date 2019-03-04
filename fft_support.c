@@ -24,7 +24,7 @@ void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_re
 					reader++;
 					//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
 				}
-				for (int k= (nz_left-1)*2; k < (nzd-nz_left)*2; k++){
+				for (int k= (nz_left)*2; k < (nzd-nz_left+1)*2; k++){
 					U[stride_x + stride_y+k]=0;
 				}
 				for (int k= 0; k < (nz_left)*2; k++){
