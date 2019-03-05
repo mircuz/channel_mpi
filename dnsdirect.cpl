@@ -245,3 +245,44 @@ SUBROUTINE move_data
 		REPEAT
 	REPEAT 
 END move_data 
+
+SUBROUTINE outstats
+	<*
+	int nx= nx_;	int nz= 2*nz_+1;	int size= size_; 	int rank = rank_;
+	int *contiguous_x = (int *) malloc(sizeof(int)*size);
+	int *contiguous_y = (int *) malloc(sizeof(int)*size);
+	if (( contiguous_x||contiguous_y ) == NULL) {
+		perror(".:Error while allocating memory for disk writing operations:.\n");
+		abort();
+	}
+	contiguous_y[rank] = (fz_jhi_-fz_jlo_+1);
+	contiguous_x[rank] = (fz_ihi_-fz_ilo_+1); 
+	//printf("conty= %d ,contx= %d ,rank=%d ", contiguous_y[rank], contiguous_x[rank], rank);
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Allgather(&contiguous_y[rank],1,MPI_INT,contiguous_y,1,MPI_INT, MPI_COMM_WORLD);
+	MPI_Allgather(&contiguous_x[rank],1,MPI_INT,contiguous_x,1,MPI_INT, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Datatype vector[size], contiguous[size];
+	int bytes_stride = sizeof(double)*2*nz*nx;
+
+	for (int i = 0; i < size; i++) {
+		MPI_Type_contiguous(2*nz*contiguous_x[i], MPI_DOUBLE, &contiguous[i]);
+		MPI_Type_create_hvector(contiguous_y[i], 1, bytes_stride, contiguous[i], &vector[i]);
+		MPI_Type_commit(&vector[i]);
+	}
+
+	MPI_File fh;
+	char time_str[15], title_u[15]="";
+	gcvt (time_, 10, time_str);
+	strcat(title_u,time_str);
+	strcat(title_u,"_u.dat"); 
+	if( chdir("/home/mirco/Scrivania/channel_mpi-master/results") !=0 )
+		perror("error changing folder");
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_File_open(MPI_COMM_WORLD,title_u,MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
+	MPI_Offset offset = 10;
+	MPI_File_set_view (fh , offset , vector[rank], vector[rank], "internal" ,MPI_INFO_NULL);
+	MPI_File_write_all(fh, U_t_, 1, vector[rank], MPI_STATUS_IGNORE);
+	MPI_File_close(&fh);
+	*>
+END outstats

@@ -316,7 +316,7 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	else if (flag == -1) {
 		MPI_Alltoallw(&arr_recv[0], recvcounts, recvdispls, recvtype, &arr[0], sendcounts, senddispls, vector, MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);
-	}
+	} 
 	else {
 		perror(".:Invalid FLAG for Alltoall call:.\n\n");
 		abort();
@@ -326,8 +326,7 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 		  for(int i = 0; i < recvcounts[0]; i++){
 			  printf("arr_recv[%d]= %f\n", i, arr_recv[i]);
 		  }
-	  }
-	*/
+	  } */
 	MPI_Type_free(vector);
 }
 
