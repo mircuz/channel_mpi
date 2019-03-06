@@ -238,7 +238,6 @@ SUBROUTINE move_data
 	LOOP FOR i=ilo TO ihi
 		LOOP FOR k=klo TO khi
 			LOOP FOR j=-1 TO ny+1
-				!IF rank=0 THEN WRITE "("i","k","j")   " V(i,k,j).u
 				U_t[counter]= V(i,k,j).u.REAL;		V_t[counter]= V(i,k,j).v.REAL;		W_t[counter]= V(i,k,j).w.REAL;		INC counter;
 				U_t[counter]= V(i,k,j).u.IMAG;		V_t[counter]= V(i,k,j).v.IMAG;		W_t[counter]= V(i,k,j).w.IMAG;		INC counter;
 			REPEAT
@@ -248,8 +247,8 @@ END move_data
 
 SUBROUTINE outstats
 	<*
-	int nx= nx_;	int nz= 2*nz_+1;	int size= size_; 	int rank = rank_;
-	int *contiguous_x = (int *) malloc(sizeof(int)*size);
+	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_;
+/*	int *contiguous_x = (int *) malloc(sizeof(int)*size);
 	int *contiguous_y = (int *) malloc(sizeof(int)*size);
 	if (( contiguous_x||contiguous_y ) == NULL) {
 		perror(".:Error while allocating memory for disk writing operations:.\n");
@@ -271,18 +270,140 @@ SUBROUTINE outstats
 		MPI_Type_commit(&vector[i]);
 	}
 
+
+for(int i = 0; i < localdim_x_; i++){
+		 if (rank==0) printf("U_t_[%d]= %g\t", i, (*(double *)(i*(ssize_t)sizeof(double)+U_t_)) );	
+	}
+
 	MPI_File fh;
 	char time_str[15], title_u[15]="";
 	gcvt (time_, 10, time_str);
 	strcat(title_u,time_str);
-	strcat(title_u,"_u.dat"); 
+	strcat(title_u,"_u.bin"); 
 	if( chdir("/home/mirco/Scrivania/channel_mpi-master/results") !=0 )
-		perror("error changing folder");
+		perror("Error changing folder in outstats routine");
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_File_open(MPI_COMM_WORLD,title_u,MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
-	MPI_Offset offset = 10;
-	MPI_File_set_view (fh , offset , vector[rank], vector[rank], "internal" ,MPI_INFO_NULL);
-	MPI_File_write_all(fh, U_t_, 1, vector[rank], MPI_STATUS_IGNORE);
+	MPI_Offset offset = rank*10*sizeof(double);
+	MPI_File_set_view (fh , offset , MPI_CHAR, MPI_CHAR, "external32" ,MPI_INFO_NULL);
+	char* pippovar[3];
+	pippovar[1]="10", pippovar[2]="20", pippovar[0]="1";
+	MPI_File_write_all(fh, pippovar[0] , 50, MPI_CHAR, MPI_STATUS_IGNORE);
 	MPI_File_close(&fh);
+*/
+	int NX=8, NY=4, CH_NX=4, CH_NY=2, RANK=2;
+	/*HDF5 APIs definitions*/ 		
+    hid_t       file_id, dset_id;         /* file and dataset identifiers */
+    hid_t       filespace, memspace;      /* file and memory dataspace identifiers */
+    hsize_t     dimsf[2];                 /* dataset dimensions */
+    hsize_t     chunk_dims[2];            /* chunk dimensions */
+    double         *data;                    /* pointer to data buffer to write */
+    hsize_t	count[2];	          /* hyperslab selection parameters */
+    hsize_t	stride[2];
+    hsize_t	block[2];
+    hsize_t	offset[2];
+    hid_t	plist_id;                 /* property list identifier */
+    int         i;
+    herr_t	status;
+	MPI_Info info  = MPI_INFO_NULL;
+	char time_str[15], title[15]="";
+	gcvt (time_, 10, time_str);
+	strcat(time_str,".h5");
+	if( chdir("/home/mirco/Scrivania/channel_mpi-master/results") !=0 )
+		perror("Error changing folder in outstats routine");
+
+	/* 
+     * Set up file access property list with parallel I/O access
+     */
+     plist_id = H5Pcreate(H5P_FILE_ACCESS);
+     H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, info);
+
+    /*
+     * Create a new file collectively and release property list identifier.
+     */
+    file_id = H5Fcreate(time_str, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+    H5Pclose(plist_id);
+   
+
+    /*
+     * Create the dataspace for the dataset.
+     */
+    dimsf[0] = NX;
+    dimsf[1] = NY;
+    chunk_dims[0] = CH_NX;   
+    chunk_dims[1] = CH_NY;   
+    filespace = H5Screate_simple(RANK, dimsf, NULL); 
+    memspace  = H5Screate_simple(RANK, chunk_dims, NULL); 
+
+    /*
+     * Create chunked dataset.
+     */
+    plist_id = H5Pcreate(H5P_DATASET_CREATE);
+    H5Pset_chunk(plist_id, RANK, chunk_dims);
+    dset_id = H5Dcreate(file_id, "Velocity", H5T_IEEE_F64LE, filespace,
+			H5P_DEFAULT, plist_id, H5P_DEFAULT);
+    H5Pclose(plist_id);
+    H5Sclose(filespace);
+
+    /* 
+     * Each process defines dataset in memory and writes it to the hyperslab
+     * in the file.
+     */
+    count[0] = 1;
+    count[1] = 1 ;
+    stride[0] = 1;
+    stride[1] = 1;
+    block[0] = chunk_dims[0];
+    block[1] = chunk_dims[1];
+    if(rank == 0) {
+       offset[0] = 0;
+       offset[1] = 0;
+    } 
+    if(rank == 1) {
+       offset[0] = 0;
+       offset[1] = chunk_dims[1];
+    }
+    if(rank == 2) {
+       offset[0] = chunk_dims[0];
+       offset[1] = 0;
+    } 
+    if(rank == 3) {
+       offset[0] = chunk_dims[0];
+       offset[1] = chunk_dims[1];
+    } 
+
+    /*
+     * Select hyperslab in the file.
+     */
+    filespace = H5Dget_space(dset_id);
+    status = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
+
+    /*
+     * Initialize data buffer 
+     */
+    data = (double *) malloc(sizeof(double)*chunk_dims[0]*chunk_dims[1]);
+    for (i=0; i < (int)chunk_dims[0]*chunk_dims[1]; i++) {
+        data[i] = rank + 1.2;
+    }
+
+    /*
+     * Create property list for collective dataset write.
+     */
+    plist_id = H5Pcreate(H5P_DATASET_XFER);
+    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+    
+    status = H5Dwrite(dset_id, H5T_IEEE_F64LE, memspace, filespace,
+		      plist_id, data);
+    free(data);
+
+    /*
+     * Close/release resources.
+     */
+    H5Dclose(dset_id);
+    H5Sclose(filespace);
+    H5Sclose(memspace);
+    H5Pclose(plist_id);
+    H5Fclose(file_id);
+
 	*>
 END outstats

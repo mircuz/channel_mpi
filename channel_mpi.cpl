@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "remap3d_wrap.h"
+#include "/home/mirco/Scrivania/hdf5/include/hdf5.h"
 
 INTEGER rank, size
 gamma=0
@@ -13,7 +14,7 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
-LOOP forward WHILE time < t_max-deltat/2
+!LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
 	vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);	ytoz
@@ -27,7 +28,8 @@ LOOP forward WHILE time < t_max-deltat/2
 	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	ytoz
 
 	outstats
-REPEAT forward
+
+!REPEAT forward
 
 
 <* 	MPI_Barrier(MPI_COMM_WORLD);

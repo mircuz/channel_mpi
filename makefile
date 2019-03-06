@@ -1,4 +1,4 @@
-CC = mpicc
+CC = /home/mirco/Scrivania/hdf5/bin/h5pcc
 CFLAGS = /usr/local/fri/complex.o /usr/local/fri/fft.o /usr/local/fri/rbmat.o 
 
 
