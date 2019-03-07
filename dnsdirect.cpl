@@ -335,7 +335,7 @@ for(int i = 0; i < localdim_x_; i++){
     filespace = H5Dget_space(dset_id);
 	offset[0] = fz_ilo_;	offset[1] = fz_jlo_;	offset[2] = fz_klo_;
 	stride[0] = 1; 			stride[1] = 1;			stride[2] = 1;
-	count[0]  = 1; 			count[1]  = 2;   		count[2]  = 1; 
+	count[0]  = fz_ihi_-fz_ilo_+1; 			count[1]  = fz_jhi_-fz_jlo_+1;   		count[2]  = 1; 
 	block[0]  = chunk_dims[0]; 		block[1]  = chunk_dims[1];		block[2]  = chunk_dims[2];
 	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
     
@@ -344,8 +344,8 @@ for(int i = 0; i < localdim_x_; i++){
 	/*
      * Initialize data buffer 
      */
-	dim_vect[0] = chunk_dims[0]*chunk_dims[1]*chunk_dims[2]*3*2;
-    data = (double *) malloc(sizeof(double)*chunk_dims[0]*chunk_dims[1]*chunk_dims[2]*3*2);
+	dim_vect[0] = chunk_dims[0]*chunk_dims[1]*chunk_dims[2]*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1);
+    data = (double *) malloc(sizeof(double)*chunk_dims[0]*chunk_dims[1]*chunk_dims[2]*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1));
     for (i=0; i < dim_vect[0]; i++) {
         data[i] = rank*100 + i;
     }
@@ -355,7 +355,7 @@ for(int i = 0; i < localdim_x_; i++){
 	/*Set MEMORY hyperslab*/    
 	offset[0]  = 0;
 	stride[0] = 1;
-	count[0]  = nz*2;
+	count[0]  = nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1);
 	block[0]  = 1;
 	mem_hyper = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, offset, stride, count, block);
 
