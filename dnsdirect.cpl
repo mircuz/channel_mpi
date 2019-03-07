@@ -291,36 +291,32 @@ for(int i = 0; i < localdim_x_; i++){
 	MPI_File_write_all(fh, pippovar[0] , 50, MPI_CHAR, MPI_STATUS_IGNORE);
 	MPI_File_close(&fh);
 */
-	int NX=16, NY=8, CH_NX=4, CH_NY=2, RANK=2;
 	/*HDF5 APIs definitions*/ 		
     hid_t       file_id, dset_id;         /* file and dataset identifiers */
     hid_t       filespace, memspace;      /* file and memory dataspace identifiers */
-    hsize_t     dimsf[2];                 /* dataset dimensions */
-    hsize_t     chunk_dims[2];            /* chunk dimensions */
-    double         *data;                    /* pointer to data buffer to write */
-    hsize_t	count[2];	          /* hyperslab selection parameters */
-    hsize_t	stride[2];
-    hsize_t	block[2];
-    hsize_t	offset[2];
-    hid_t	plist_id;                 /* property list identifier */
-    int         i;
-    herr_t	status;
+    hsize_t     dimsf[3];                 /* dataset dimensions */
+    hsize_t     chunk_dims[3];            /* chunk dimensions */
+    double      *data;                    /* pointer to data buffer to write */
+    hsize_t		count[3];	          /* hyperslab selection parameters */
+    hsize_t		stride[3];
+    hsize_t		block[3];
+    hsize_t		offset[3];
+    hid_t		plist_id;                 /* property list identifier */
+    int     	i, RANK=3;
+    herr_t		file_hyper;
 	MPI_Info info  = MPI_INFO_NULL;
 	char time_str[15], title[15]="";
 	gcvt (time_, 10, time_str);
 	strcat(time_str,".h5");
-	if( chdir("/home/mirco/Scrivania/channel_mpi-master/results") !=0 )
+	//if( chdir("/home/mirco/Scrivania/channel_mpi-master/results") !=0 )
+	if( chdir("/media/sf_Materiale_Tesi") !=0 )
 		perror("Error changing folder in outstats routine");
 
-	/* 
-     * Set up file access property list with parallel I/O access
-     */
+	/*Set up file access property list with parallel I/O access*/
      plist_id = H5Pcreate(H5P_FILE_ACCESS);
      H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, info);
 
-    /*
-     * Create a new file collectively and release property list identifier.
-     */
+    /*Create a new file collectively and release property list identifier*/
     file_id = H5Fcreate(time_str, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
     H5Pclose(plist_id);
    
@@ -328,20 +324,22 @@ for(int i = 0; i < localdim_x_; i++){
     /*
      * Create the dataspace for the dataset.
      */
-    dimsf[0] = nx;
-    dimsf[1] = nz;
-    chunk_dims[0] = y_ihi_-y_ilo_+1;   
-    chunk_dims[1] = y_khi_-y_klo_+1;   
-    filespace = H5Screate_simple(RANK, dimsf, NULL); 
-    memspace  = H5Screate_simple(RANK, chunk_dims, NULL); 
+    dimsf[0] = nz;		// Disk dim = 3D
+    dimsf[1] = ny;
+	dimsf[2] = nx;
+	chunk_dims[0] = nz; // Memory dim = 1D
+    chunk_dims[1] = 1;
+	chunk_dims[2] = 1; 
+	printf("%d,%d,%d rank %d\n", chunk_dims[0], chunk_dims[1], chunk_dims[2], rank); 
+    filespace = H5Screate_simple(3, dimsf, NULL); 
+    memspace  = H5Screate_simple(3, chunk_dims, NULL); 
 
     /*
      * Create chunked dataset.
      */
     plist_id = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_chunk(plist_id, RANK, chunk_dims);
-    dset_id = H5Dcreate(file_id, "Velocity", H5T_IEEE_F64LE, filespace,
-			H5P_DEFAULT, plist_id, H5P_DEFAULT);
+    H5Pset_chunk(plist_id, 3, chunk_dims);
+    dset_id = H5Dcreate(file_id, "/Velocity", H5T_IEEE_F64LE, filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
     H5Pclose(plist_id);
     H5Sclose(filespace);
 
@@ -350,42 +348,29 @@ for(int i = 0; i < localdim_x_; i++){
      * in the file.
      */
     count[0] = 1;
-    count[1] = 1 ;
+	count[1] = 1;
+	count[2] = 1;
     stride[0] = 1;
     stride[1] = 1;
+	stride[2] = 1;
     block[0] = chunk_dims[0];
     block[1] = chunk_dims[1];
-	offset[0]= y_ilo_;
-	offset[1]= y_klo_;
-  /*  if(rank == 0) {
-       offset[0] = 0;
-       offset[1] = 0;
-    } 
-    if(rank == 1) {
-       offset[0] = 0;
-       offset[1] = chunk_dims[1];
-    }
-    if(rank == 2) {
-       offset[0] = chunk_dims[0];
-       offset[1] = 0;
-    } 
-    if(rank == 3) {
-       offset[0] = chunk_dims[0];
-       offset[1] = chunk_dims[1];
-    } */
-
+	block[2] = chunk_dims[2];
+	offset[0]= fz_klo_;
+	offset[1]= fz_jlo_;
+	offset[2]= fz_ilo_;
     /*
      * Select hyperslab in the file.
      */
     filespace = H5Dget_space(dset_id);
-    status = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
+    file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 
     /*
      * Initialize data buffer 
      */
-    data = (double *) malloc(sizeof(double)*chunk_dims[0]*chunk_dims[1]);
-    for (i=0; i < (int)chunk_dims[0]*chunk_dims[1]; i++) {
-        data[i] = rank + 1.2;
+    data = (double *) malloc(sizeof(double)*chunk_dims[0]*chunk_dims[1]*chunk_dims[2]);
+    for (i=0; i < (int)chunk_dims[0]*chunk_dims[1]*chunk_dims[2]; i++) {
+        data[i] = rank*100 + i;
     }
 
     /*
@@ -394,10 +379,8 @@ for(int i = 0; i < localdim_x_; i++){
     plist_id = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
     
-    status = H5Dwrite(dset_id, H5T_IEEE_F64LE, memspace, filespace,
+    file_hyper = H5Dwrite(dset_id, H5T_IEEE_F64LE, memspace, filespace,
 		      plist_id, data);		//&(U_t_[0]) for my purpose
-    free(data);
-
     /*
      * Close/release resources.
      */
@@ -406,6 +389,5 @@ for(int i = 0; i < localdim_x_; i++){
     H5Sclose(memspace);
     H5Pclose(plist_id);
     H5Fclose(file_id);
-
 	*>
 END outstats
