@@ -246,51 +246,9 @@ SUBROUTINE move_data
 END move_data 
 
 SUBROUTINE outstats
+IF rank=0 THEN WRITE U_t
 	<*
 	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_;
-/*	int *contiguous_x = (int *) malloc(sizeof(int)*size);
-	int *contiguous_y = (int *) malloc(sizeof(int)*size);
-	if (( contiguous_x||contiguous_y ) == NULL) {
-		perror(".:Error while allocating memory for disk writing operations:.\n");
-		abort();
-	}
-	contiguous_y[rank] = (fz_jhi_-fz_jlo_+1);
-	contiguous_x[rank] = (fz_ihi_-fz_ilo_+1); 
-	//printf("conty= %d ,contx= %d ,rank=%d ", contiguous_y[rank], contiguous_x[rank], rank);
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Allgather(&contiguous_y[rank],1,MPI_INT,contiguous_y,1,MPI_INT, MPI_COMM_WORLD);
-	MPI_Allgather(&contiguous_x[rank],1,MPI_INT,contiguous_x,1,MPI_INT, MPI_COMM_WORLD);
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Datatype vector[size], contiguous[size];
-	int bytes_stride = sizeof(double)*2*nz*nx;
-
-	for (int i = 0; i < size; i++) {
-		MPI_Type_contiguous(2*nz*contiguous_x[i], MPI_DOUBLE, &contiguous[i]);
-		MPI_Type_create_hvector(contiguous_y[i], 1, bytes_stride, contiguous[i], &vector[i]);
-		MPI_Type_commit(&vector[i]);
-	}
-
-
-for(int i = 0; i < localdim_x_; i++){
-		 if (rank==0) printf("U_t_[%d]= %g\t", i, (*(double *)(i*(ssize_t)sizeof(double)+U_t_)) );	
-	}
-
-	MPI_File fh;
-	char time_str[15], title_u[15]="";
-	gcvt (time_, 10, time_str);
-	strcat(title_u,time_str);
-	strcat(title_u,"_u.bin"); 
-	if( chdir("/home/mirco/Scrivania/channel_mpi-master/results") !=0 )
-		perror("Error changing folder in outstats routine");
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_File_open(MPI_COMM_WORLD,title_u,MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
-	MPI_Offset offset = rank*10*sizeof(double);
-	MPI_File_set_view (fh , offset , MPI_CHAR, MPI_CHAR, "external32" ,MPI_INFO_NULL);
-	char* pippovar[3];
-	pippovar[1]="10", pippovar[2]="20", pippovar[0]="1";
-	MPI_File_write_all(fh, pippovar[0] , 50, MPI_CHAR, MPI_STATUS_IGNORE);
-	MPI_File_close(&fh);
-*/
 	/*HDF5 APIs definitions*/ 		
     hid_t       file_id, dset_id;         /* file and dataset identifiers */
     hid_t       filespace, memspace;      /* file and memory dataspace identifiers */
@@ -302,7 +260,6 @@ for(int i = 0; i < localdim_x_; i++){
     hsize_t		block[3];
     hsize_t		offset[3];
     hid_t		plist_id;                 /* property list identifier */
-    int     	i, RANK=3;
     herr_t		file_hyper, mem_hyper;
 	MPI_Info info  = MPI_INFO_NULL;
 	char time_str[15], title[15]="";
@@ -320,11 +277,11 @@ for(int i = 0; i < localdim_x_; i++){
     H5Pclose(plist_id);  
 
     /*Create the dataspace for the FILE dataset*/
-    dimsf[0] = nx;	dimsf[1] = ny;	dimsf[2] = nz;
+    dimsf[0] = ny;	dimsf[1] = nx;	dimsf[2] = 2*nz;			// BE AWARE 2*NZ IS JUST FOR TESTING WITHOUT COMPOUND DATATYPE!!
 	filespace = H5Screate_simple(3, dimsf, NULL); 
 	
     /*Create the FILE chunked dataset*/
-	chunk_dims[0] = 1;		chunk_dims[1] = 1;		chunk_dims[2] = nz; 
+	chunk_dims[0] = 1;		chunk_dims[1] = 1;		chunk_dims[2] = 2*nz; 	// BE AWARE 2*NZ IS JUST FOR TESTING WITHOUT COMPOUND DATATYPE!!
     plist_id = H5Pcreate(H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 3, chunk_dims);
     dset_id = H5Dcreate(file_id, "/Velocity", H5T_IEEE_F64LE, filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
@@ -333,39 +290,29 @@ for(int i = 0; i < localdim_x_; i++){
 	
     /*Select FILE hyperslab in the chunk*/
     filespace = H5Dget_space(dset_id);
-	offset[0] = fz_ilo_;	offset[1] = fz_jlo_;	offset[2] = fz_klo_;
+	offset[0] = fz_jlo_;	offset[1] = fz_ilo_;	offset[2] = fz_klo_;
 	stride[0] = 1; 			stride[1] = 1;			stride[2] = 1;
-	count[0]  = fz_ihi_-fz_ilo_+1; 			count[1]  = fz_jhi_-fz_jlo_+1;   		count[2]  = 1; 
+	count[0]  = fz_jhi_-fz_jlo_+1; 			count[1]  = fz_ihi_-fz_ilo_+1;   		count[2]  = 1; 
 	block[0]  = chunk_dims[0]; 		block[1]  = chunk_dims[1];		block[2]  = chunk_dims[2];
 	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
     
 
 
-	/*
-     * Initialize data buffer 
-     */
-	dim_vect[0] = chunk_dims[0]*chunk_dims[1]*chunk_dims[2]*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1);
-    data = (double *) malloc(sizeof(double)*chunk_dims[0]*chunk_dims[1]*chunk_dims[2]*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1));
-    for (i=0; i < dim_vect[0]; i++) {
-        data[i] = rank*100 + i;
-    }
 
 	/*Create the dataspace for the MEMORY dataset*/
 	memspace = H5Screate_simple(1, dim_vect, NULL);
 	/*Set MEMORY hyperslab*/    
 	offset[0]  = 0;
 	stride[0] = 1;
-	count[0]  = nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1);
+	count[0]  = nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1)*2;
 	block[0]  = 1;
 	mem_hyper = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, offset, stride, count, block);
-
-
 
 	/*Create property list for collective dataset write*/
     plist_id = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
     
-    file_hyper = H5Dwrite(dset_id, H5T_IEEE_F64LE, memspace, filespace, plist_id, data);		//&(U_t_[0]) for my purpose
+    file_hyper = H5Dwrite(dset_id, H5T_IEEE_F64LE, memspace, filespace, plist_id, &(U_t_[0]));		//&(U_t_[0]) for my purpose
 
     /*Close/release resources*/
     H5Dclose(dset_id);
