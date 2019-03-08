@@ -246,7 +246,7 @@ REPEAT LOOP
 END convol_trasp
 
 SUBROUTINE ytoz
-!	move_data 
+	move_data 
 <*	int nqty, permute, memoryflag, sendsize, recvsize;
 	void *remap_ytoz_pencil;
 	nqty=2, memoryflag=1;
