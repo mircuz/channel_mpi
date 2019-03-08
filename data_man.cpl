@@ -1,7 +1,6 @@
 !USE rtchecks
 WRITE
-<*
-  /******************************************** Memory Alloc *******************************************/
+<*/******************************************** Memory Alloc *******************************************/
   MPI_Barrier(MPI_COMM_WORLD);
   u_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   v_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
