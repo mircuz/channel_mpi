@@ -15,9 +15,9 @@ USE dnsdirect
 USE convol_trasp
 read_disk
 
-!LOOP forward WHILE time < t_max-deltat/2
+LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
-	convol_trasp(VV,V);		buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
+	convol_trasp(VV,V);	 	buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
 	vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);	ytoz
 
 	time=~+2/RK2_rai_coeff*deltat
@@ -30,7 +30,7 @@ read_disk
 
 	write_on_disk
 	IF rank=0 THEN WRITE "t="time
-!REPEAT forward
+REPEAT forward
 
 
 <* 	MPI_Barrier(MPI_COMM_WORLD);
