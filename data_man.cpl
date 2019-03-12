@@ -8,9 +8,6 @@ WRITE
   U_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   V_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   W_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  FFT_SCALAR *u_read = (FFT_SCALAR *) malloc(2*nx*ny*nz*sizeof(FFT_SCALAR));
-  FFT_SCALAR *v_read = (FFT_SCALAR *) malloc(2*nx*ny*nz*sizeof(FFT_SCALAR));
-  FFT_SCALAR *w_read = (FFT_SCALAR *) malloc(2*nx*ny*nz*sizeof(FFT_SCALAR));
   uu_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   uv_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   vv_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
@@ -21,11 +18,12 @@ WRITE
   FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   MPI_Barrier(MPI_COMM_WORLD);
 
-  if ((u_convol_||u_read||v_convol_||v_read||w_convol_||w_read||uu_||uv_||vv_||vw_||ww_||uw_||sendbuf||recvbuf) == NULL) {
+  if ((u_convol_||v_convol_||w_convol_||uu_||uv_||vv_||vw_||ww_||uw_||sendbuf||recvbuf) == NULL) {
 	  perror(".:Error while allocating memory for remapping variables:.\n");
 	  abort();
   }
 
+/* For testing purpose! Read inputs from 3 files row-by-row
   // Declare variables, on all procs, needed to Scatter data
   FFT_SCALAR *U_read, *V_read, *W_read;
 
@@ -73,5 +71,5 @@ WRITE
   MPI_Barrier(MPI_COMM_WORLD);
   Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
-  free(W_read);
+  free(W_read); */
 *>

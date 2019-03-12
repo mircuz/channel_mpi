@@ -19,8 +19,8 @@ INTEGER ny,nx,nz, maxtimelevels=1
 REAL alfa0, beta0, a, ymin, ymax, t_max, dt_field, dt_save
 REAL u_conv, u0, un, w_conv, w0, wn, t0, tn
 REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0 
-BOOLEAN time_from_restart
-STRING restart_file
+REAL starting_time
+BOOLEAN generate_inputs
 INTEGER localdim_x, localdim_z, dim_z, dim_y, ilo,ihi,jlo,jhi,klo,khi,  x_ilo,x_ihi,x_jlo,x_jhi,x_klo,x_khi,
 																		y_ilo,y_ihi,y_jlo,y_jhi,y_klo,y_khi,
 																		z_ilo,z_ihi,z_jlo,z_jhi,z_klo,z_khi,
@@ -75,23 +75,24 @@ END y_pencil_parser_vel
 
 !// read_initial_data------------------------------------------------------------------------------------
 SUBROUTINE read_initial_data
-FILE in_data=OPEN("dns.in")
-READ BY NAME FROM in_data ny,nx,nz,alfa0,beta0,ymin,ymax,a,ni,pr; ni=1/ni; pr=1/pr
-DO WHILE READ BY NAME FROM in_data meanpx OR meanflowx; px=meanpx
-DO WHILE READ BY NAME FROM in_data meanpz OR meanflowz; pz=meanpz
-READ BY NAME FROM in_data u_conv, w_conv
-READ BY NAME FROM in_data u0, un, w0, wn, t0, tn
-DO WHILE READ BY NAME FROM in_data deltat OR cflmax
-READ BY NAME FROM in_data t_max, time_from_restart, dt_field, dt_save
-IF NOT READ BY NAME FROM in_data restart_file THEN restart_file=""
-CLOSE in_data
-IF rank= 0 THEN
-	WRITE BY NAME nx, nz, ny, time
-    WRITE BY NAME meanflowx, meanpx, meanflowz, meanpz
-    WRITE BY NAME ymin, ymax, a, alfa0, beta0, 1/ni, 1/pr
-    WRITE BY NAME u_conv, u0, un, w_conv, w0, wn, t0, tn
-    WRITE BY NAME deltat, cflmax, t_max, dt_save, dt_field  
-END IF
+	FILE in_data=OPEN("dns.in")
+	READ BY NAME FROM in_data ny,nx,nz,alfa0,beta0,ymin,ymax,a,ni,pr; ni=1/ni; pr=1/pr
+	DO WHILE READ BY NAME FROM in_data meanpx OR meanflowx; px=meanpx
+	DO WHILE READ BY NAME FROM in_data meanpz OR meanflowz; pz=meanpz
+	READ BY NAME FROM in_data u_conv, w_conv
+	READ BY NAME FROM in_data u0, un, w0, wn, t0, tn
+	DO WHILE READ BY NAME FROM in_data deltat OR cflmax
+	READ BY NAME FROM in_data t_max, starting_time, dt_field, dt_save
+	READ BY NAME FROM in_data generate_inputs
+
+	CLOSE in_data
+	IF rank= 0 THEN
+		WRITE BY NAME nx, nz, ny, time
+    	WRITE BY NAME meanflowx, meanpx, meanflowz, meanpz
+   	 	WRITE BY NAME ymin, ymax, a, alfa0, beta0, 1/ni, 1/pr
+   	 WRITE BY NAME u_conv, u0, un, w_conv, w0, wn, t0, tn
+   	 WRITE BY NAME deltat, cflmax, t_max, dt_save, dt_field  
+	END IF
 END read_initial_data
 
 BOOLEAN reread=NO
@@ -252,6 +253,24 @@ SUBROUTINE yintegr(REAL RESULT^, f(*))
    RESULT=~+a1*f(iy-1) + a2*f(iy) + a3*f(iy+1)    
   REPEAT
 END yintegr
+
+SUBROUTINE random_field
+	WRITE "in random_field"
+END random_field
+
+!// Set starting time of simulation
+SUBROUTINE set_time
+	time = starting_time
+	IF rank=0 THEN WRITE "Simulation starts from " time "s"
+	IF time = 0.0 THEN 
+		IF generate_inputs = TRUE THEN
+			IF rank=0 THEN WRITE "Random field will be generated" 
+			random_field
+		ELSE
+			IF rank=0 THEN WRITE "File results/0.h5 will be the initial field"
+		END IF
+	END IF
+END set_time
 
 !// Coefficients library---------------------------------------------------------------------------------
 SUBROUTINE simple(COMPLEX rhs^,old^(*),unkn,impl,expl)
