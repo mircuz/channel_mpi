@@ -249,7 +249,7 @@ SUBROUTINE move_data
 	REPEAT 
 END move_data 
 
-SUBROUTINE outstats
+SUBROUTINE write_on_disk
 <*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int mem_reader;
 	/*HDF5 APIs definitions*/ 		
     hid_t       file_id, dset_u, dset_v, dset_w;          /* file and dataset identifiers */
@@ -271,7 +271,6 @@ SUBROUTINE outstats
 	//if( chdir("/home/mirco/Scrivania/channel_mpi-master/results") !=0 )
 	if( chdir("/media/sf_Materiale_Tesi") !=0 )
 		perror(".:Error changing folder in outstats routine:.");
-
 	//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
 	complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1)*sizeof(complex));	
 	if ( complex_disk_data == NULL) {
@@ -325,11 +324,11 @@ SUBROUTINE outstats
 	block[0]  = chunk_dims[0]; 		block[1]  = chunk_dims[1];		block[2]  = chunk_dims[2];
 	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 
-	//------------------------------------------------ WRITE --------------------------------------------------
+	//------------------------------------------------ I/O --------------------------------------------------
 	/*Create property list for collective dataset write*/
     plist_id_write = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id_write, H5FD_MPIO_COLLECTIVE);
-
+  
 	mem_reader=0;
 	for(int i = 0; i < nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1); i++){
 		complex_disk_data[i].real = (*(double *)(mem_reader*(ssize_t)sizeof(double)+U_t_));
@@ -337,9 +336,7 @@ SUBROUTINE outstats
 		complex_disk_data[i].imag = (*(double *)(mem_reader*(ssize_t)sizeof(double)+U_t_));
 		mem_reader++;
 	}
-    
-    file_hyper = H5Dwrite(dset_u, memtype, memspace, filespace, plist_id_write, complex_disk_data);
-
+   	file_hyper = H5Dwrite(dset_u, memtype, memspace, filespace, plist_id_write, complex_disk_data);
     /*Close U resources*/
 	H5Sclose(filespace);
 	H5Dclose(dset_u);
@@ -356,9 +353,8 @@ SUBROUTINE outstats
 		complex_disk_data[i].imag = (*(double *)(mem_reader*(ssize_t)sizeof(double)+V_t_));
 		mem_reader++;
 	}
-    
     file_hyper = H5Dwrite(dset_v, memtype, memspace, filespace, plist_id_write, complex_disk_data);
-
+	/*Close V resources*/
 	H5Sclose(filespace);
 	H5Dclose(dset_v);
 
@@ -370,23 +366,155 @@ SUBROUTINE outstats
 	mem_reader=0;
 	for(int i = 0; i < nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1); i++){
 		complex_disk_data[i].real = (*(double *)(mem_reader*(ssize_t)sizeof(double)+W_t_));
-		mem_reader++;
+		mem_reader++;		
 		complex_disk_data[i].imag = (*(double *)(mem_reader*(ssize_t)sizeof(double)+W_t_));
 		mem_reader++;
-	}
-    
+		}
     file_hyper = H5Dwrite(dset_w, memtype, memspace, filespace, plist_id_write, complex_disk_data);
-
+	/*Close W resources*/
 	H5Sclose(filespace);
 	H5Dclose(dset_w);
 
 	/*Release global resources*/
+	MPI_Barrier(MPI_COMM_WORLD);
 	H5Pclose(plist_id_write);
 	H5Sclose(global_filespace);
 	H5Pclose(plist_id);
 	H5Fclose(file_id);
 	H5Tclose(filetype);
     H5Sclose(memspace);
+	free(complex_disk_data); *>
+END write_on_disk
+
+
+
+
+
+
+SUBROUTINE read_disk
+	<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int file_reader;
+	/*HDF5 APIs definitions*/ 		
+    hid_t       file_id, dset_u, dset_v, dset_w;          /* file and dataset identifiers */
+    hid_t       filespace, memspace, global_filespace;    /* file and memory dataspace identifiers */
+	hid_t		plist_id, plist_id_write;		          /* property list identifier */
+	hid_t		filetype, memtype;
+    hsize_t     dimsf[3], dim_vect[1];    /* dataset dimensions */
+    hsize_t     chunk_dims[3];            /* chunk dimensions */
+    double      *data;                    /* pointer to data buffer to write */
+    hsize_t		count[3];	          	  /* hyperslab selection parameters */
+    hsize_t		stride[3];
+    hsize_t		block[3];
+    hsize_t		offset[3];
+    herr_t		file_type, mem_type, file_hyper, mem_hyper, status;
+	MPI_Info info  = MPI_INFO_NULL;
+	char time_str[15], title[15]="";
+	gcvt (time_, 10, time_str);
+	strcat(time_str,".h5");
+	if (rank==0) printf("Reading field from %s\n", time_str);
+	//if( chdir("/home/mirco/Scrivania/channel_mpi-master/results") !=0 )
+	if( chdir("/media/sf_Materiale_Tesi") !=0 )
+		perror(".:Error changing folder in outstats routine:.");
+	//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
+	complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1)*sizeof(complex));	
+	if ( complex_disk_data == NULL) {
+		perror(".:Error while allocating complex_disk_data:.\n");	
+		abort();
+	}	
+						
+	/*Create FILE Type*/
+	filetype = H5Tcreate (H5T_COMPOUND, sizeof (complex));
+	file_type = H5Tinsert (filetype, "real", HOFFSET (complex, real), H5T_IEEE_F64LE);
+	file_type = H5Tinsert (filetype, "imag", HOFFSET (complex, imag), H5T_IEEE_F64LE);
+
+	/*Create MEMORY Type*/
+	memtype = H5Tcreate (H5T_COMPOUND, sizeof (complex));
+	mem_type = H5Tinsert (memtype, "real", HOFFSET (complex, real), H5T_NATIVE_DOUBLE);
+	mem_type = H5Tinsert (memtype, "imag", HOFFSET (complex, imag), H5T_NATIVE_DOUBLE);
+
+	//------------------------------------------------ MEMORY -------------------------------------------------
+	/*Create the dataspace for the MEMORY dataset*/
+	memspace = H5Screate_simple(1, dim_vect, NULL);
+	/*Set MEMORY hyperslab*/    
+	offset[0]  = 0;
+	stride[0] = 1;
+	count[0]  = nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1);
+	block[0]  = 1;
+	mem_hyper = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, offset, stride, count, block);
+
+	//------------------------------------------------ FILE --------------------------------------------------
+	/*Set up file access property list with parallel I/O access*/
+    plist_id = H5Pcreate(H5P_FILE_ACCESS);
+    H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, info);
+    /*Create a new file collectively and release property list identifier*/
+    file_id = H5Fopen(time_str, H5F_ACC_RDONLY, plist_id);
+    H5Pclose(plist_id);  
+
+    /*Create the FILE chunked dataset*/
+	chunk_dims[0] = 1;		chunk_dims[1] = 1;		chunk_dims[2] = nz; 
+    plist_id = H5Pcreate(H5P_DATASET_CREATE);
+    H5Pset_chunk(plist_id, 3, chunk_dims);
+	dset_u = H5Dopen(file_id, "/U", H5P_DEFAULT);
+    
+    /*Set FILE hyperslab in the chunk*/
+    filespace = H5Dget_space(dset_u);
+	offset[0] = fz_jlo_;	offset[1] = fz_ilo_;	offset[2] = fz_klo_;
+	stride[0] = 1; 			stride[1] = 1;			stride[2] = 1;
+	count[0]  = fz_jhi_-fz_jlo_+1; 			count[1]  = fz_ihi_-fz_ilo_+1;   		count[2]  = 1; 
+	block[0]  = chunk_dims[0]; 		block[1]  = chunk_dims[1];		block[2]  = chunk_dims[2];
+	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
+
+	//------------------------------------------------ I/O --------------------------------------------------
+	/*Create property list for collective dataset write*/
+    plist_id_write = H5Pcreate(H5P_DATASET_XFER);
+    H5Pset_dxpl_mpio(plist_id_write, H5FD_MPIO_COLLECTIVE);
+  
+   	file_hyper = H5Dread(dset_u, memtype, memspace, filespace, plist_id_write, complex_disk_data);
+	file_reader=0;
+	for(int i = 0; i < nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1); i++) {
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+U_t_)) = complex_disk_data[i].real;		file_reader++;
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+U_t_)) = complex_disk_data[i].imag;		file_reader++;
+	} 
+    /*Close U resources*/
+	H5Sclose(filespace);
+	H5Dclose(dset_u);
+	
+	//=======================================================================================================
+	dset_v = H5Dopen(file_id, "/V", H5P_DEFAULT);
+	filespace = H5Dget_space(dset_v);
+	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
+
+	file_hyper = H5Dread(dset_v, memtype, memspace, filespace, plist_id_write, complex_disk_data);
+	file_reader=0;
+	for(int i = 0; i < nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1); i++) {
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+V_t_)) = complex_disk_data[i].real;		file_reader++;
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+V_t_)) = complex_disk_data[i].imag;		file_reader++;
+	} 	
+    /*Close U resources*/
+	H5Sclose(filespace);
+	H5Dclose(dset_v);
+
+	//=======================================================================================================
+	dset_w = H5Dopen(file_id, "/W", H5P_DEFAULT);
+	filespace = H5Dget_space(dset_w);
+	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
+
+	file_hyper = H5Dread(dset_w, memtype, memspace, filespace, plist_id_write, complex_disk_data);
+	file_reader=0;
+	for(int i = 0; i < nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1); i++) {
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+W_t_)) = complex_disk_data[i].real;		file_reader++;
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+W_t_)) = complex_disk_data[i].imag;		file_reader++;
+	} 	
+    /*Close U resources*/
+	H5Sclose(filespace);
+	H5Dclose(dset_w);
+
+	/*Release global resources*/
+	MPI_Barrier(MPI_COMM_WORLD);
+	H5Pclose(plist_id_write);
+	H5Pclose(plist_id);
+	H5Fclose(file_id);
+	H5Tclose(filetype);
+    H5Sclose(memspace);
 	free(complex_disk_data);
-	MPI_Barrier(MPI_COMM_WORLD);*>
-END outstats
+	*>
+END read_disk
