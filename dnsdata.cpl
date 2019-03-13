@@ -21,6 +21,7 @@ REAL u_conv, u0, un, w_conv, w0, wn, t0, tn
 REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0 
 REAL starting_time
 BOOLEAN generate_inputs
+CHAR cwd[1024], output_cwd[1024]
 INTEGER localdim_x, localdim_z, dim_z, dim_y, ilo,ihi,jlo,jhi,klo,khi,  x_ilo,x_ihi,x_jlo,x_jhi,x_klo,x_khi,
 																		y_ilo,y_ihi,y_jlo,y_jhi,y_klo,y_khi,
 																		z_ilo,z_ihi,z_jlo,z_jhi,z_klo,z_khi,
@@ -267,10 +268,22 @@ SUBROUTINE set_time
 			IF rank=0 THEN WRITE "Random field will be generated" 
 			random_field
 		ELSE
-			IF rank=0 THEN WRITE "File results/0.h5 will be the initial field"
+			IF rank=0 THEN WRITE "File 'results/0.h5'' will be the initial field"
 		END IF
 	END IF
 END set_time
+
+
+
+
+
+
+
+
+
+
+
+
 
 !// Coefficients library---------------------------------------------------------------------------------
 SUBROUTINE simple(COMPLEX rhs^,old^(*),unkn,impl,expl)
