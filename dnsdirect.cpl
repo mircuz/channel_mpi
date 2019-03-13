@@ -524,7 +524,7 @@ END read_disk
 
 
 
-REAL energy, slice_energy, diss, slice_diss, diss_tot
+REAL energy, slice_energy, diss, slice_diss, diss_tot, energy_tot
 COMPLEX dudy, dvdy, dwdy
 VETA fieldbuf(ilo..ihi,klo..khi)
 VELOCITY velbuf(ilo..ihi,klo..khi)
@@ -555,13 +555,13 @@ IF outcont>0 THEN
 			END IF
 		REPEAT
 	REPEAT
-<*	slice_diss_ = (double) slice_diss_;
-	MPI_Barrier(MPI_COMM_WORLD);
+<*	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Reduce(&slice_diss_, &diss_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	printf("Res: %.10f", diss_tot_);
+	MPI_Reduce(&slice_energy_, &energy_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	printf("diss: %.10f\tenergy: %.10f", diss_tot_,energy_tot_);
 *>
 
-	IF has_terminal THEN
+!(	IF has_terminal THEN
 	  WRITE time:1.9, u1zero:1.9, SUM -d14n(i)*V(0,0,ny-1+i).u.REAL FOR i=-2 TO 2 :1.9,
         	w1zero :1.9, SUM -d14n(i)*V(0,0,ny-1+i).w.REAL FOR i=-2 TO 2 :1.9,
 		flowx,px+corrpx,flowz,pz+corrpz,cflm*deltat,deltat,energy,diss
