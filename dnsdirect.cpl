@@ -525,9 +525,7 @@ VETA fieldbuf(ilo..ihi,klo..khi)
 VELOCITY velbuf(ilo..ihi,klo..khi)
 INTEGER cont=0,outcont=1000
 SUBROUTINE outstats
-INC outcont; 
-IF outcont>0 THEN
-	outcont=0; energy=0; slice_energy=0; diss=0; slice_diss=0
+energy=0; slice_energy=0; diss=0; slice_diss=0
 
 	DO WITH V(ix,iz,iy): 
 	slice_energy = ~ + 1/2 * [NORM(u)+NORM(v)+NORM(w)]*[IF ix=0 THEN 1 ELSE 2] *(y(iy+1)-y(iy-1))*0.5 FOR iy=1 TO ny-1 AND ALL ix,iz EXCEPT ix=0 AND iz=0
@@ -550,6 +548,7 @@ IF outcont>0 THEN
 			END IF
 		REPEAT
 	REPEAT
+
 LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 	IF ix=0 AND iz=0 THEN 
 		u_fin=SUM -d14n(i)*V(0,0,ny-1+i).u.REAL FOR i=-2 TO 2
@@ -557,11 +556,10 @@ LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 	END IF
 REPEAT LOOP
 
-!(<*	MPI_Barrier(MPI_COMM_WORLD);
+<*	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Reduce(&slice_diss_, &diss_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	MPI_Reduce(&slice_energy_, &energy_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);	
-
-	if(rank_= rank_zero_) {
+	if(rank_== rank_zero_) {
 		MPI_Send(&u_fin_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 		MPI_Send(&w_fin_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 		MPI_Send(&u1zero_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
@@ -572,22 +570,19 @@ REPEAT LOOP
 		MPI_Recv(&w_fin_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 		MPI_Recv(&u1zero_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 		MPI_Recv(&w1zero_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-		printf("%f\t%f\t%f\t%f",u_fin_,w_fin_,u1zero_,w1zero_);
-	}
-	MPI_Barrier(MPI_COMM_WORLD);	*> !)
+	} 
+	MPI_Barrier(MPI_COMM_WORLD);	*> 
 
 	IF rank=0 THEN
 	 WRITE time:1.9, u1zero:1.9, u_fin :1.9,
         	w1zero :1.9, w_fin :1.9,
 		flowx,px+corrpx,flowz,pz+corrpz,deltat,energy_tot,diss_tot
-	  !(WRITE TO time_file time:1.9, 
+!(		WRITE TO time_file time:1.9, 
         	u1zero:1.9, SUM -d14n(i)*V(0,0,ny-1+i).u.REAL FOR i=-2 TO 2 :1.9,
 	        w1zero :1.9, SUM -d14n(i)*V(0,0,ny-1+i).w.REAL FOR i=-2 TO 2 :1.9,
 	        flowx,px+corrpx,flowz,pz+corrpz,deltat,energy_tot,diss_tot; FLUSH(time_file)
 !)
 	END IF 
-
-END IF 
     	
 !(IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
   DO WITH V(0,0,iy): u=~-u_conv; w=~-w_conv FOR ALL iy
