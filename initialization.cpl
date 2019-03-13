@@ -140,13 +140,19 @@ WRITE
   y_ilo_ = y_ilo, y_ihi_ = y_ihi, y_jlo_ = y_jlo, y_jhi_ = y_jhi, y_klo_ = y_klo, y_khi_ = y_khi;
   z_ilo_ = z_ilo, z_ihi_ = z_ihi, z_jlo_ = z_jlo, z_jhi_ = z_jhi, z_klo_ = z_klo, z_khi_ = z_khi;
   fz_ilo_=fz_ilo, fz_ihi_=fz_ihi, fz_jlo_=fz_jlo, fz_jhi_=fz_jhi, fz_klo_=fz_klo, fz_khi_=fz_khi;
-  MPI_Barrier(MPI_COMM_WORLD);  
-*>
+  MPI_Barrier(MPI_COMM_WORLD);  *>
 !// Take into account the negative modes
 klo = klo - nz;		khi = khi - nz;
 jlo = jlo - 1;		jhi = jhi - 1;
+!// Determine which core owns (ix=0 iz=0) mode
+LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
+	IF ix=0 AND iz=0 THEN 
+		rank_zero_flag =rank
+	END IF
+REPEAT LOOP
+<*	MPI_Allreduce(&rank_zero_flag_,&rank_zero_,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);	*>
 
-<* MPI_Barrier(MPI_COMM_WORLD); *>
 !// Fill the local array VV & V
 ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF MOMFLUX VV 
 ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF VELOCITY V 

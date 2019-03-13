@@ -14,7 +14,6 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
-!read_disk
 
 !LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat

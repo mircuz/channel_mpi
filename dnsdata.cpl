@@ -15,13 +15,14 @@ size_ = size;
 *>
 
 !// Variables initialization-----------------------------------------------------------------------------
-INTEGER ny,nx,nz, maxtimelevels=1
+INTEGER ny,nx,nz,rank_zero_flag=0,rank_zero,maxtimelevels=1
 REAL alfa0, beta0, a, ymin, ymax, t_max, dt_field, dt_save
 REAL u_conv, u0, un, w_conv, w0, wn, t0, tn
 REAL ni,pr,meanpx=-99,meanpz=-99,meanflowx=-99,meanflowz=-99,px=0,corrpx=0,pz=0,corrpz=0,flowx=0,flowz=0,deltat=0, cflmax=0, time=0 
 REAL starting_time
 BOOLEAN generate_inputs
 CHAR cwd[1024], output_cwd[1024]
+FILE time_file; IF rank=0 THEN time_file=CREATE("Runtimedata")
 INTEGER localdim_x, localdim_z, dim_z, dim_y, ilo,ihi,jlo,jhi,klo,khi,  x_ilo,x_ihi,x_jlo,x_jhi,x_klo,x_khi,
 																		y_ilo,y_ihi,y_jlo,y_jhi,y_klo,y_khi,
 																		z_ilo,z_ihi,z_jlo,z_jhi,z_klo,z_khi,
