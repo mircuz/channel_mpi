@@ -14,7 +14,7 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
-read_disk
+!read_disk
 
 !LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
@@ -28,7 +28,7 @@ read_disk
 	time=~+2/RK3_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
 	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats
-
+	
 	!ytoz;  write_on_disk
 	IF rank=0 THEN WRITE "t="time
 !REPEAT forward

@@ -446,8 +446,6 @@ SUBROUTINE read_disk
 
     /*Create the FILE chunked dataset*/
 	chunk_dims[0] = 1;		chunk_dims[1] = 1;		chunk_dims[2] = nz; 
-    plist_id = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_chunk(plist_id, 3, chunk_dims);
 	dset_u = H5Dopen(file_id, "/U", H5P_DEFAULT);
     
     /*Set FILE hyperslab in the chunk*/
@@ -506,7 +504,6 @@ SUBROUTINE read_disk
 	/*Release global resources*/
 	MPI_Barrier(MPI_COMM_WORLD);
 	H5Pclose(plist_id_write);
-	H5Pclose(plist_id);
 	H5Fclose(file_id);
 	H5Tclose(filetype);
     H5Sclose(memspace);
@@ -515,9 +512,9 @@ END read_disk
 
 
 
-
-
-
+IF generate_inputs = FALSE THEN 
+	read_disk
+END IF
 
 
 
@@ -558,8 +555,9 @@ IF outcont>0 THEN
 <*	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Reduce(&slice_diss_, &diss_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	MPI_Reduce(&slice_energy_, &energy_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	printf("diss: %.10f\tenergy: %.10f", diss_tot_,energy_tot_);
+	//printf("diss: %.10f\tenergy: %.10f", diss_tot_,energy_tot_);
 *>
+	IF rank=0 THEN WRITE energy_tot, diss_tot
 
 !(	IF has_terminal THEN
 	  WRITE time:1.9, u1zero:1.9, SUM -d14n(i)*V(0,0,ny-1+i).u.REAL FOR i=-2 TO 2 :1.9,

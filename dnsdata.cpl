@@ -268,7 +268,7 @@ SUBROUTINE set_time
 			IF rank=0 THEN WRITE "Random field will be generated" 
 			random_field
 		ELSE
-			IF rank=0 THEN WRITE "File 'results/0.h5'' will be the initial field"
+			IF rank=0 THEN WRITE "File 'results/0.h5'' will be the initial field."
 		END IF
 	END IF
 END set_time
