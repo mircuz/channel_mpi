@@ -273,18 +273,6 @@ SUBROUTINE set_time
 	END IF
 END set_time
 
-
-
-
-
-
-
-
-
-
-
-
-
 !// Coefficients library---------------------------------------------------------------------------------
 SUBROUTINE simple(COMPLEX rhs^,old^(*),unkn,impl,expl)
   rhs=unkn/deltat+expl

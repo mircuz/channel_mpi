@@ -386,11 +386,6 @@ SUBROUTINE write_on_disk
 	free(complex_disk_data); *>
 END write_on_disk
 
-
-
-
-
-
 SUBROUTINE read_disk
 	<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int file_reader;
 	/*HDF5 APIs definitions*/ 		
@@ -515,6 +510,128 @@ SUBROUTINE read_disk
 	H5Fclose(file_id);
 	H5Tclose(filetype);
     H5Sclose(memspace);
-	free(complex_disk_data);
-	*>
+	free(complex_disk_data);	*>
 END read_disk
+
+
+
+
+
+
+
+
+
+
+
+
+REAL energy, slice_energy, diss, slice_diss, diss_tot
+COMPLEX dudy, dvdy, dwdy
+VETA fieldbuf(ilo..ihi,klo..khi)
+VELOCITY velbuf(ilo..ihi,klo..khi)
+INTEGER cont=0,outcont=1000
+SUBROUTINE outstats
+INC outcont; 
+IF outcont>0 THEN
+	outcont=0; energy=0; slice_energy=0; diss=0; slice_diss=0
+
+	DO WITH V(ix,iz,iy): 
+	slice_energy = ~ + 1/2 * [NORM(u)+NORM(v)+NORM(w)]*[IF ix=0 THEN 1 ELSE 2] *(y(iy+1)-y(iy-1))*0.5 FOR iy=1 TO ny-1 AND ALL ix,iz EXCEPT ix=0 AND iz=0
+
+	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi 
+		LOOP FOR iy=1 TO ny-1
+			WITH V(ix,iz,*):
+			k2 = (alfa0*ix)^2 + (beta0*iz)^2
+			dudy = 0.5*[(u(iy+1)-u(iy))/(y(iy+1)-y(iy)) + (u(iy)-u(iy-1))/(y(iy)-y(iy-1))]
+			dvdy = 0.5*[(v(iy+1)-v(iy))/(y(iy+1)-y(iy)) + (v(iy)-v(iy-1))/(y(iy)-y(iy-1))]
+			dwdy = 0.5*[(w(iy+1)-w(iy))/(y(iy+1)-y(iy)) + (w(iy)-w(iy-1))/(y(iy)-y(iy-1))]
+			IF ix=0 THEN 
+				IF iz=0 THEN 
+					slice_diss = ~ + 0
+				ELSE 
+					slice_diss = ~ + 0.5*[ k2*(NORM(u(iy))+NORM(v(iy))+NORM(w(iy))) + NORM(dudy)+NORM(dvdy)+NORM(dwdy) ] * (y(iy+1)-y(iy-1))*0.5
+				END IF
+			ELSE 
+				slice_diss = ~ + 2 *0.5*[ k2*(NORM(u(iy))+NORM(v(iy))+NORM(w(iy))) + NORM(dudy)+NORM(dvdy)+NORM(dwdy) ] * (y(iy+1)-y(iy-1))*0.5
+			END IF
+		REPEAT
+	REPEAT
+<*	slice_diss_ = (double) slice_diss_;
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Reduce(&slice_diss_, &diss_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	printf("Res: %.10f", diss_tot_);
+*>
+
+	IF has_terminal THEN
+	  WRITE time:1.9, u1zero:1.9, SUM -d14n(i)*V(0,0,ny-1+i).u.REAL FOR i=-2 TO 2 :1.9,
+        	w1zero :1.9, SUM -d14n(i)*V(0,0,ny-1+i).w.REAL FOR i=-2 TO 2 :1.9,
+		flowx,px+corrpx,flowz,pz+corrpz,cflm*deltat,deltat,energy,diss
+	  WRITE TO time_file time:1.9, 
+        	u1zero:1.9, SUM -d14n(i)*V(0,0,ny-1+i).u.REAL FOR i=-2 TO 2 :1.9,
+	        w1zero :1.9, SUM -d14n(i)*V(0,0,ny-1+i).w.REAL FOR i=-2 TO 2 :1.9,
+	        flowx,px+corrpx,flowz,pz+corrpz,cflm*deltat,deltat,energy,diss; FLUSH(time_file)
+
+	END IF
+END IF
+    	
+IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
+  DO WITH V(0,0,iy): u=~-u_conv; w=~-w_conv FOR ALL iy
+  IF NOT first THEN READ FROM prev
+  diskimage = OPEN("Dati.cart.out")
+  WITH diskimage
+    IF has_terminal THEN
+      WRITE "Writing Dati.cart.out at time", time
+      WRITE TO header <<??
+         ny=??ny??       nx=??nx??       nz=??nz??
+         alfa0=??alfa0??     beta0=??beta0??
+         ymin=??ymin??       ymax=??ymax??       a=??a??
+         ni=??1/ni??       time=??time??
+         ??
+    END IF
+
+   LOOP FOR iy = miny TO maxy
+     DO velbuf(0..nx,iz) = V(0..nx,iz,iy) FOR ALL iz
+     Vimage(iy) = velbuf
+
+   REPEAT LOOP
+DO WRITE i,header(i) FOR i=0 TO 1023
+  CLOSE diskimage
+  IF NOT last THEN WRITE TO next
+  DO WITH V(0,0,iy): u=~+u_conv; w=~+w_conv FOR ALL iy
+END IF
+    
+IF time>0 AND FLOOR((time+0.5*deltat)/dt_field) > FLOOR((time-0.5*deltat)/dt_field) THEN
+  cont=~+1; STRING field_name
+  field_name = WRITE("Field"cont".fld")
+  DO WITH V(0,0,iy): u=~-u_conv; w=~-w_conv FOR ALL iy
+  IF NOT first THEN READ FROM prev
+  diskfield = OPEN(field_name)
+  WITH diskfield
+    IF has_terminal THEN
+      WRITE "Writing field_file", cont, "at time", time
+      nyimage=ny;nximage=nx;nzimage=nz
+      timage=time;yminimage=ymin;ymaximage=ymax
+      aimage=a;alfa0image=alfa0;beta0image=beta0;niimage=1/ni
+    END IF
+    uavimage(miny..maxy)=V(0,0,miny..maxy).u.REAL
+    wavimage(miny..maxy)=V(0,0,miny..maxy).w.REAL
+
+    LOOP FOR iy = miny TO maxy
+     LOOP FOR ALL ix,iz WITH fieldbuf(ix,iz)
+      v = V(ix,iz,iy).v
+      ialfa = I*alfa0*ix; ibeta = I*beta0*iz
+      eta = ibeta*V(ix,iz,iy).u - ialfa*V(ix,iz,iy).w
+     REPEAT LOOP
+    fieldimage(iy)=fieldbuf
+
+    REPEAT LOOP
+
+  CLOSE diskfield
+  IF NOT last THEN WRITE TO next
+  DO WITH V(0,0,iy): u=~+u_conv; w=~+w_conv FOR ALL iy !)
+END IF 
+END outstats
+
+
+
+
+
