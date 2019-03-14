@@ -256,18 +256,18 @@ SUBROUTINE yintegr(REAL RESULT^, f(*))
   REPEAT
 END yintegr
 
-SUBROUTINE random_field
-	WRITE "in random_field"
-END random_field
-
 !// Set starting time of simulation
+SUBROUTINE random_field FOLLOWS
 SUBROUTINE set_time
 	time = starting_time
-	IF rank=0 THEN WRITE "Simulation starts from " time "s"
+	IF rank=0 THEN 
+		WRITE "Simulation starts from " time "s"
+		WRITE TO time_file "time","u1zero", ,"u_fin", ,"w1zero", , ,"w_fin", ,,"flowx",
+								  "px+corrpx", "flowz", , ,"pz+corrpz", "deltat","energy_tot","diss_tot"
+	END IF
 	IF time = 0.0 THEN 
 		IF generate_inputs = TRUE THEN
 			IF rank=0 THEN WRITE "Random field will be generated" 
-			random_field
 		ELSE
 			IF rank=0 THEN WRITE "File 'results/0.h5'' will be the initial field."
 		END IF

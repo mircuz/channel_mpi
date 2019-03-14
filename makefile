@@ -26,5 +26,6 @@ clean:
 	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c
 	rm *.o
 	rm *.d
+	rm Runtimedata
 	rm exe
 
