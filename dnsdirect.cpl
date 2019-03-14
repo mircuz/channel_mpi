@@ -265,10 +265,9 @@ SUBROUTINE write_on_disk
     hsize_t		offset[3];
     herr_t		file_type, mem_type, file_hyper, mem_hyper, status;
 	MPI_Info info  = MPI_INFO_NULL;
-	char field_time[25], field_u[25], field_v[25], field_w[25], field_eta[25], time_str[25]="Field";
-	const char field_u2=&field_u, field_v2=&field_v, field_w2=field_w, field_eta2=field_eta;
+	char field_time[25]="", field_u[25]="", field_v[25]="", field_w[25]="", field_eta[25]="", time_str[25]="Field";
 	gcvt (time_, 10, field_time);
-	strcat(field_u,"/");	strcat(field_u,field_time);		strcat(field_u,"/U");	
+	strcat(field_u,"/");	strcat(field_u,field_time);		strcat(field_u,"/u");	
 	strcat(field_v,"/");	strcat(field_v,field_time);		strcat(field_v,"/v");
 	strcat(field_w,"/");	strcat(field_w,field_time);		strcat(field_w,"/w");
 	strcat(field_eta,field_time);	strcat(field_eta,"/eta");
@@ -323,7 +322,7 @@ SUBROUTINE write_on_disk
 	chunk_dims[0] = 1;		chunk_dims[1] = 1;		chunk_dims[2] = nz; 
     plist_id = H5Pcreate(H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 3, chunk_dims);
-	dset_u = H5Dcreate(file_id, "/0.05/U", filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	dset_u = H5Dcreate(file_id, field_u, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
     
     /*Set FILE hyperslab in the chunk*/
     filespace = H5Dget_space(dset_u);
@@ -351,7 +350,7 @@ SUBROUTINE write_on_disk
 	H5Dclose(dset_u);
     
 	//========================================================================================================
-	dset_v = H5Dcreate(file_id, field_v2, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	dset_v = H5Dcreate(file_id, field_v, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_v);
 	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 	
