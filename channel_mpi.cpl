@@ -26,16 +26,20 @@ LOOP forward WHILE time < t_max-deltat/2
 
 	time=~+2/RK3_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
-	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats
-	
-	ytoz;  write_on_disk
+	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats;	ytoz;
+
+	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk
+
 REPEAT forward
 
-
+IF rank=0 THEN 
+	WRITE "Simulation Ended"
+	WRITE; WRITE
+END IF
 <* 	MPI_Barrier(MPI_COMM_WORLD);
 	free(u_convol_);	free(v_convol_);	free(w_convol_);				//Worked uvw
 	free(U_t_);		free(V_t_);		free(W_t_);								//Local UVW copied into structure
   	free(uu_);	free(uv_);	free(vv_);	free(vw_);	free(ww_);	free(uw_); 	//Local convols copied into structure
-	free(recvbuf_);	 free(sendbuf_);  										//Remap local arrays
+	free(recvbuf_);	 free(sendbuf_);										//Remap local arrays
 	MPI_Finalize();	*>
 

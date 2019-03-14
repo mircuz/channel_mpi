@@ -516,7 +516,6 @@ REAL energy, slice_energy, diss, slice_diss, diss_tot, energy_tot, u_fin, w_fin
 COMPLEX dudy, dvdy, dwdy
 VETA fieldbuf(ilo..ihi,klo..khi)
 VELOCITY velbuf(ilo..ihi,klo..khi)
-INTEGER cont=0,outcont=1000
 SUBROUTINE outstats
 	energy=0; slice_energy=0; diss=0; slice_diss=0
 	DO WITH V(ix,iz,iy): 
@@ -583,10 +582,8 @@ SUBROUTINE outstats
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
-    	
-!(IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
-  DO WITH V(0,0,iy): u=~-u_conv; w=~-w_conv FOR ALL iy
-  IF NOT first THEN READ FROM prev
+
+!(IF NOT first THEN READ FROM prev
   diskimage = OPEN("Dati.cart.out")
   WITH diskimage
     IF has_terminal THEN
