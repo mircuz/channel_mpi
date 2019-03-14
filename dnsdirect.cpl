@@ -514,8 +514,7 @@ IF generate_inputs = FALSE THEN read_disk
 
 REAL energy, slice_energy, diss, slice_diss, diss_tot, energy_tot, u_fin, w_fin
 COMPLEX dudy, dvdy, dwdy
-VETA fieldbuf(ilo..ihi,klo..khi)
-VELOCITY velbuf(ilo..ihi,klo..khi)
+VETA fieldbuf(ilo..ihi,klo..khi,-1..ny+1)
 SUBROUTINE outstats
 	energy=0; slice_energy=0; diss=0; slice_diss=0
 	DO WITH V(ix,iz,iy): 
@@ -582,6 +581,25 @@ SUBROUTINE outstats
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
+
+	
+	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
+		LOOP FOR iy=-1 TO ny+1
+			WITH fieldbuf(ix,iz,iy)
+      		v = V(ix,iz,iy).v
+     	 	ialfa = I*alfa0*ix; ibeta = I*beta0*iz
+      		eta = ibeta*V(ix,iz,iy).u - ialfa*V(ix,iz,iy).w
+		REPEAT
+	REPEAT
+	INTEGER counter_buf = 0
+	LOOP FOR i=ilo TO ihi
+		LOOP FOR k=klo TO khi
+			LOOP FOR j=-1 TO ny+1
+				eta_write[counter_buf]= fieldbuf(i,k,j).eta.REAL;		v_write[counter_buf]= fieldbuf(i,k,j).v.REAL;		INC counter_buf;
+				eta_write[counter_buf]= fieldbuf(i,k,j).eta.IMAG;		v_write[counter_buf]= fieldbuf(i,k,j).v.IMAG;		INC counter_buf;
+			REPEAT
+		REPEAT
+	REPEAT 
 
 !(IF NOT first THEN READ FROM prev
   diskimage = OPEN("Dati.cart.out")

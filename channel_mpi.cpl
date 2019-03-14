@@ -41,5 +41,6 @@ END IF
 	free(U_t_);		free(V_t_);		free(W_t_);								//Local UVW copied into structure
   	free(uu_);	free(uv_);	free(vv_);	free(vw_);	free(ww_);	free(uw_); 	//Local convols copied into structure
 	free(recvbuf_);	 free(sendbuf_);										//Remap local arrays
+	free(eta_write_);	 free(v_write_);
 	MPI_Finalize();	*>
 
