@@ -1,4 +1,3 @@
-!USE rtchecks
 #include <mpi.h>
 #include <math.h>
 #include <stdlib.h>
@@ -27,9 +26,7 @@ LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK3_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
 	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats;	ytoz;
-
 	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk
-
 REPEAT forward
 
 IF rank=0 THEN 
