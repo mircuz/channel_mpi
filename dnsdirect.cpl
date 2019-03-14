@@ -581,8 +581,7 @@ SUBROUTINE outstats
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
-
-	
+	!// Generate V_eta array
 	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 		LOOP FOR iy=-1 TO ny+1
 			WITH fieldbuf(ix,iz,iy)
@@ -600,61 +599,7 @@ SUBROUTINE outstats
 			REPEAT
 		REPEAT
 	REPEAT 
-
-!(IF NOT first THEN READ FROM prev
-  diskimage = OPEN("Dati.cart.out")
-  WITH diskimage
-    IF has_terminal THEN
-      WRITE "Writing Dati.cart.out at time", time
-      WRITE TO header <<??
-         ny=??ny??       nx=??nx??       nz=??nz??
-         alfa0=??alfa0??     beta0=??beta0??
-         ymin=??ymin??       ymax=??ymax??       a=??a??
-         ni=??1/ni??       time=??time??
-         ??
-    END IF
-
-   LOOP FOR iy = miny TO maxy
-     DO velbuf(0..nx,iz) = V(0..nx,iz,iy) FOR ALL iz
-     Vimage(iy) = velbuf
-
-   REPEAT LOOP
-DO WRITE i,header(i) FOR i=0 TO 1023
-  CLOSE diskimage
-  IF NOT last THEN WRITE TO next
-  DO WITH V(0,0,iy): u=~+u_conv; w=~+w_conv FOR ALL iy
-END IF
-    
-IF time>0 AND FLOOR((time+0.5*deltat)/dt_field) > FLOOR((time-0.5*deltat)/dt_field) THEN
-  cont=~+1; STRING field_name
-  field_name = WRITE("Field"cont".fld")
-  DO WITH V(0,0,iy): u=~-u_conv; w=~-w_conv FOR ALL iy
-  IF NOT first THEN READ FROM prev
-  diskfield = OPEN(field_name)
-  WITH diskfield
-    IF has_terminal THEN
-      WRITE "Writing field_file", cont, "at time", time
-      nyimage=ny;nximage=nx;nzimage=nz
-      timage=time;yminimage=ymin;ymaximage=ymax
-      aimage=a;alfa0image=alfa0;beta0image=beta0;niimage=1/ni
-    END IF
-    uavimage(miny..maxy)=V(0,0,miny..maxy).u.REAL
-    wavimage(miny..maxy)=V(0,0,miny..maxy).w.REAL
-
-    LOOP FOR iy = miny TO maxy
-     LOOP FOR ALL ix,iz WITH fieldbuf(ix,iz)
-      v = V(ix,iz,iy).v
-      ialfa = I*alfa0*ix; ibeta = I*beta0*iz
-      eta = ibeta*V(ix,iz,iy).u - ialfa*V(ix,iz,iy).w
-     REPEAT LOOP
-    fieldimage(iy)=fieldbuf
-
-    REPEAT LOOP
-
-  CLOSE diskfield
-  IF NOT last THEN WRITE TO next
-  DO WITH V(0,0,iy): u=~+u_conv; w=~+w_conv FOR ALL iy
-END IF !)
+	flag_veta=1
 
 END outstats
 

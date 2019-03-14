@@ -2,12 +2,14 @@
 WRITE
 <*/******************************************** Memory Alloc *******************************************/
   MPI_Barrier(MPI_COMM_WORLD);
-  u_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  v_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  w_convol_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  u_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  v_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  w_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   U_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
-  V_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  W_t_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  V_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  W_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  eta_write_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  v_write_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   uu_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   uv_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
   vv_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));

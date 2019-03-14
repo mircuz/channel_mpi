@@ -262,7 +262,12 @@ SUBROUTINE ytoz
 	remap3d_remap(remap_ytoz_pencil,U_t_,U_t_,sendbuf_,recvbuf_);
 	remap3d_remap(remap_ytoz_pencil,V_t_,V_t_,sendbuf_,recvbuf_);
 	remap3d_remap(remap_ytoz_pencil,W_t_,W_t_,sendbuf_,recvbuf_);
-  	MPI_Barrier(MPI_COMM_WORLD);  
+	if (flag_veta_ == 1) {
+		remap3d_remap(remap_ytoz_pencil,eta_write_,eta_write_,sendbuf_,recvbuf_);
+		remap3d_remap(remap_ytoz_pencil,v_write_,  v_write_,  sendbuf_,recvbuf_);
+	}
+  	MPI_Barrier(MPI_COMM_WORLD); 
+	flag_veta_=0; 
 	remap3d_destroy(remap_ytoz_pencil);	*>
 END ytoz
 
