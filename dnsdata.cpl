@@ -12,6 +12,7 @@ MPI_Comm_size(MPI_COMM_WORLD,&size);
 MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 rank_ = rank;
 size_ = size;
+
 *>
 
 !// Variables initialization-----------------------------------------------------------------------------
@@ -38,6 +39,10 @@ rhstype=STRUCTURE(COMPLEX eta,D2v)
 VETA=STRUCTURE(COMPLEX v,eta)
 INLINE FUNCTION imod(INTEGER iy)=(iy+1000)MOD(5)
 REAL u1zero=0, w1zero=0
+<* typedef struct complex {
+		double 	real;
+		double	imag;
+  	} complex; *>
 
 !// Routine to read data from the structure MOMFLUX------------------------------------------------------	
 SUBROUTINE y_pencil_parser_mom( POINTER TO ARRAY(*,*,*) OF MOMFLUX VV; INTEGER start_mode_x; INTEGER end_mode_x;
@@ -256,6 +261,43 @@ SUBROUTINE yintegr(REAL RESULT^, f(*))
   REPEAT
 END yintegr
 
+SUBROUTINE setup_file
+	<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int mem_reader;
+		//if( chdir(output_cwd_) !=0 )
+		if( chdir("/media/sf_Materiale_Tesi") !=0 )
+			perror(".:Error changing folder in outstats routine:.");
+		hid_t plist_id0, file_id0;
+		hid_t       file_id, dset_u, dset_v, dset_w, dset_eta;          /* file and dataset identifiers */
+  	 	hid_t       filespace, memspace, global_filespace;    /* file and memory dataspace identifiers */
+		hid_t		plist_id;
+		hid_t		filetype, memtype;
+		herr_t		file_type, mem_type;
+		//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
+		complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1)*sizeof(complex));	
+		if ( complex_disk_data == NULL) {
+			perror(".:Error while allocating complex_disk_data:.\n");	
+			abort();
+		}	
+						
+		/*Create FILE Type*/
+		filetype = H5Tcreate (H5T_COMPOUND, sizeof (complex));
+		file_type = H5Tinsert (filetype, "real", HOFFSET (complex, real), H5T_IEEE_F64LE);
+		file_type = H5Tinsert (filetype, "imag", HOFFSET (complex, imag), H5T_IEEE_F64LE);
+
+		/*Create MEMORY Type*/
+		memtype = H5Tcreate (H5T_COMPOUND, sizeof (complex));
+		mem_type = H5Tinsert (memtype, "real", HOFFSET (complex, real), H5T_NATIVE_DOUBLE);
+		mem_type = H5Tinsert (memtype, "imag", HOFFSET (complex, imag), H5T_NATIVE_DOUBLE);
+
+		/*Set up file access property list with parallel I/O access*/
+   		plist_id0 = H5Pcreate(H5P_FILE_ACCESS);
+    	H5Pset_fapl_mpio(plist_id0, MPI_COMM_WORLD, MPI_INFO_NULL);
+    	/*Create a new file collectively and release property list identifier*/
+    	file_id0 = H5Fcreate("Field.h5", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id0);
+    	H5Pclose(plist_id0);
+		H5Fclose(file_id0); *>
+END setup_file
+
 !// Set starting time of simulation
 SUBROUTINE random_field FOLLOWS
 SUBROUTINE set_time
@@ -266,6 +308,7 @@ SUBROUTINE set_time
 								  "px+corrpx", "flowz", , ,"pz+corrpz", "deltat","energy_tot","diss_tot"
 	END IF
 	IF time = 0.0 THEN 
+		setup_file
 		IF generate_inputs = TRUE THEN
 			IF rank=0 THEN WRITE "Random field will be generated" 
 		ELSE

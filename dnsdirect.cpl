@@ -252,9 +252,9 @@ END move_data
 SUBROUTINE write_on_disk
 <*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int mem_reader;
 	/*HDF5 APIs definitions*/ 		
-    hid_t       file_id, dset_u, dset_v, dset_w, dset_eta;          /* file and dataset identifiers */
+    hid_t       file_id, dset_u, dset_v, dset_w, dset_eta;/* file and dataset identifiers */
     hid_t       filespace, memspace, global_filespace;    /* file and memory dataspace identifiers */
-	hid_t		plist_id, plist_id_write;		          /* property list identifier */
+	hid_t		plist_id, plist_id_write, group_id;	      /* property list identifier */
 	hid_t		filetype, memtype;
     hsize_t     dimsf[3], dim_vect[1];    /* dataset dimensions */
     hsize_t     chunk_dims[3];            /* chunk dimensions */
@@ -265,8 +265,13 @@ SUBROUTINE write_on_disk
     hsize_t		offset[3];
     herr_t		file_type, mem_type, file_hyper, mem_hyper, status;
 	MPI_Info info  = MPI_INFO_NULL;
-	char time_str[15];
-	gcvt (time_, 10, time_str);
+	char field_time[25], field_u[25], field_v[25], field_w[25], field_eta[25], time_str[25]="Field";
+	const char field_u2=&field_u, field_v2=&field_v, field_w2=field_w, field_eta2=field_eta;
+	gcvt (time_, 10, field_time);
+	strcat(field_u,"/");	strcat(field_u,field_time);		strcat(field_u,"/U");	
+	strcat(field_v,"/");	strcat(field_v,field_time);		strcat(field_v,"/v");
+	strcat(field_w,"/");	strcat(field_w,field_time);		strcat(field_w,"/w");
+	strcat(field_eta,field_time);	strcat(field_eta,"/eta");
 	strcat(time_str,".h5");
 	//if( chdir(output_cwd_) !=0 )
 	if( chdir("/media/sf_Materiale_Tesi") !=0 )
@@ -303,8 +308,12 @@ SUBROUTINE write_on_disk
     plist_id = H5Pcreate(H5P_FILE_ACCESS);
     H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, info);
     /*Create a new file collectively and release property list identifier*/
-    file_id = H5Fcreate(time_str, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+    file_id = H5Fopen("Field.h5", H5F_ACC_RDWR, plist_id);
+    //file_id = H5Fcreate("Field.h5", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
     H5Pclose(plist_id);  
+
+	/* Create a group named "time" in the file. */
+   group_id = H5Gcreate2(file_id, field_time, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
     /*Create the dataspace for the FILE dataset*/
     dimsf[0] = ny;	dimsf[1] = nx;	dimsf[2] = nz;			
@@ -314,7 +323,7 @@ SUBROUTINE write_on_disk
 	chunk_dims[0] = 1;		chunk_dims[1] = 1;		chunk_dims[2] = nz; 
     plist_id = H5Pcreate(H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 3, chunk_dims);
-	dset_u = H5Dcreate(file_id, "/U", filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	dset_u = H5Dcreate(file_id, "/0.05/U", filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
     
     /*Set FILE hyperslab in the chunk*/
     filespace = H5Dget_space(dset_u);
@@ -342,7 +351,7 @@ SUBROUTINE write_on_disk
 	H5Dclose(dset_u);
     
 	//========================================================================================================
-	dset_v = H5Dcreate(file_id, "/V", filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	dset_v = H5Dcreate(file_id, field_v2, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_v);
 	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 	
@@ -359,7 +368,7 @@ SUBROUTINE write_on_disk
 	H5Dclose(dset_v);
 
 	//========================================================================================================
-	dset_w = H5Dcreate(file_id, "/W", filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	dset_w = H5Dcreate(file_id, field_w, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_w);
 	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 	
@@ -376,7 +385,7 @@ SUBROUTINE write_on_disk
 	H5Dclose(dset_w);
 	
 	//========================================================================================================
-	dset_eta = H5Dcreate(file_id, "/eta", filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	dset_eta = H5Dcreate(file_id, field_eta, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_eta);
 	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 	
@@ -397,6 +406,7 @@ SUBROUTINE write_on_disk
 	H5Pclose(plist_id_write);
 	H5Sclose(global_filespace);
 	H5Pclose(plist_id);
+	H5Gclose(group_id);
 	H5Fclose(file_id);
 	H5Tclose(filetype);
     H5Sclose(memspace);
