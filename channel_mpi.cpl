@@ -29,10 +29,7 @@ LOOP forward WHILE time < t_max-deltat/2
 	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk
 REPEAT forward
 
-IF rank=0 THEN 
-	WRITE "Simulation Ended"
-	WRITE; WRITE
-END IF
+IF rank=0 THEN WRITE; WRITE "Simulation Ended"; WRITE; WRITE; END IF
 <* 	MPI_Barrier(MPI_COMM_WORLD);
 	free(u_convol_);	free(v_convol_);	free(w_convol_);				//Worked uvw
 	free(U_t_);		free(V_t_);		free(W_t_);								//Local UVW copied into structure
