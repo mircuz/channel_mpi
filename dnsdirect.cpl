@@ -250,7 +250,7 @@ SUBROUTINE move_data
 END move_data 
 
 SUBROUTINE write_on_disk
-<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int mem_reader;
+<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;	int size= size_; 	int rank = rank_; 	int mem_reader;		double ni = 1/ni_;
 	/*HDF5 APIs definitions*/ 		
     hid_t       file_id, dset_u, dset_v, dset_w, dset_eta;/* file and dataset identifiers */
     hid_t       filespace, memspace, global_filespace;    /* file and memory dataspace identifiers */
@@ -258,23 +258,27 @@ SUBROUTINE write_on_disk
 	hid_t		filetype, memtype;
     hsize_t     dimsf[3], dim_vect[1];    /* dataset dimensions */
     hsize_t     chunk_dims[3];            /* chunk dimensions */
-    double      *data;                    /* pointer to data buffer to write */
     hsize_t		count[3];	          	  /* hyperslab selection parameters */
     hsize_t		stride[3];
     hsize_t		block[3];
     hsize_t		offset[3];
     herr_t		file_type, mem_type, file_hyper, mem_hyper, status;
 	MPI_Info info  = MPI_INFO_NULL;
-	char field_time[25]="", field_u[25]="", field_v[25]="", field_w[25]="", field_eta[25]="", time_str[25]="Field";
+	char field_time[25]="/", field_u[25]="", field_v[25]="", field_w[25]="", field_eta[25]="", time_str[25]="Field";
 	gcvt (time_, 10, field_time);
-	strcat(field_u,"/");	strcat(field_u,field_time);		strcat(field_u,"/u");	
-	strcat(field_v,"/");	strcat(field_v,field_time);		strcat(field_v,"/v");
-	strcat(field_w,"/");	strcat(field_w,field_time);		strcat(field_w,"/w");
+	strcat(field_u,field_time);		strcat(field_u,"/u");	
+	strcat(field_v,field_time);		strcat(field_v,"/v");
+	strcat(field_w,field_time);		strcat(field_w,"/w");
 	strcat(field_eta,field_time);	strcat(field_eta,"/eta");
 	strcat(time_str,".h5");
 	//if( chdir(output_cwd_) !=0 )
 	if( chdir("/media/sf_Materiale_Tesi") !=0 )
 		perror(".:Error changing folder in outstats routine:.");
+	//=======================================================================================================
+	int dim=3;
+	hsize_t att_dims=dim;
+	double att_modes[dim];
+	att_modes[0] = nx;	att_modes[1] = nz;	att_modes[2] = ny;
 	//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
 	complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1)*sizeof(complex));	
 	if ( complex_disk_data == NULL) {
@@ -345,6 +349,7 @@ SUBROUTINE write_on_disk
 		mem_reader++;
 	}
    	file_hyper = H5Dwrite(dset_u, memtype, memspace, filespace, plist_id_write, complex_disk_data);
+
     /*Close U resources*/
 	H5Sclose(filespace);
 	H5Dclose(dset_u);
@@ -362,6 +367,7 @@ SUBROUTINE write_on_disk
 		mem_reader++;
 	}
     file_hyper = H5Dwrite(dset_v, memtype, memspace, filespace, plist_id_write, complex_disk_data);
+
 	/*Close V resources*/
 	H5Sclose(filespace);
 	H5Dclose(dset_v);
@@ -379,6 +385,7 @@ SUBROUTINE write_on_disk
 		mem_reader++;
 		}
     file_hyper = H5Dwrite(dset_w, memtype, memspace, filespace, plist_id_write, complex_disk_data);
+
 	/*Close W resources*/
 	H5Sclose(filespace);
 	H5Dclose(dset_w);
@@ -396,9 +403,18 @@ SUBROUTINE write_on_disk
 		mem_reader++;
 		}
     file_hyper = H5Dwrite(dset_eta, memtype, memspace, filespace, plist_id_write, complex_disk_data);
+
 	/*Close W resources*/
 	H5Sclose(filespace);
 	H5Dclose(dset_eta);
+
+	/*Dataset Attributes*/
+	H5LTset_attribute_double(file_id, field_time, "time", &time_, 1);
+	H5LTset_attribute_double(file_id, field_time, "nx nz ny", att_modes, dim);
+	H5LTset_attribute_double(file_id, field_time, "alpha0", &alfa0_, 1);
+	H5LTset_attribute_double(file_id, field_time, "beta0", &beta0_, 1);
+	H5LTset_attribute_double(file_id, field_time, "a", &a_, 1);
+	H5LTset_attribute_double(file_id, field_time, "ni", &ni , 1);
 
 	/*Release global resources*/
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -421,7 +437,6 @@ SUBROUTINE read_disk
 	hid_t		filetype, memtype;
     hsize_t     dimsf[3], dim_vect[1];    /* dataset dimensions */
     hsize_t     chunk_dims[3];            /* chunk dimensions */
-    double      *data;                    /* pointer to data buffer to write */
     hsize_t		count[3];	          	  /* hyperslab selection parameters */
     hsize_t		stride[3];
     hsize_t		block[3];
@@ -607,23 +622,26 @@ SUBROUTINE outstats
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
-	!// Generate V_eta array
-	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
-		LOOP FOR iy=-1 TO ny+1
-			WITH fieldbuf(ix,iz,iy)
-      		v = V(ix,iz,iy).v
-     	 	ialfa = I*alfa0*ix; ibeta = I*beta0*iz
-      		eta = ibeta*V(ix,iz,iy).u - ialfa*V(ix,iz,iy).w
-		REPEAT
-	REPEAT
-	INTEGER counter_buf = 0
-	LOOP FOR i=ilo TO ihi
-		LOOP FOR k=klo TO khi
-			LOOP FOR j=-1 TO ny+1
-				eta_write[counter_buf]= fieldbuf(i,k,j).eta.REAL;		v_write[counter_buf]= fieldbuf(i,k,j).v.REAL;		INC counter_buf;
-				eta_write[counter_buf]= fieldbuf(i,k,j).eta.IMAG;		v_write[counter_buf]= fieldbuf(i,k,j).v.IMAG;		INC counter_buf;
+	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
+		IF rank=0 THEN WRITE "Writing Field at " time "s"
+		!// Generate V_eta array
+		LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
+			LOOP FOR iy=-1 TO ny+1
+				WITH fieldbuf(ix,iz,iy)
+		  		v = V(ix,iz,iy).v
+		 	 	ialfa = I*alfa0*ix; ibeta = I*beta0*iz
+		  		eta = ibeta*V(ix,iz,iy).u - ialfa*V(ix,iz,iy).w
 			REPEAT
 		REPEAT
-	REPEAT 
-	flag_veta=1
+		INTEGER counter_buf = 0
+		LOOP FOR i=ilo TO ihi
+			LOOP FOR k=klo TO khi
+				LOOP FOR j=-1 TO ny+1
+					eta_write[counter_buf]= fieldbuf(i,k,j).eta.REAL;		v_write[counter_buf]= fieldbuf(i,k,j).v.REAL;		INC counter_buf;
+					eta_write[counter_buf]= fieldbuf(i,k,j).eta.IMAG;		v_write[counter_buf]= fieldbuf(i,k,j).v.IMAG;		INC counter_buf;
+				REPEAT
+			REPEAT
+		REPEAT 
+		flag_veta=1
+	END IF
 END outstats
