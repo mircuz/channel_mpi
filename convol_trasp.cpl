@@ -285,6 +285,7 @@ SUBROUTINE random_field
 		IF ix=0 AND iz=0 THEN DO WITH V(0,0,iy): u.REAL=3/4*(1-[1-y(iy)]^2); u.IMAG=0; v=0; w.IMAG=0 FOR iy=-1 TO ny+1
 	REPEAT 	
 	ytoz
+	write_on_disk
 END random_field
 
 IF generate_inputs = TRUE THEN random_field
