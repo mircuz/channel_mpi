@@ -326,22 +326,22 @@ SUBROUTINE write_on_disk
 	chunk_dims[0] = 1;		chunk_dims[1] = 1;		chunk_dims[2] = nz; 
     plist_id = H5Pcreate(H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 3, chunk_dims);
-	dset_u = H5Dcreate(file_id, field_u, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+//	dset_u = H5Dcreate(file_id, field_u, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
     
     /*Set FILE hyperslab in the chunk*/
-    filespace = H5Dget_space(dset_u);
+ //   filespace = H5Dget_space(dset_u);
 	offset[0] = fz_jlo_;	offset[1] = fz_ilo_;	offset[2] = fz_klo_;
 	stride[0] = 1; 			stride[1] = 1;			stride[2] = 1;
 	count[0]  = fz_jhi_-fz_jlo_+1; 			count[1]  = fz_ihi_-fz_ilo_+1;   		count[2]  = 1; 
 	block[0]  = chunk_dims[0]; 		block[1]  = chunk_dims[1];		block[2]  = chunk_dims[2];
-	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
+//	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 
 	//------------------------------------------------ I/O --------------------------------------------------
 	/*Create property list for collective dataset write*/
     plist_id_write = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id_write, H5FD_MPIO_COLLECTIVE);
   
-	mem_reader=0;
+/*	mem_reader=0;
 	for(int i = 0; i < nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1); i++){
 		complex_disk_data[i].real = (*(double *)(mem_reader*(ssize_t)sizeof(double)+U_t_));
 		mem_reader++;
@@ -349,11 +349,11 @@ SUBROUTINE write_on_disk
 		mem_reader++;
 	}
    	file_hyper = H5Dwrite(dset_u, memtype, memspace, filespace, plist_id_write, complex_disk_data);
-
+*/
     /*Close U resources*/
-	H5Sclose(filespace);
+/*	H5Sclose(filespace);
 	H5Dclose(dset_u);
-    
+*/    
 	//========================================================================================================
 	dset_v = H5Dcreate(file_id, field_v, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_v);
@@ -373,7 +373,7 @@ SUBROUTINE write_on_disk
 	H5Dclose(dset_v);
 
 	//========================================================================================================
-	dset_w = H5Dcreate(file_id, field_w, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+/*	dset_w = H5Dcreate(file_id, field_w, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_w);
 	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 	
@@ -385,11 +385,11 @@ SUBROUTINE write_on_disk
 		mem_reader++;
 		}
     file_hyper = H5Dwrite(dset_w, memtype, memspace, filespace, plist_id_write, complex_disk_data);
-
+*/
 	/*Close W resources*/
-	H5Sclose(filespace);
+/*	H5Sclose(filespace);
 	H5Dclose(dset_w);
-	
+*/	
 	//========================================================================================================
 	dset_eta = H5Dcreate(file_id, field_eta, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_eta);
