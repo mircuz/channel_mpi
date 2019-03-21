@@ -14,7 +14,8 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
-
+<* 	double sim_time=0.0, max_sim_time=0.0; 
+	sim_time-=MPI_Wtime();*>
 LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
 	convol_trasp(VV,V);	 	buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
@@ -29,6 +30,18 @@ LOOP forward WHILE time < t_max-deltat/2
 	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats;	ytoz;
 	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk
 REPEAT forward
+
+!// Get timing
+<*	sim_time+=MPI_Wtime();
+	MPI_Allreduce(&sim_time, &max_sim_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 	*>
+REAL time_out
+IF rank=0 THEN
+		<*time_out_ = max_sim_time;
+		printf("%fs to do the simulation\n", time_out_); *>
+END IF
+FILE timeout = CREATE("time_out.txt")
+WRITE TO timeout "Time elapsed since loop starting: " time_out
+
 
 IF rank=0 THEN WRITE; WRITE "Simulation Ended"; WRITE; WRITE; END IF
 <* 	MPI_Barrier(MPI_COMM_WORLD);

@@ -271,8 +271,8 @@ SUBROUTINE write_on_disk
 	strcat(field_w,field_time);		strcat(field_w,"/w");
 	strcat(field_eta,field_time);	strcat(field_eta,"/eta");
 	strcat(time_str,".h5");
-	//if( chdir(output_cwd_) !=0 )
-	if( chdir("/media/sf_Materiale_Tesi") !=0 )
+	if( chdir(output_cwd_) !=0 )
+	//if( chdir("/media/sf_Materiale_Tesi") !=0 )
 		perror(".:Error changing folder in outstats routine:.");
 	//=======================================================================================================
 	int dim=3;
@@ -447,8 +447,8 @@ SUBROUTINE read_disk
 	gcvt (time_, 10, time_str);
 	strcat(time_str,".h5");
 	if (rank==0) printf("Reading field from %s\n", time_str);
-	//if( output_cwd_ !=0 )
-	if( chdir("/media/sf_Materiale_Tesi") !=0 )
+	if( chdir(output_cwd_) !=0 )
+	//if( chdir("/media/sf_Materiale_Tesi") !=0 )
 		perror(".:Error changing folder in outstats routine:.");
 	//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
 	complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1)*sizeof(complex));	
