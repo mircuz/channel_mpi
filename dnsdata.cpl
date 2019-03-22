@@ -263,9 +263,9 @@ END yintegr
 
 SUBROUTINE setup_file
 	<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int mem_reader;
-		if( chdir(output_cwd_) !=0 )
+		//if( chdir(output_cwd_) !=0 )
 		//if( chdir("/media/sf_Materiale_Tesi") !=0 )
-			perror(".:Error changing folder in outstats routine:.");
+			//perror(".:Error changing folder in outstats routine:.");
 		hid_t plist_id0, file_id0;
 		/*Set up file access property list with parallel I/O access*/
    		plist_id0 = H5Pcreate(H5P_FILE_ACCESS);
@@ -288,8 +288,6 @@ SUBROUTINE set_time
 		setup_file
 		IF generate_inputs = TRUE THEN
 			IF rank=0 THEN WRITE "Random field will be generated" 
-		ELSE
-			IF rank=0 THEN WRITE "File 'results/0.h5'' will be the initial field."
 		END IF
 	END IF
 END set_time

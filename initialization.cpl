@@ -15,6 +15,8 @@ WRITE
   	  printf("Running in: %s\n", cwd_);
 	  printf("Output in : %s\n", output_cwd_);
   }
+  if( chdir(output_cwd_) !=0 )
+	  perror(".:Error changing folder in outstats routine:.");
 
   int nfast,nmid,nslow, nx,ny,nz;
   nx = nx_+1;		ny = ny_+3;	nz = nz_*2+1;
