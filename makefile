@@ -1,4 +1,4 @@
-CC = /home/mirco/Scrivania/hdf5/bin/h5pcc
+CCX = mpicxx
 CFLAGS = /usr/local/fri/complex.o /usr/local/fri/fft.o /usr/local/fri/rbmat.o 
 
 
@@ -16,7 +16,7 @@ compilation:
 	$(CC) -O3 -fPIC -c dnsdata.c
 	$(CC) -O3 -fPIC -c dnsdirect.c
 	
-	$(CC) $(CFLAGS) -O3 -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o -lfft3dmpi -lm 
+	$(CCX) $(CFLAGS) -O3 -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o /home/mirco/Scrivania/fftmpi-1Oct18/src/libfft3dmpi.a -L/home/mirco/Scrivania/hdf5/lib /home/mirco/Scrivania/hdf5/lib/libhdf5_hl.a /home/mirco/Scrivania/hdf5/lib/libhdf5.a -lz -ldl -lm -Wl,-rpath -Wl,/home/mirco/Scrivania/hdf5/lib -I/usr/local/include -pthread -Wl,-rpath -Wl,/usr/local/lib -Wl,--enable-new-dtags -L/usr/local/lib -lmpi
 	make remove_useless
 		#--> Executable ready <--
 		#--> run as mpiexec -n "#procs" exe <--
