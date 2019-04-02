@@ -2,7 +2,7 @@ CCX = mpicxx
 CFLAGS = /usr/local/fri/complex.o /usr/local/fri/fft.o /usr/local/fri/rbmat.o 
 
 
-all: translation compilation
+all: translation compilation linking
 
 translation:
 	/usr/local/fri/fri /usr/local/fri/cpl channel_mpi.cpl
@@ -15,7 +15,8 @@ compilation:
 	$(CC) -O3 -fPIC -c channel_mpi.c
 	$(CC) -O3 -fPIC -c dnsdata.c
 	$(CC) -O3 -fPIC -c dnsdirect.c
-	
+
+linking:	
 	$(CCX) $(CFLAGS) -O3 -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o /home/mirco/Scrivania/fftmpi-1Oct18/src/libfft3dmpi.a -L/home/mirco/Scrivania/hdf5/lib /home/mirco/Scrivania/hdf5/lib/libhdf5_hl.a /home/mirco/Scrivania/hdf5/lib/libhdf5.a -lz -ldl -lm -Wl,-rpath -Wl,/home/mirco/Scrivania/hdf5/lib -I/usr/local/include -pthread -Wl,-rpath -Wl,/usr/local/lib -Wl,--enable-new-dtags -L/usr/local/lib -lmpi
 	make remove_useless
 		#--> Executable ready <--
@@ -27,8 +28,8 @@ remove_useless:
 	rm *.d
 
 clean: 
-	rm Runtimedata
 	rm exe
 	rm results/Field.h5
-	rm results/time_out.txt
+	rm results/time_out
+	rm Runtimedata
 

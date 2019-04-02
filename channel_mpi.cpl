@@ -5,6 +5,8 @@
 #include "remap3d_wrap.h"
 #include "/home/mirco/Scrivania/hdf5/include/hdf5.h"
 #include "/home/mirco/Scrivania/hdf5/include/hdf5_hl.h"
+!//#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5.h"
+!//#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5_hl.h"
 
 INTEGER rank, size
 gamma=0
@@ -14,8 +16,7 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
-<* 	double sim_time=0.0, max_sim_time=0.0; 
-	sim_time-=MPI_Wtime();*>
+<* 	clock_t begin = clock();*>
 LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
 	convol_trasp(VV,V);	 	buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
@@ -32,18 +33,12 @@ LOOP forward WHILE time < t_max-deltat/2
 REPEAT forward
 
 !// Get timing
-<*	sim_time+=MPI_Wtime();
-	MPI_Allreduce(&sim_time, &max_sim_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 	*>
-REAL time_out
-IF rank=0 THEN
-		<*time_out_ = max_sim_time;
-		printf("%fs to do the simulation\n", time_out_); *>
-END IF
-FILE timeout = CREATE("time_out.txt")
-WRITE TO timeout "Time elapsed since loop starting: " time_out
+<*	clock_t end = clock();
+	double sim_time = (double)(end - begin) / CLOCKS_PER_SEC;	double max_sim_time=0.0;
+	MPI_Allreduce(&sim_time, &max_sim_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	FILE *ft = fopen("time_out","w");	fprintf(ft, "Simulation performed in %f s", max_sim_time); 	fclose(ft);	*>
 
-
-IF rank=0 THEN WRITE; WRITE "Simulation Ended"; WRITE; WRITE; END IF
+IF rank=0 THEN WRITE; WRITE "<Simulation Ended>"; WRITE; WRITE; END IF
 <* 	MPI_Barrier(MPI_COMM_WORLD);
 	free(u_convol_);	free(v_convol_);	free(w_convol_);				//Worked uvw
 	free(U_t_);		free(V_t_);		free(W_t_);								//Local UVW copied into structure
