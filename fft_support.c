@@ -16,18 +16,18 @@ typedef double FFT_SCALAR;
 /*============================================= Functions Def =============================================*/
 void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
 		int nz_left = 1+ (nz-1)/2; 	int reader=0;
-	
-		for( int stride_x = 0; stride_x < 2*nzd*ny*nx; stride_x = stride_x + 2*nzd*ny) {
-			for( int stride_y = 0; stride_y < 2*nzd*ny; stride_y = stride_y + 2*nzd) {
-				for (int k= (nzd-nz_left+1)*2; k < nzd*2; k++){
+		int stride_x, stride_y, k;
+		for( stride_x = 0; stride_x < 2*nzd*ny*nx; stride_x = stride_x + 2*nzd*ny) {
+			for( stride_y = 0; stride_y < 2*nzd*ny; stride_y = stride_y + 2*nzd) {
+				for ( k= (nzd-nz_left+1)*2; k < nzd*2; k++){
 					U[stride_x + stride_y+k] = U_read[reader];
 					reader++;
 					//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
 				}
-				for (int k= (nz_left)*2; k < (nzd-nz_left+1)*2; k++){
+				for ( k= (nz_left)*2; k < (nzd-nz_left+1)*2; k++){
 					U[stride_x + stride_y+k]=0;
 				}
-				for (int k= 0; k < (nz_left)*2; k++){
+				for ( k= 0; k < (nz_left)*2; k++){
 					U[stride_x + stride_y+k] = U_read[reader];
 					reader++;
 					//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
@@ -37,16 +37,17 @@ void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_re
 }
 
 void x_aliasing(int nx, int ny, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read){
-	int reader = nx*ny*nzd*2-1;		//printf("reader %d", reader);
-	for( int stride_z = 2*nxd*ny*nzd-1; stride_z > 0 ; stride_z = stride_z - 2*nxd*ny) {			//Backward x evitare sovrascritture
+	int reader = nx*ny*nzd*2-1;		
+	int stride_z, stride_y, i;
+	for( stride_z = 2*nxd*ny*nzd-1; stride_z > 0 ; stride_z = stride_z - 2*nxd*ny) {			//Backward x evitare sovrascritture
 		//printf("stride_z %d\n", stride_z)
-		for( int stride_y = 0; stride_y < 2*nxd*ny ; stride_y = stride_y + 2*nxd) {
+		for( stride_y = 0; stride_y < 2*nxd*ny ; stride_y = stride_y + 2*nxd) {
 			//printf("\tstride_y %d\n", stride_y);
-			for( int i = 0; i < 2*(nxd-nx); i++) {
+			for( i = 0; i < 2*(nxd-nx); i++) {
 				U[stride_z - stride_y - i] = 0;		
 				//printf("U0[%d] = %g\n", stride_z - stride_y - i, U[stride_z - stride_y - i]);	
 			}
-			for( int i = 2*(nxd-nx); i < 2*nxd; i++) {
+			for( i = 2*(nxd-nx); i < 2*nxd; i++) {
 				U[stride_z - stride_y - i] = U_read[reader];
 				//printf("reader %d\n", reader);
 				reader--;
@@ -59,9 +60,10 @@ void x_aliasing(int nx, int ny, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_r
 void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u) {
 	/* scounts = initial number of ny*nz modes */
 	int stride_x, placeholder=0;
-	for (int mode =0; mode < scounts; mode++) {
+	int mode, i;
+	for ( mode =0; mode < scounts; mode++) {
 		stride_x = mode*nxd*2;
-		for (int i = 0; i < 2*nx; i++) {
+		for ( i = 0; i < 2*nx; i++) {
 			u[placeholder] = u[stride_x+i];
 			placeholder++;
 			//printf("u[%d]= %g\n", placeholder, u[placeholder]);
@@ -71,24 +73,25 @@ void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u) {
 
 void z_dealiasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U) {
 	int writer=0;	int reader=0;	int nz_left = 1+(nz-1)/2;
+	int stride_x, stride_y, k;
 	FFT_SCALAR *temp = (FFT_SCALAR *) malloc(2*nz_left*sizeof(FFT_SCALAR));
 	if (temp == NULL) {
 		perror(".:Error while allocating temporary vector in z_dealiasing routine:.\n");
 		abort();
 	}
-	for (int stride_x = 0; stride_x < 2*nx*ny*nzd; stride_x = stride_x + 2*ny*nzd ) {
-		for (int stride_y = 0; stride_y < 2*ny*nzd; stride_y = stride_y + 2*nzd) {
+	for ( stride_x = 0; stride_x < 2*nx*ny*nzd; stride_x = stride_x + 2*ny*nzd ) {
+		for ( stride_y = 0; stride_y < 2*ny*nzd; stride_y = stride_y + 2*nzd) {
 			reader=0;
-			for (int k= 0; k < 2*nz_left; k++) {
+			for ( k= 0; k < 2*nz_left; k++) {
 				temp[reader] = U[stride_x + stride_y + k];
 				reader++;
 			}	
-			for (int k=2*(nzd-(nz_left-1)); k < 2*nzd; k++ ) {
+			for ( k=2*(nzd-(nz_left-1)); k < 2*nzd; k++ ) {
 				U[writer] = U[stride_x + stride_y + k];
 				writer++;	
 			}	
 			reader=0;
-			for (int k = 2*(nz_left-1); k < 2*nz; k++) {
+			for ( k = 2*(nz_left-1); k < 2*nz; k++) {
 				U[writer] = temp[reader];
 				writer++;	reader++;	
 			}
@@ -99,14 +102,14 @@ void z_dealiasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U) {
 void cores_handler( int modes, int size, int *modes_per_proc) {
 	int rank =0;
 	int check=0;
-
-	for (int i = 0; i < modes; i++) {
+	int i;
+	for ( i = 0; i < modes; i++) {
 		modes_per_proc[rank] = modes_per_proc[rank]+1;
 		rank = rank+1;
 		if (rank == size ) rank = 0;
 	}
 	
-	for (int i = 0; i < size; i++){
+	for ( i = 0; i < size; i++){
 		//printf("%d modes on rank %d\n", modes_per_proc[i], i);
 		check = check+modes_per_proc[i];
 	}
@@ -119,14 +122,15 @@ void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4])
 	//On rank 0 read the dataset
 	FILE *U_dat;	U_dat = fopen( file_to_read, "r");
 	printf("Reading initial field from %s...\n",file_to_read);
-	for ( int i = 0; i < (nx)*(ny)*(nz)*2; i++) {
+	int i;
+	for ( i = 0; i < (nx)*(ny)*(nz)*2; i++) {
 		fscanf( U_dat, "%lf", &U_read[i]);
 		//printf("I've read %lf\n", U_read[i]);
 	}
 	printf("\tReading completed\n");
 }
 
-/* APPLY GLOBAL AA Z PENCIL VERSION */
+/* APPLY GLOBAL AA Z PENCIL VERSION 
 void print_z_pencil(int nz, int in_ilo, int in_ihi, int in_jlo,
 		FFT_SCALAR *u, int rank, int scounts, int desidered_rank);
 void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
@@ -153,7 +157,7 @@ void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALA
 		}
 	}
 	//print_z_pencil(nzd, 0, nxd-1, 0, U, 0, 2*nxd*ny*nzd, 0);
-}
+} */
 
 /*	APPLY GLOBAL AA X-PENCIL VERSION 
 void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read) {
@@ -209,8 +213,8 @@ void print_x_pencil(int nx, int in_jlo, int in_jhi, int in_klo,
 if (rank == desidered_rank) {
 	  int stride_nz = in_klo;
 	  int stride_ny = in_jlo;
-
-	  for (int i = 0; i < scounts; i++) {
+	  int i;
+	  for ( i = 0; i < scounts; i++) {
    	  if ( i % (nx*2) == 0) {
    		  printf("========(ny= %d, nz= %d)=======\n", stride_ny , stride_nz);
    		  if ( (stride_ny ) == in_jhi) {
@@ -229,8 +233,8 @@ void print_y_pencil(int ny, int y_ilo, int y_khi, int y_klo,
 if (rank == desidered_rank) {
 	int stride_nx = y_ilo;
 	int stride_nz = y_klo;
-
-	for (int i = 0; i < scounts; i++) {
+	int i;
+	for ( i = 0; i < scounts; i++) {
    		if ( i % (ny*2) == 0) {
    			printf("========(nx= %d, nz= %d)=======\n", stride_nx , stride_nz);
    			if ( (stride_nz ) == y_khi) {
@@ -249,8 +253,8 @@ void print_z_pencil(int nz, int in_ilo, int in_ihi, int in_jlo,
 if (rank == desidered_rank) {
 	int stride_nx = in_ilo;
 	int stride_ny = in_jlo;
-
-	for (int i = 0; i < scounts; i++) {
+	int i;
+	for ( i = 0; i < scounts; i++) {
 		if ( i % (nz*2) == 0) {
 			printf("========(nx= %d, ny= %d)=======\n", stride_nx , stride_ny);
 			if ( (stride_nx) == in_ihi) {
@@ -268,7 +272,7 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 					 int in_ihi, int nz, int nx, FFT_SCALAR *arr, FFT_SCALAR *arr_recv, int flag){
 	/* Flag = 1 	=> 	Scatterw
 	 * Flag = -1 	=>	Gatherw */
-
+	int i;
 	int *contiguous_x = (int *) malloc(sizeof(int)*size);
 	int *contiguous_y = (int *) malloc(sizeof(int)*size);
 	int *sendcounts = (int *) malloc(sizeof(int)*size);
@@ -282,12 +286,12 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	MPI_Datatype recvtype[size];
 	contiguous_y[rank] = (in_jhi-in_jlo+1);
 	contiguous_x[rank] = (in_ihi-in_ilo+1);
-	for (int i = 0; i < size; i++){
+	for ( i = 0; i < size; i++){
 		sendcounts[i] = 0;	recvdispls[i] = 0;		recvcounts[i] = 0;		recvtype[i] = MPI_DOUBLE;
 	}
 	// Broadcaster is the only one that send something
 	if (rank == 0) {
-		for (int i  = 0; i < size; i++){
+		for ( i  = 0; i < size; i++){
 			sendcounts[i] = 1;
 		}
 	}
@@ -302,7 +306,7 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	MPI_Datatype vector[size], contiguous[size];
 	int bytes_stride = sizeof(double)*2*nz*nx;
 
-	for (int i = 0; i < size; i++) {
+	for ( i = 0; i < size; i++) {
 		MPI_Type_contiguous(2*nz*contiguous_x[i], MPI_DOUBLE, &contiguous[i]);
 		MPI_Type_create_hvector(contiguous_y[i], 1, bytes_stride, contiguous[i], &vector[i]);
 		MPI_Type_commit(&vector[i]);

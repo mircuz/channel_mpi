@@ -1,4 +1,5 @@
 CCX = mpicxx
+CC = mpicc
 CFLAGS = /usr/local/fri/complex.o /usr/local/fri/fft.o /usr/local/fri/rbmat.o 
 
 
