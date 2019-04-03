@@ -16,11 +16,37 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
-<* 	clock_t begin = clock();*>
+<* 	clock_t con_begin, con_end;	clock_t bui_begin, bui_end;	clock_t lin_begin, lin_end;
+	clock_t vet_begin, vet_end;	clock_t flo_begin, flo_end;	clock_t yz_begin, yz_end;
+	double con_time, max_con_time, bui_time, max_bui_time, lin_time, max_lin_time, 
+			vet_time, max_vet_time, flo_time, max_flo_time, yz_time, max_yz_time;	
+	FILE *ft1;	FILE *ft2;	FILE *ft3;
+	clock_t begin = clock();*>
+
+
+
 LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
-	convol_trasp(VV,V);	 	buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
-	vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);	ytoz
+	<*con_begin = clock();*>	convol_trasp(VV,V);	 	<*con_end = clock();*>
+	<*bui_begin = clock();*>	buildrhs(RK1_rai, VV, V);	<*bui_end = clock();*>
+	<*lin_begin = clock();*>	linsolve(RK1_rai_coeff/deltat);	<*lin_end = clock();*>
+	<*vet_begin = clock();*>	vetaTOuvw;	<*vet_end = clock();*>
+	<*flo_begin = clock();*>	computeflowrate(RK1_rai_coeff/deltat);	<*flo_end = clock();*>
+	<*yz_begin = clock();*>		ytoz;	<*yz_end = clock();
+	con_time = (double)(con_end - con_begin) / CLOCKS_PER_SEC;
+	MPI_Allreduce(&con_time, &max_con_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	bui_time = (double)(bui_end - bui_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&bui_time, &max_bui_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	lin_time = (double)(lin_end - lin_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&lin_time, &max_lin_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	vet_time = (double)(vet_end - vet_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&vet_time, &max_vet_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	flo_time = (double)(flo_end - flo_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&flo_time, &max_flo_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	yz_time = (double)(yz_end - yz_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&yz_time, &max_yz_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	if(rank==0) {ft1= fopen("profiler1","a");	fprintf(ft1, "%f\t%f\t%f\t%f\t%f\t%f\n", 
+				max_con_time, max_bui_time, max_lin_time, max_vet_time, max_flo_time, max_yz_time); 	fclose(ft1); }	*>
 
 	time=~+2/RK2_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK2_rai, VV, V);	linsolve(RK2_rai_coeff/deltat)

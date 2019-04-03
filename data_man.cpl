@@ -1,5 +1,5 @@
 !USE rtchecks
-WRITE
+WRITE "TOBEREMOVED"
 <*/******************************************** Memory Alloc *******************************************/
   MPI_Barrier(MPI_COMM_WORLD);
   u_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
@@ -25,8 +25,7 @@ WRITE
 	  abort();
   }
 
-/* For testing purpose! Read inputs from 3 files row-by-row
-  // Declare variables, on all procs, needed to Scatter data
+/*  // Declare variables, on all procs, needed to Scatter data
   FFT_SCALAR *U_read, *V_read, *W_read;
 
   // Allocate memory needed to Scatter data, only on the broadcaster

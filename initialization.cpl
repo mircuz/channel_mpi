@@ -74,10 +74,10 @@ WRITE
   int z_jlo = (int) 1.0*ipslow*nslow/npslow;					// J slow
   int z_jhi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
 
-  printf("[Z-PENCIL] (k,i,j order)\t"
+/*  printf("[Z-PENCIL] (k,i,j order)\t"
 		  "On rank %d the coordinates are: "
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, z_ilo, z_jlo, z_klo, z_ihi, z_jhi, z_khi );
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD); */
 
   // partitioning in x-pencil
   nfast = nx;
@@ -91,10 +91,10 @@ WRITE
   int x_klo = (int) 1.0*ipslow*nslow/npslow;						// K slow
   int x_khi = (int) 1.0*(ipslow+1)*nslow/npslow - 1; 
 
-  printf("[X-PENCIL] (i,j,k order)\t"
+/*  printf("[X-PENCIL] (i,j,k order)\t"
 		  "On rank %d the coordinates are: "
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, x_ilo, x_jlo, x_klo, x_ihi, x_jhi, x_khi );
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD); */
 
   // Final z-pencil
   nfast = nz;
@@ -125,10 +125,10 @@ WRITE
   int y_ilo = (int) 1.0*ipslow*nslow/npslow;					// J slow
   int y_ihi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
 
-  printf("[Y-PENCIL] (j,k,i order)\t"
+/*  printf("[Y-PENCIL] (j,k,i order)\t"
 		  "On rank %d the coordinates are: "
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, y_ilo, y_jlo, y_klo, y_ihi, y_jhi, y_khi );
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD); */
  
   /******************************************* Size Variables ******************************************/
   localdim_x_ = 2*nxd*(x_jhi-x_jlo+1)*(x_khi-x_klo+1);
