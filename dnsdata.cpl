@@ -262,7 +262,7 @@ SUBROUTINE yintegr(REAL RESULT^, f(*))
 END yintegr
 
 SUBROUTINE setup_file
-	<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int mem_reader;
+	!(<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int mem_reader;
 		//if( chdir(output_cwd_) !=0 )
 		//if( chdir("/media/sf_Materiale_Tesi") !=0 )
 			//perror(".:Error changing folder in outstats routine:.");
@@ -273,8 +273,8 @@ SUBROUTINE setup_file
     	/*Create a new file collectively and release property list identifier*/
     	file_id0 = H5Fcreate("Field.h5", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id0);
     	H5Pclose(plist_id0);
-		H5Fclose(file_id0); *>
-END setup_file
+		H5Fclose(file_id0); *> !)
+END setup_file 
 
 !// Set starting time of simulation
 SUBROUTINE set_time
