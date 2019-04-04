@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include "remap3d_wrap.h"
-#include "/home/mirco/Scrivania/hdf5/include/hdf5.h"
-#include "/home/mirco/Scrivania/hdf5/include/hdf5_hl.h"
-!//#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5.h"
-!//#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5_hl.h"
+!//#include "/home/mirco/Scrivania/hdf5/include/hdf5.h"
+!//#include "/home/mirco/Scrivania/hdf5/include/hdf5_hl.h"
+#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5.h"
+#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5_hl.h"
 
 INTEGER rank, size
 gamma=0
@@ -16,9 +16,9 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
-<* 	clock_t con_begin, con_end;	clock_t bui_begin, bui_end;	clock_t lin_begin, lin_end;
+<* 	clock_t con_begin, con_end;	clock_t bui_begin, bui_end;	clock_t lin_begin, lin_end, dis_begin, dis_end;
 	clock_t vet_begin, vet_end;	clock_t flo_begin, flo_end;	clock_t yz_begin, yz_end;
-	double con_time, max_con_time, bui_time, max_bui_time, lin_time, max_lin_time, 
+	double con_time, max_con_time, bui_time, max_bui_time, lin_time, max_lin_time, dis_time, max_dis_time,
 			vet_time, max_vet_time, flo_time, max_flo_time, yz_time, max_yz_time;	
 	FILE *ft1;	FILE *ft2;	FILE *ft3;
 	clock_t begin = clock();*>
@@ -45,16 +45,57 @@ LOOP forward WHILE time < t_max-deltat/2
 	MPI_Allreduce(&flo_time, &max_flo_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
 	yz_time = (double)(yz_end - yz_begin) / CLOCKS_PER_SEC;	
 	MPI_Allreduce(&yz_time, &max_yz_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
-	if(rank==0) {ft1= fopen("profiler1","a");	fprintf(ft1, "%f\t%f\t%f\t%f\t%f\t%f\n", 
-				max_con_time, max_bui_time, max_lin_time, max_vet_time, max_flo_time, max_yz_time); 	fclose(ft1); }	*>
+	if(rank==0) {ft1= fopen("profiler1","a");	fprintf(ft1, "%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
+				time_,max_con_time, max_bui_time, max_lin_time, max_vet_time, max_flo_time, max_yz_time); 	fclose(ft1); }	*>
+
 
 	time=~+2/RK2_rai_coeff*deltat
-	convol_trasp(VV,V);		buildrhs(RK2_rai, VV, V);	linsolve(RK2_rai_coeff/deltat)
-	vetaTOuvw; computeflowrate(RK2_rai_coeff/deltat); 	ytoz
+	<*con_begin = clock();*>	convol_trasp(VV,V);	 	<*con_end = clock();*>
+	<*bui_begin = clock();*>	buildrhs(RK2_rai, VV, V);	<*bui_end = clock();*>
+	<*lin_begin = clock();*>	linsolve(RK2_rai_coeff/deltat);	<*lin_end = clock();*>
+	<*vet_begin = clock();*>	vetaTOuvw;	<*vet_end = clock();*>
+	<*flo_begin = clock();*>	computeflowrate(RK2_rai_coeff/deltat);	<*flo_end = clock();*>
+	<*yz_begin = clock();*>		ytoz;	<*yz_end = clock();
+	con_time = (double)(con_end - con_begin) / CLOCKS_PER_SEC;
+	MPI_Allreduce(&con_time, &max_con_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	bui_time = (double)(bui_end - bui_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&bui_time, &max_bui_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	lin_time = (double)(lin_end - lin_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&lin_time, &max_lin_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	vet_time = (double)(vet_end - vet_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&vet_time, &max_vet_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	flo_time = (double)(flo_end - flo_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&flo_time, &max_flo_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	yz_time = (double)(yz_end - yz_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&yz_time, &max_yz_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	if(rank==0) {ft2= fopen("profiler2","a");	fprintf(ft2, "%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
+				time_,max_con_time, max_bui_time, max_lin_time, max_vet_time, max_flo_time, max_yz_time); 	fclose(ft2); }	*>
 
 	time=~+2/RK3_rai_coeff*deltat
-	convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
-	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats;	ytoz;
+	<*con_begin = clock();*>	convol_trasp(VV,V);	 	<*con_end = clock();*>
+	<*bui_begin = clock();*>	buildrhs(RK3_rai, VV, V);	<*bui_end = clock();*>
+	<*lin_begin = clock();*>	linsolve(RK3_rai_coeff/deltat);	<*lin_end = clock();*>
+	<*vet_begin = clock();*>	vetaTOuvw;	<*vet_end = clock();*>
+	<*flo_begin = clock();*>	computeflowrate(RK3_rai_coeff/deltat);	<*flo_end = clock();*>
+	<*dis_begin = clock();*>	outstats;	<*dis_end = clock();*>
+	<*yz_begin = clock();*>		ytoz;	<*yz_end = clock();
+	con_time = (double)(con_end - con_begin) / CLOCKS_PER_SEC;
+	MPI_Allreduce(&con_time, &max_con_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	bui_time = (double)(bui_end - bui_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&bui_time, &max_bui_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	lin_time = (double)(lin_end - lin_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&lin_time, &max_lin_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	vet_time = (double)(vet_end - vet_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&vet_time, &max_vet_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	flo_time = (double)(flo_end - flo_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&flo_time, &max_flo_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	yz_time = (double)(yz_end - yz_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&yz_time, &max_yz_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	dis_time = (double)(dis_end - dis_begin) / CLOCKS_PER_SEC;	
+	MPI_Allreduce(&dis_time, &max_dis_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
+	if(rank==0) {ft3= fopen("profiler3","a");	fprintf(ft3, "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n", 
+				time_,max_con_time, max_bui_time, max_lin_time, max_vet_time, max_flo_time, max_yz_time, max_dis_time); 	fclose(ft3); }	*>
+
 	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk
 REPEAT forward
 
