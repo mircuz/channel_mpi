@@ -30,14 +30,7 @@ WRITE
 
   // Algorithm to factor Nprocs into roughly cube roots
   int npfast,npmid,npslow;
-  npfast= 1;
-  int npmidslow = size / npfast;
-  npmid = (int) sqrt(npmidslow);
-  while (npmid < npmidslow) {
-    if (npmidslow % npmid == 0) break;
-    npmid++;
-  }
-  npslow = size / npfast / npmid;
+  npfast=1;	npmid=size;	npslow=1;
 
   int ipfast = rank % npfast;
   int ipmid = (rank/npfast) % npmid;
@@ -51,12 +44,8 @@ WRITE
   			  nxd,ny,nzd,nx,ny,nz,size,npfast,npmid,npslow);
     }
   // Sanity check
-  if ((ny/npmid) < 1) {
-	  perror("\n\n\nInvalid Y Grid decomposition\nAborting simulation...\n\n\n");
-	  abort();
-  }
-  if ((nz/npslow) < 1) {
- 	  perror("\n\n\nInvalid Z Grid decomposition\nAborting simulation...\n\n\n");
+  if (nx<size) {
+ 	  perror("\n\n\nInvalid Grid decomposition\nAborting simulation...\n\n\n");
  	  abort();
    }
   MPI_Barrier(MPI_COMM_WORLD);
@@ -96,7 +85,7 @@ WRITE
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, x_ilo, x_jlo, x_klo, x_ihi, x_jhi, x_khi );
   MPI_Barrier(MPI_COMM_WORLD);
 
-  // Final z-pencil
+  /*/ Final z-pencil
   nfast = nz;
   nmid = nx;
   nslow = ny;
@@ -107,11 +96,11 @@ WRITE
   int fz_ihi = (int) 1.0*(ipmid+1)*nmid/npmid - 1;
   int fz_jlo = (int) 1.0*ipslow*nslow/npslow;					// J slow
   int fz_jhi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
-
+*/
  /* printf("[FZ-PENCIL] (k,i,j order)\t"
 		  "On rank %d the coordinates are: "
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, fz_ilo, fz_jlo, fz_klo, fz_ihi, fz_jhi, fz_khi ); */
-  MPI_Barrier(MPI_COMM_WORLD);
+/*  MPI_Barrier(MPI_COMM_WORLD);
 
   // Final y-pencil
   nfast = ny;
@@ -129,19 +118,21 @@ WRITE
 		  "On rank %d the coordinates are: "
 		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, y_ilo, y_jlo, y_klo, y_ihi, y_jhi, y_khi );
   MPI_Barrier(MPI_COMM_WORLD);
- 
+*/ 
   /******************************************* Size Variables ******************************************/
   localdim_x_ = 2*nxd*(x_jhi-x_jlo+1)*(x_khi-x_klo+1);
   localdim_z_ = 2*(z_ihi-z_ilo+1)*(z_jhi-z_jlo+1)*nzd;
-  dim_z_ = 2*(fz_ihi-fz_ilo+1)*(fz_jhi-fz_jlo+1)*(fz_khi-fz_klo+1);
+/*  dim_z_ = 2*(fz_ihi-fz_ilo+1)*(fz_jhi-fz_jlo+1)*(fz_khi-fz_klo+1);
   dim_y_ = 2*(y_ihi-y_ilo+1)*(y_jhi-y_jlo+1)*(y_khi-y_klo+1);
   ilo_ = y_ilo; 	jlo_ = y_jlo;	klo_ = y_klo;
-  ihi_ = y_ihi;		jhi_ = y_jhi;	khi_ = y_khi;
+  ihi_ = y_ihi;		jhi_ = y_jhi;	khi_ = y_khi; */
+  ilo_ = z_ilo;		jlo_ = 0;	klo_ = 0;
+  ihi_ = z_ihi;		jhi_ = ny;	khi_ = nz-1;
 
   x_ilo_ = x_ilo, x_ihi_ = x_ihi, x_jlo_ = x_jlo, x_jhi_ = x_jhi, x_klo_ = x_klo, x_khi_ = x_khi;
-  y_ilo_ = y_ilo, y_ihi_ = y_ihi, y_jlo_ = y_jlo, y_jhi_ = y_jhi, y_klo_ = y_klo, y_khi_ = y_khi;
+//  y_ilo_ = y_ilo, y_ihi_ = y_ihi, y_jlo_ = y_jlo, y_jhi_ = y_jhi, y_klo_ = y_klo, y_khi_ = y_khi;
   z_ilo_ = z_ilo, z_ihi_ = z_ihi, z_jlo_ = z_jlo, z_jhi_ = z_jhi, z_klo_ = z_klo, z_khi_ = z_khi;
-  fz_ilo_=fz_ilo, fz_ihi_=fz_ihi, fz_jlo_=fz_jlo, fz_jhi_=fz_jhi, fz_klo_=fz_klo, fz_khi_=fz_khi;
+//  fz_ilo_=fz_ilo, fz_ihi_=fz_ihi, fz_jlo_=fz_jlo, fz_jhi_=fz_jhi, fz_klo_=fz_klo, fz_khi_=fz_khi;
   MPI_Barrier(MPI_COMM_WORLD);  *>
 !// Take into account the negative modes
 klo = klo - nz;		khi = khi - nz;
@@ -169,21 +160,21 @@ rhstype memrhs(ilo..ihi,klo..khi,1..(ny-1))
 INLINE FUNCTION newrhs(INTEGER ix,iz,iy)=memrhs(ix,iz,(iy+1000)MOD(3))
 ARRAY(klo..khi,1..ny-1,-2..2) OF REAL D2vmat=0, etamat=0	
 ARRAY(ilo..ihi,klo..khi) OF STRUCTURE(COMPLEX u,v,w,vy,eta) bc0=0, bcn=0
-POINTER TO ARRAY(0..localdim_x-1) OF REAL u_convol
-POINTER TO ARRAY(0..localdim_x-1) OF REAL v_convol
-POINTER TO ARRAY(0..localdim_x-1) OF REAL w_convol
-POINTER TO ARRAY(0..localdim_x-1) OF REAL U_t
-POINTER TO ARRAY(0..localdim_x-1) OF REAL V_t
-POINTER TO ARRAY(0..localdim_x-1) OF REAL W_t
-POINTER TO ARRAY(0..localdim_x-1) OF REAL uu
-POINTER TO ARRAY(0..localdim_x-1) OF REAL uv
-POINTER TO ARRAY(0..localdim_x-1) OF REAL vv
-POINTER TO ARRAY(0..localdim_x-1) OF REAL vw
-POINTER TO ARRAY(0..localdim_x-1) OF REAL uw
-POINTER TO ARRAY(0..localdim_x-1) OF REAL ww
-POINTER TO ARRAY(0..localdim_x-1) OF REAL sendbuf
-POINTER TO ARRAY(0..localdim_x-1) OF REAL recvbuf
-POINTER TO ARRAY(0..localdim_x-1) OF REAL eta_write
-POINTER TO ARRAY(0..localdim_x-1) OF REAL v_write
+POINTER TO ARRAY(0..localdim_x) OF REAL u_convol
+POINTER TO ARRAY(0..localdim_x) OF REAL v_convol
+POINTER TO ARRAY(0..localdim_x) OF REAL w_convol
+POINTER TO ARRAY(0..localdim_x) OF REAL U_t
+POINTER TO ARRAY(0..localdim_x) OF REAL V_t
+POINTER TO ARRAY(0..localdim_x) OF REAL W_t
+POINTER TO ARRAY(0..localdim_x) OF REAL uu
+POINTER TO ARRAY(0..localdim_x) OF REAL uv
+POINTER TO ARRAY(0..localdim_x) OF REAL vv
+POINTER TO ARRAY(0..localdim_x) OF REAL vw
+POINTER TO ARRAY(0..localdim_x) OF REAL uw
+POINTER TO ARRAY(0..localdim_x) OF REAL ww
+POINTER TO ARRAY(0..localdim_x) OF REAL sendbuf
+POINTER TO ARRAY(0..localdim_x) OF REAL recvbuf
+POINTER TO ARRAY(0..localdim_x) OF REAL eta_write
+POINTER TO ARRAY(0..localdim_x) OF REAL v_write
 
 set_time

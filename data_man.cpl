@@ -25,7 +25,6 @@ WRITE
 	  abort();
   }
 
-/* For testing purpose! Read inputs from 3 files row-by-row
   // Declare variables, on all procs, needed to Scatter data
   FFT_SCALAR *U_read, *V_read, *W_read;
 
@@ -73,5 +72,5 @@ WRITE
   MPI_Barrier(MPI_COMM_WORLD);
   Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
-  free(W_read); */
+  free(W_read); 
 *>

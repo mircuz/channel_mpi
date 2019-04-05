@@ -22,23 +22,21 @@ SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRA
       		  	  z_klo_,  z_khi_, z_ilo_,  z_ihi_, z_jlo_, z_jhi_,
 				  x_klo_,  x_khi_, x_ilo_,  x_ihi_, x_jlo_, x_jhi_, 
       			  nqty, permute, memoryflag, &sendsize, &recvsize);
-  MPI_Barrier(MPI_COMM_WORLD);
   // -----------------------------------------------------------------------------------------------------------	
   // Apply AA in z-direction locally
   //if (rank == 0) printf("Applying local z-antialiasing...\n");
   z_aliasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, u_convol_, U_t_); 	
   z_aliasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, v_convol_, V_t_);	
   z_aliasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, w_convol_, W_t_);	
-  MPI_Barrier(MPI_COMM_WORLD);
   // Backward FFT
   //print_z_pencil( nzd, z_ilo_, z_ihi_, z_jlo_, u_convol_, rank, localdim_z_, 0); 
   //if (rank == 0) printf("\tAA applied\n\nStarting Backward transformations...\n");
   double timer_b1 = 0.0;
-  timer_b1 -= MPI_Wtime();	*>
+	timer_b1 -= MPI_Wtime();	*>
 	FFT_z( u_convol, localdim_z, 1)
 	FFT_z( v_convol, localdim_z, 1)
 	FFT_z( w_convol, localdim_z, 1)
-<*MPI_Barrier(MPI_COMM_WORLD);
+<*
   timer_b1 += MPI_Wtime();
 //print_z_pencil( nzd, z_ilo_, z_ihi_, z_jlo_, u_convol_, rank, localdim_z_, 0); 
 
@@ -162,7 +160,7 @@ timer_conv += MPI_Wtime();
 
   /*********************************************** Y Transpose ********************************************/
   //if (rank == 0) printf("\tForward FFTs completed\n\nRemapping into Y pencil\n");
-  // Sanity check
+/*  // Sanity check
   if ( z_ihi_ != fz_ihi_ || z_ilo_ != fz_ilo_ || z_jhi_ != fz_jhi_ || z_jlo_ != fz_jlo_) {
   	  perror(".:Dimension mismatch among Z pencils:.");
 	  abort();
@@ -194,7 +192,7 @@ timer_conv += MPI_Wtime();
   //print_y_pencil( ny, y_ilo_, y_khi_, y_klo_, uu_, rank, dim_y_, 0);
 
   remap3d_destroy(remap_to_ypencil);
-
+*/
   /************************************************ Print Stats *********************************************/
   /*/ Gather all stats
   double TIMER_b1, TIMER_b2, TIMER_f1, TIMER_f2, TIMER_conv;
@@ -223,9 +221,9 @@ timer_conv += MPI_Wtime();
   MPI_Barrier(MPI_COMM_WORLD); *>
 WRITE
 INTEGER counter=0
-LOOP FOR mode_x = ilo TO ihi
-	LOOP FOR mode_z = klo TO khi
-		LOOP FOR mode_y = -1 TO ny+1	
+LOOP FOR mode_y = -1 TO ny+1
+	LOOP FOR mode_x = ilo TO ihi
+		LOOP FOR mode_z = klo TO khi	
 			VVd(mode_x,mode_z,mode_y).uu.REAL= uu[counter];	VVd(mode_x,mode_z,mode_y).vv.REAL= vv[counter];	
 			VVd(mode_x,mode_z,mode_y).ww.REAL= ww[counter];	VVd(mode_x,mode_z,mode_y).uv.REAL= uv[counter];	
 			VVd(mode_x,mode_z,mode_y).vw.REAL= vw[counter];	VVd(mode_x,mode_z,mode_y).uw.REAL= uw[counter];
@@ -238,16 +236,16 @@ LOOP FOR mode_x = ilo TO ihi
 			Vd(mode_x,mode_z,mode_y).u.IMAG = U_t[counter];	
 			Vd(mode_x,mode_z,mode_y).v.IMAG = V_t[counter];	
 			Vd(mode_x,mode_z,mode_y).w.IMAG = W_t[counter];	INC counter
-			!IF rank=0 THEN WRITE "("mode_x","mode_z","mode_y")  " Vd(mode_x,mode_z,mode_y).u
+			IF rank=5 THEN WRITE "("mode_x","mode_z","mode_y")  " Vd(mode_x,mode_z,mode_y).u
 		REPEAT LOOP
 	REPEAT LOOP
 REPEAT LOOP
-<*MPI_Barrier(MPI_COMM_WORLD); *>
+<*MPI_Barrier(MPI_COMM_WORLD); *> 
 END convol_trasp
 
 SUBROUTINE ytoz
 	move_data 
-<*	int nqty, permute, memoryflag, sendsize, recvsize;
+!(<*	int nqty, permute, memoryflag, sendsize, recvsize;
 	void *remap_ytoz_pencil;
 	nqty=2, memoryflag=1;
 	// ------------------------------------------- Setup YZ-Transpose --------------------------------------------
@@ -268,7 +266,7 @@ SUBROUTINE ytoz
 	}
   	MPI_Barrier(MPI_COMM_WORLD); 
 	flag_veta_=0; 
-	remap3d_destroy(remap_ytoz_pencil);	*>
+	remap3d_destroy(remap_ytoz_pencil);	*> !)
 END ytoz
 
 SUBROUTINE random_field
