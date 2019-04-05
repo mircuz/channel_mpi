@@ -236,7 +236,7 @@ LOOP FOR mode_y = -1 TO ny+1
 			Vd(mode_x,mode_z,mode_y).u.IMAG = U_t[counter];	
 			Vd(mode_x,mode_z,mode_y).v.IMAG = V_t[counter];	
 			Vd(mode_x,mode_z,mode_y).w.IMAG = W_t[counter];	INC counter
-			IF rank=5 THEN WRITE "("mode_x","mode_z","mode_y")  " Vd(mode_x,mode_z,mode_y).u
+			!IF rank=5 THEN WRITE "("mode_x","mode_z","mode_y")  " Vd(mode_x,mode_z,mode_y).u
 		REPEAT LOOP
 	REPEAT LOOP
 REPEAT LOOP
