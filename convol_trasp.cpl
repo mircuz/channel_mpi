@@ -271,14 +271,16 @@ END ytoz
 
 SUBROUTINE random_field
 	V=0
-	LOOP FOR iy=HI-10 TO HI
-		DO WITH V(ix,iz,iy): u=0.0001*EXP(RAND()*2*PI*I); v=0.0001*EXP(RAND()*2*PI*I); w=0.0001*EXP(RAND()*2*PI*I) FOR ALL ix,iz
-		LOOP FOR ix=ilo TO ihi
-			IF ix=0 THEN LOOP FOR iz=klo TO khi
-				IF iz>1 THEN V(ix,-iz,iy).u=CONJG(V(0,iz,iy).u);V(0,-iz,iy).v=CONJG(V(0,iz,iy).v);V(0,-iz,iy).w=CONJG(V(0,iz,iy).w)
+	IF rank=0 THEN 
+		LOOP FOR ALL iy
+			DO WITH V(0,iz,iy): u=0.0001*EXP(RAND()*2*PI*I); v=0.0001*EXP(RAND()*2*PI*I); w=0.0001*EXP(RAND()*2*PI*I) FOR ALL iz
+			LOOP FOR ix=ilo TO ihi
+				IF ix=0 THEN LOOP FOR iz=klo TO khi
+					IF iz>1 THEN V(ix,-iz,iy).u=CONJG(V(0,iz,iy).u);V(0,-iz,iy).v=CONJG(V(0,iz,iy).v);V(0,-iz,iy).w=CONJG(V(0,iz,iy).w)
+				REPEAT
 			REPEAT
 		REPEAT
-	REPEAT
+	END IF
 	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 		IF ix=0 AND iz=0 THEN DO WITH V(ix,iz,iy): u.REAL=3/4*(1-[1-y(iy)]^2); u.IMAG=0; v=0; w.IMAG=0 FOR iy=-1 TO ny+1
 	REPEAT 	
