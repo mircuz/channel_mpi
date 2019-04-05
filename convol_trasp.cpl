@@ -55,22 +55,19 @@ SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRA
   x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, u_convol_, u_convol_);
   x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, v_convol_, v_convol_);
   x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, w_convol_, w_convol_);
-  MPI_Barrier(MPI_COMM_WORLD);
   // Backward RFT
   double timer_b2 = 0.0;
   timer_b2 -= MPI_Wtime();  *>
 	FFT_x( u_convol, localdim_x, 1)
 	FFT_x( v_convol, localdim_x, 1)
 	FFT_x( w_convol, localdim_x, 1)
-<*MPI_Barrier(MPI_COMM_WORLD);
-  timer_b2 += MPI_Wtime();
+<*timer_b2 += MPI_Wtime();
   //print_x_pencil(nxd, x_jlo_, x_jhi_, x_klo_, w_, rank, localdim_x_, 0);
   remap3d_destroy(remap_to_xpencil);
 
   /************************************************ Convolutions *********************************************/
   double timer_conv = 0.0;
-  timer_conv -= MPI_Wtime();
-  MPI_Barrier(MPI_COMM_WORLD);  *>
+  timer_conv -= MPI_Wtime();	*>
 LOOP FOR i=0 TO localdim_x
 	uu[i] = u_convol[i]*u_convol[i]
 	uv[i] = u_convol[i]*v_convol[i]
@@ -79,8 +76,7 @@ LOOP FOR i=0 TO localdim_x
 	uw[i] = u_convol[i]*w_convol[i]
 	ww[i] = w_convol[i]*w_convol[i]
 REPEAT LOOP
-<*MPI_Barrier(MPI_COMM_WORLD);
-timer_conv += MPI_Wtime();
+<*timer_conv += MPI_Wtime();
   //if (rank == 0) printf("\tBackward FFTs completed\n\nStarting Forward transformations...\n");
   //print_x_pencil(nxd, x_jlo_, x_jhi_, x_klo_, uu_, rank, localdim_x_, 0);
 
@@ -92,7 +88,6 @@ timer_conv += MPI_Wtime();
 		  	  	  x_ilo_,  x_ihi_, x_jlo_,  x_jhi_,  x_klo_, x_khi_,
 				  z_ilo_,  z_ihi_, z_jlo_,  z_jhi_,  z_klo_, z_khi_,
 				  nqty, permute, memoryflag, &sendsize, &recvsize);
-  MPI_Barrier(MPI_COMM_WORLD);
   // -----------------------------------------------------------------------------------------------------------
   // Forward HFT
   double timer_f1 = 0.0;  
@@ -103,8 +98,7 @@ timer_conv += MPI_Wtime();
 	FFT_x( vw, localdim_x, -1)
 	FFT_x( uw, localdim_x, -1)
 	FFT_x( ww, localdim_x, -1)
-<*MPI_Barrier(MPI_COMM_WORLD);
-  timer_f1 += MPI_Wtime();
+<*timer_f1 += MPI_Wtime();
   //print_x_pencil(nxd, x_jlo_, x_jhi_, x_klo_, uu_, rank, localdim_x_, 0);
   // x-Dealiasing
   //if (rank == 0) printf("\tRemoving alias in x direction\n");
@@ -116,7 +110,6 @@ timer_conv += MPI_Wtime();
 	x_dealiasing( localdim_x_/nxd, nx, nxd, uw_);
 	x_dealiasing( localdim_x_/nxd, nx, nxd, ww_);
   //print_x_pencil(nx, x_jlo_, x_jhi_, x_klo_, ww_, rank, localdim_z_, 0);
-  MPI_Barrier(MPI_COMM_WORLD);
   // Transpose to x-pencil
   double timer_trasp_x = 0.0, TIMER_TRASP_x = 0.0;
   timer_trasp_x -= MPI_Wtime();
@@ -134,19 +127,16 @@ timer_conv += MPI_Wtime();
 
   // Forward FFT
   double timer_f2 = 0.0;
-  timer_f2 -= MPI_Wtime();
-  MPI_Barrier(MPI_COMM_WORLD);  *>
+  timer_f2 -= MPI_Wtime();  *>
 	FFT_z( uu, localdim_z, -1)
 	FFT_z( uv, localdim_z, -1)
 	FFT_z( vv, localdim_z, -1)
 	FFT_z( vw, localdim_z, -1)
 	FFT_z( uw, localdim_z, -1)
 	FFT_z( ww, localdim_z, -1)
-<*MPI_Barrier(MPI_COMM_WORLD);
-  timer_f2 += MPI_Wtime();
+<*timer_f2 += MPI_Wtime();
   
   // z-Dealiasing
-  MPI_Barrier(MPI_COMM_WORLD);
   //z_dealiasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, u_);
     z_dealiasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, uu_);
 	z_dealiasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, uv_);
@@ -155,7 +145,6 @@ timer_conv += MPI_Wtime();
 	z_dealiasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, uw_);
 	z_dealiasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, ww_);
   //print_z_pencil( nz, fz_ilo_, fz_ihi_, fz_jlo_, uu_, rank, localdim_z_, 0);
-  MPI_Barrier(MPI_COMM_WORLD);
   remap3d_destroy(remap_to_zpencil);
 
   /*********************************************** Y Transpose ********************************************/
@@ -217,8 +206,7 @@ timer_conv += MPI_Wtime();
   	  printf("%lgs employed to transpose in Y-pencils \n", TIMER_TRASP_y);
   	  printf("-----------------------------------------------------------\n\n");
   	  printf("Process Ended\n");
-  } */
-  MPI_Barrier(MPI_COMM_WORLD); *>
+  } */*>
 WRITE
 INTEGER counter=0
 LOOP FOR mode_y = -1 TO ny+1
@@ -240,7 +228,6 @@ LOOP FOR mode_y = -1 TO ny+1
 		REPEAT LOOP
 	REPEAT LOOP
 REPEAT LOOP
-<*MPI_Barrier(MPI_COMM_WORLD); *> 
 END convol_trasp
 
 SUBROUTINE ytoz

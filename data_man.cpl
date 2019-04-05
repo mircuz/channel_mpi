@@ -1,7 +1,6 @@
 !USE rtchecks
 WRITE
 <*/******************************************** Memory Alloc *******************************************/
-  MPI_Barrier(MPI_COMM_WORLD);
   u_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   v_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   w_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
@@ -25,7 +24,7 @@ WRITE
 	  abort();
   }
 
-  /*/ Declare variables, on all procs, needed to Scatter data
+  // Declare variables, on all procs, needed to Scatter data
   FFT_SCALAR *U_read, *V_read, *W_read;
 
   // Allocate memory needed to Scatter data, only on the broadcaster
@@ -72,5 +71,5 @@ WRITE
   MPI_Barrier(MPI_COMM_WORLD);
   Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
-  free(W_read);  */
+  free(W_read); 
 *>
