@@ -1,5 +1,5 @@
 WRITE
-SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRAY(*,*,*) OF VELOCITY Vd )
+!(SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRAY(*,*,*) OF VELOCITY Vd )
 <*
 	/****************************************************************************
 	 * 													      					*
@@ -274,5 +274,5 @@ SUBROUTINE random_field
 	ytoz
 	!//write_on_disk
 END random_field
-
-IF generate_inputs = TRUE THEN random_field
+ 
+IF generate_inputs = TRUE THEN random_field !)

@@ -1,5 +1,6 @@
 !USE rtchecks
-SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme; 
+WRITE
+!(SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme; 
 						POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRAY(*,*,*) OF VELOCITY Vd] FOLLOWS
 SUBROUTINE linsolve(REAL lambda) FOLLOWS
 SUBROUTINE deriv(ARRAY(*) OF REAL f0,f1^) FOLLOWS
@@ -247,7 +248,7 @@ SUBROUTINE move_data
 			REPEAT
 		REPEAT
 	REPEAT 
-END move_data 
+END move_data !)
 
 !(SUBROUTINE write_on_disk
 <*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;	int size= size_; 	int rank = rank_; 	int mem_reader;		double ni = 1/ni_;
@@ -552,7 +553,7 @@ SUBROUTINE read_disk
 END read_disk 
 
 IF generate_inputs = FALSE THEN read_disk !)
-
+!(
 REAL energy, slice_energy, diss, slice_diss, diss_tot, energy_tot, u_fin, w_fin
 COMPLEX dudy, dvdy, dwdy
 VETA fieldbuf(ilo..ihi,klo..khi,-1..ny+1)
@@ -644,4 +645,4 @@ SUBROUTINE outstats
 		REPEAT 
 		flag_veta=1
 	END IF
-END outstats
+END outstats !)

@@ -103,12 +103,14 @@ void cores_handler( int modes, int size, int *modes_per_proc) {
 	int rank =0;
 	int check=0;
 	int i;
-	for ( i = 0; i < modes; i++) {
-		modes_per_proc[rank] = modes_per_proc[rank]+1;
-		rank = rank+1;
-		if (rank == size ) rank = 0;
+	for ( i = 0; i < size; i++) {
+		modes_per_proc[i]=0;
 	}
-	
+	for ( i = 0; i < modes; i++) {
+		if (rank == size ) rank = 0;
+		modes_per_proc[rank] = modes_per_proc[rank]+1;
+		rank = rank+1;	
+	}
 	for ( i = 0; i < size; i++){
 		//printf("%d modes on rank %d\n", modes_per_proc[i], i);
 		check = check+modes_per_proc[i];
@@ -117,6 +119,8 @@ void cores_handler( int modes, int size, int *modes_per_proc) {
 			printf("[ERROR] check - modes = %d!!\nUnable to scatter modes properly\nAbort... \n", check - modes);
 	}
 }
+
+
 
 void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4]) {
 	//On rank 0 read the dataset

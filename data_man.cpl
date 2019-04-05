@@ -1,6 +1,6 @@
 !USE rtchecks
 WRITE
-<*/******************************************** Memory Alloc *******************************************/
+!(<*/******************************************** Memory Alloc *******************************************/
   u_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   v_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   w_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
@@ -72,4 +72,4 @@ WRITE
   Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(W_read); 
-*>
+*> !)
