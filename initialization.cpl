@@ -53,9 +53,9 @@ WRITE
 	  skipped_x = skipped_x +modes_per_proc[i];
   }
   int z_klo = 0;				// K fast
-  int z_khi = nzd;
+  int z_khi = nzd-1;
   int z_ilo = 0+ skipped_x;		// I slow
-  int z_ihi = z_ilo + modes_per_proc[rank];
+  int z_ihi = z_ilo + modes_per_proc[rank]-1;
 
   printf("[Z-PENCIL] (k,i,j order)\t"
 		  "On rank %d the coordinates are: "
@@ -66,9 +66,9 @@ WRITE
 	  skipped_z = skipped_z +modes_per_proc[i];
   }
   int x_klo = 0+ skipped_z;		// K slow
-  int x_khi = x_klo + modes_per_proc[rank];
+  int x_khi = x_klo + modes_per_proc[rank]-1;
   int x_ilo = 0;				// I fast
-  int x_ihi = nx;
+  int x_ihi = nx-1;
  
   printf("[X-PENCIL] (i,j,k order)\t"
 		  "On rank %d the coordinates are: "
@@ -76,8 +76,8 @@ WRITE
 
  
   /******************************************* Size Variables ******************************************/
-  localdim_x_ = 2*nxd*ny*(x_khi-x_klo+1);
-  localdim_z_ = 2*(z_ihi-z_ilo+1)*ny*nzd;
+  localdim_x_ = 2*nxd*(x_khi-x_klo+1);
+  localdim_z_ = 2*(z_ihi-z_ilo+1)*nzd;
   ilo_ = z_ilo;		jlo_ = 0;	klo_ = 0;
   ihi_ = z_ihi;		jhi_ = ny;	khi_ = nz-1;
 

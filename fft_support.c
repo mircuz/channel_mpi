@@ -14,25 +14,23 @@
 typedef double FFT_SCALAR;
 
 /*============================================= Functions Def =============================================*/
-void z_aliasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
+void z_aliasing(int nx, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
 		int nz_left = 1+ (nz-1)/2; 	int reader=0;
-		int stride_x, stride_y, k;
-		for( stride_x = 0; stride_x < 2*nzd*ny*nx; stride_x = stride_x + 2*nzd*ny) {
-			for( stride_y = 0; stride_y < 2*nzd*ny; stride_y = stride_y + 2*nzd) {
-				for ( k= (nzd-nz_left+1)*2; k < nzd*2; k++){
-					U[stride_x + stride_y+k] = U_read[reader];
-					reader++;
-					//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
-				}
-				for ( k= (nz_left)*2; k < (nzd-nz_left+1)*2; k++){
-					U[stride_x + stride_y+k]=0;
-				}
-				for ( k= 0; k < (nz_left)*2; k++){
-					U[stride_x + stride_y+k] = U_read[reader];
-					reader++;
-					//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
-				} 
-		}
+		int stride_x, k;
+		for( stride_x = 0; stride_x < 2*nzd*nx; stride_x = stride_x + 2*nzd) {
+			for ( k= (nzd-nz_left+1)*2; k < nzd*2; k++){
+				U[stride_x+k] = U_read[reader];
+				reader++;
+				//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
+			}
+			for ( k= (nz_left)*2; k < (nzd-nz_left+1)*2; k++){
+				U[stride_x+k]=0;
+			}
+			for ( k= 0; k < (nz_left)*2; k++){
+				U[stride_x+k] = U_read[reader];
+				reader++;
+				//printf("U[%d] = %g\n", stride_x + stride_y+k, U[stride_x + stride_y+k]);
+		} 
 	}
 }
 
@@ -212,20 +210,14 @@ void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALA
 	  	  } 
 }*/
 
-void print_x_pencil(int nx, int in_jlo, int in_jhi, int in_klo,
-		FFT_SCALAR *u, int rank, int scounts, int desidered_rank) {
+void print_x_pencil(int nx, int in_klo, FFT_SCALAR *u, int rank, int scounts, int desidered_rank) {
 if (rank == desidered_rank) {
 	  int stride_nz = in_klo;
-	  int stride_ny = in_jlo;
 	  int i;
 	  for ( i = 0; i < scounts; i++) {
    	  if ( i % (nx*2) == 0) {
-   		  printf("========(ny= %d, nz= %d)=======\n", stride_ny , stride_nz);
-   		  if ( (stride_ny ) == in_jhi) {
-   			  stride_ny = in_jlo;
+   		  printf("========(nz= %d)=======\n", stride_nz);
    			  stride_nz ++;
-   		  }
-   		  else stride_ny ++;
    	  }
    	  printf("u[%d]= %.10f\n", (i), u[i]);
 	  }
@@ -252,18 +244,15 @@ if (rank == desidered_rank) {
  	}
 }
 
-void print_z_pencil(int nz, int in_ilo, int in_ihi, int in_jlo,
-		FFT_SCALAR *u, int rank, int scounts, int desidered_rank) {
+void print_z_pencil(int nz, int in_ilo, int in_ihi, FFT_SCALAR *u, int rank, int scounts, int desidered_rank) {
 if (rank == desidered_rank) {
 	int stride_nx = in_ilo;
-	int stride_ny = in_jlo;
 	int i;
 	for ( i = 0; i < scounts; i++) {
 		if ( i % (nz*2) == 0) {
-			printf("========(nx= %d, ny= %d)=======\n", stride_nx , stride_ny);
+			printf("========(nx= %d)=======\n", stride_nx);
 			if ( (stride_nx) == in_ihi) {
 				stride_nx = in_ilo;
-				stride_ny++;
 			}
 			else stride_nx ++;
 		}
@@ -329,12 +318,12 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 		perror(".:Invalid FLAG for Alltoall call:.\n\n");
 		abort();
 	}
-	/*/Checking function
-	if (rank == 3){
+	//Checking function
+	if (rank == 0){
 		  for(int i = 0; i < recvcounts[0]; i++){
 			  printf("arr_recv[%d]= %f\n", i, arr_recv[i]);
 		  }
-	  } */
+	  } 
 	MPI_Type_free(vector);
 }
 

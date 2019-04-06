@@ -18,15 +18,15 @@ compilation:
 	$(CC) $(OPTFLAGS) -c dnsdirect.c
 
 linking:	
-	$(CCX) $(CFLAGS) $(OPTFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o /home/mirco/Scrivania/fftmpi-1Oct18/src/libfft2dmpi.a 
+	$(CCX) $(CFLAGS) $(OPTFLAGS) -o exe channel_mpi.o initialization.o fft_support.o data_man.o dnsdata.o convol_trasp.o dnsdirect.o /home/mirco/Scrivania/fftmpi-1Oct18/src/libfft2dmpi.so
 	make remove_useless
 		#--> Executable ready <--
 		#--> run as mpiexec -n "#procs" exe <--
 
 remove_useless:
-	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c
 	rm *.o
 	rm *.d
+	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c
 
 clean: 
 	rm exe

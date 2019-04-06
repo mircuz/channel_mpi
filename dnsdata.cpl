@@ -113,6 +113,7 @@ read_initial_data; signal(SIGUSR2,kill_received)
 INTEGER nxd = (nx)*3 DIV 2 -1 ;	INTEGER nzd = 3*nz-1;
 DO INC nxd UNTIL FFTfit(nxd);	
 DO INC nzd UNTIL FFTfit(nzd);
+IF rank=0 THEN WRITE "nxd="nxd , "nzd="nzd
 
 !// X-FFT------------------------------------------------------------------------------------------------
 SUBROUTINE FFT_x(POINTER TO ARRAY(*) OF REAL work; INTEGER elem_per_proc; INTEGER flag)

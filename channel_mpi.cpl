@@ -13,24 +13,47 @@ gamma=0
 USE dnsdata
 USE initialization
 USE data_man
-USE dnsdirect
 USE convol_trasp
-!(
-<* 	clock_t begin = clock();*>
-LOOP forward WHILE time < t_max-deltat/2
+USE dnsdirect
+
+
+
+INTEGER n=0
+
+LOOP FOR j=0 TO ny+2
+	LOOP FOR i=ilo TO ihi
+		LOOP FOR k=0 TO nz*2 
+			V.u(i,k-nz,j-1).REAL= j*(2*nz+1)*(nx+1)*2+i*(2*nz+1)*2+k*2
+			V.v(i,k-nz,j-1).REAL= 0
+			V.w(i,k,j-1).REAL= 0
+			INC n
+			V.u(i,k-nz,j-1).IMAG= V.u(i,k-nz,j-1).REAL+1
+			V.v(i,k,j-1).IMAG= 0
+			V.w(i,k,j-1).IMAG= 0
+			!WRITE "("i","k-nz","j-1") " V(i,k-nz,j-1).u 
+			INC n
+		REPEAT LOOP
+	REPEAT LOOP
+REPEAT LOOP  
+
+!WRITE "["rank"] " V(*,*,-1).u
+
+
+!<* 	clock_t begin = clock();*>
+!LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
-	convol_trasp(VV,V);	 	buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
-	vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);	ytoz 
+	buildrhs(RK1_rai); 	!(linsolve(RK1_rai_coeff/deltat)	
+	vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat) 
 
 	time=~+2/RK2_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK2_rai, VV, V);	linsolve(RK2_rai_coeff/deltat)
-	vetaTOuvw; computeflowrate(RK2_rai_coeff/deltat); 	ytoz
+	vetaTOuvw; computeflowrate(RK2_rai_coeff/deltat); 	move_data
 
 	time=~+2/RK3_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
-	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats;	ytoz;
-	!//IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk
-REPEAT forward !)
+	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats;	move_data;!)
+	!//IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk  
+!REPEAT forward 
 
 !// Get timing
 !(<*	clock_t end = clock();

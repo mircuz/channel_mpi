@@ -1,6 +1,6 @@
 !USE rtchecks
 WRITE
-!(<*/******************************************** Memory Alloc *******************************************/
+<*/******************************************** Memory Alloc *******************************************/
   u_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   v_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   w_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
@@ -9,14 +9,14 @@ WRITE
   W_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   eta_write_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   v_write_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
-  uu_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  uv_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  vv_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  vw_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  ww_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  uw_ = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  FFT_SCALAR *sendbuf = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
-  FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(2*localdim_x_*sizeof(FFT_SCALAR));
+  uu_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  uv_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  vv_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  vw_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  ww_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  uw_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  FFT_SCALAR *sendbuf = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
+  FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   MPI_Barrier(MPI_COMM_WORLD);
 
   if ((u_convol_||v_convol_||w_convol_||uu_||uv_||vv_||vw_||ww_||uw_||sendbuf||recvbuf) == NULL) {
@@ -24,7 +24,7 @@ WRITE
 	  abort();
   }
 
-  // Declare variables, on all procs, needed to Scatter data
+  /*/ Declare variables, on all procs, needed to Scatter data
   FFT_SCALAR *U_read, *V_read, *W_read;
 
   // Allocate memory needed to Scatter data, only on the broadcaster
@@ -39,7 +39,7 @@ WRITE
 	  read_data(nx, ny, nz, U_read, "u.dat");
   }
   MPI_Barrier(MPI_COMM_WORLD);
-  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, U_read, U_t_, 1);
+  Alltoall( rank, size, 0, ny_+3, z_ilo, z_ihi, nz, nx, U_read, U_tmp_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(U_read);
 
@@ -71,5 +71,5 @@ WRITE
   MPI_Barrier(MPI_COMM_WORLD);
   Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
-  free(W_read); 
-*> !)
+  free(W_read); */
+*> 
