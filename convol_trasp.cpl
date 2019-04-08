@@ -33,9 +33,9 @@ SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*) OF MOMFLUX VVd; POINTER TO ARRAY(
   //if (rank == 0) printf("\tAA applied\n\nStarting Backward transformations...\n");
   double timer_b1 = 0.0;
   timer_b1 -= MPI_Wtime();	*>
-!(	FFT_z( uu, localdim_z, 1)
+	FFT_z( uu, localdim_z, 1)
 	FFT_z( vv, localdim_z, 1)
-	FFT_z( ww, localdim_z, 1) !)
+	FFT_z( ww, localdim_z, 1) 
 <*timer_b1 += MPI_Wtime();
   //print_z_pencil( nzd, z_ilo_, z_ihi_, uu_, rank, localdim_z_, 0); 
 
@@ -58,9 +58,9 @@ SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*) OF MOMFLUX VVd; POINTER TO ARRAY(
   // Backward RFT
   double timer_b2 = 0.0;
   timer_b2 -= MPI_Wtime();  *>
-!(	FFT_x( uu, localdim_x, 1)
+	FFT_x( uu, localdim_x, 1)
 	FFT_x( vv, localdim_x, 1)
-	FFT_x( ww, localdim_x, 1) !)
+	FFT_x( ww, localdim_x, 1) 
 <*timer_b2 += MPI_Wtime(); 
   //print_x_pencil(nxd, x_klo_, uu_, rank, localdim_x_, 0);
   //remap2d_destroy(remap_to_xpencil);
@@ -69,12 +69,12 @@ SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*) OF MOMFLUX VVd; POINTER TO ARRAY(
   double timer_conv = 0.0;
   timer_conv -= MPI_Wtime();	*>
 LOOP FOR i=0 TO localdim_x
-!(	uv[i] = uu[i]*vv[i]
+	uv[i] = uu[i]*vv[i]
 	vw[i] = vv[i]*ww[i]
 	uw[i] = uu[i]*ww[i]
 	ww[i] = ww[i]*ww[i]
 	uu[i] = uu[i]*uu[i]
-	vv[i] = vv[i]*vv[i] !)
+	vv[i] = vv[i]*vv[i] 
 REPEAT LOOP 
 <*timer_conv += MPI_Wtime();
   //if (rank == 0) printf("\tBackward FFTs completed\n\nStarting Forward transformations...\n");
@@ -92,22 +92,22 @@ REPEAT LOOP
   // Forward HFT
   double timer_f1 = 0.0;  
   timer_f1 -= MPI_Wtime();  *>
-!(	FFT_x( uu, localdim_x, -1)
+	FFT_x( uu, localdim_x, -1)
 	FFT_x( uv, localdim_x, -1)
 	FFT_x( vv, localdim_x, -1)
 	FFT_x( vw, localdim_x, -1)
 	FFT_x( uw, localdim_x, -1)
-	FFT_x( ww, localdim_x, -1) !)
+	FFT_x( ww, localdim_x, -1) 
 <*timer_f1 += MPI_Wtime();
   //print_x_pencil(nxd, x_klo_, uu_, rank, localdim_x_, 0);
   // x-Dealiasing
   //if (rank == 0) printf("\tRemoving alias in x direction\n");
-  /*  x_dealiasing( (int)localdim_x_/nxd, nx, nxd, uu_);
-	x_dealiasing( (int)localdim_x_/nxd, nx, nxd, uv_);
-	x_dealiasing( (int)localdim_x_/nxd, nx, nxd, vv_);
-	x_dealiasing( (int)localdim_x_/nxd, nx, nxd, vw_);
-	x_dealiasing( (int)localdim_x_/nxd, nx, nxd, uw_);
-	x_dealiasing( (int)localdim_x_/nxd, nx, nxd, ww_); */
+    x_dealiasing( localdim_x_/(2*nxd), nx, nxd, uu_);
+	x_dealiasing( localdim_x_/(2*nxd), nx, nxd, uv_);
+	x_dealiasing( localdim_x_/(2*nxd), nx, nxd, vv_);
+	x_dealiasing( localdim_x_/(2*nxd), nx, nxd, vw_);
+	x_dealiasing( localdim_x_/(2*nxd), nx, nxd, uw_);
+	x_dealiasing( localdim_x_/(2*nxd), nx, nxd, ww_); 
   //print_x_pencil(nx, x_klo_, uu_, rank, localdim_x_/nxd*nx, 0);
   // Transpose to x-pencil
   double timer_trasp_x = 0.0, TIMER_TRASP_x = 0.0;
@@ -126,26 +126,26 @@ REPEAT LOOP
   // Forward FFT
   double timer_f2 = 0.0;
   timer_f2 -= MPI_Wtime();  *>
-!(	FFT_z( uu, localdim_z, -1)
+	FFT_z( uu, localdim_z, -1)
 	FFT_z( uv, localdim_z, -1)
 	FFT_z( vv, localdim_z, -1)
 	FFT_z( vw, localdim_z, -1)
 	FFT_z( uw, localdim_z, -1)
-	FFT_z( ww, localdim_z, -1) !)
+	FFT_z( ww, localdim_z, -1) 
 <*timer_f2 += MPI_Wtime();
   
   // z-Dealiasing
-  /*  z_dealiasing( (z_ihi_-z_ilo_+1), nz, nzd, uu_);
+    z_dealiasing( (z_ihi_-z_ilo_+1), nz, nzd, uu_);
 	z_dealiasing( (z_ihi_-z_ilo_+1), nz, nzd, uv_);
 	z_dealiasing( (z_ihi_-z_ilo_+1), nz, nzd, vv_);
 	z_dealiasing( (z_ihi_-z_ilo_+1), nz, nzd, vw_);
 	z_dealiasing( (z_ihi_-z_ilo_+1), nz, nzd, uw_);
-	z_dealiasing( (z_ihi_-z_ilo_+1), nz, nzd, ww_); */
+	z_dealiasing( (z_ihi_-z_ilo_+1), nz, nzd, ww_); 
   //print_z_pencil( nz, z_ilo_, z_ihi_, uu_, rank, localdim_z_/nzd*nz, 0);
   remap2d_destroy(remap_to_zpencil);
 
   /************************************************ Print Stats *********************************************/
-  // Gather all stats
+  /*/ Gather all stats
   double TIMER_b1, TIMER_b2, TIMER_f1, TIMER_f2, TIMER_conv;
   MPI_Allreduce(&timer_trasp_x, &TIMER_TRASP_x,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);  
   MPI_Allreduce(&timer_trasp_z, &TIMER_TRASP_z,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);  
@@ -156,7 +156,7 @@ REPEAT LOOP
   MPI_Allreduce(&timer_conv, &TIMER_conv,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);  
   MPI_Barrier(MPI_COMM_WORLD);  
 
-  /*/ Print stats
+  // Print stats
   if (rank == 0) {
 	  printf("\n-----------------------------------------------------------\n");
 	  printf("%lgs employed to perform Backward 2D FFT \n", TIMER_b1 +TIMER_b2);
@@ -170,12 +170,12 @@ REPEAT LOOP
 INTEGER counter=0
 LOOP FOR mode_x = ilo TO ihi
 	LOOP FOR mode_z = klo TO khi	
-		VVd(mode_x,mode_z).uu.REAL= uu[counter];	VVd(mode_x,mode_z).vv.REAL= vv[counter];	
+	!(	VVd(mode_x,mode_z).uu.REAL= uu[counter];	VVd(mode_x,mode_z).vv.REAL= vv[counter];	
 		VVd(mode_x,mode_z).ww.REAL= ww[counter];	VVd(mode_x,mode_z).uv.REAL= uv[counter];	
 		VVd(mode_x,mode_z).vw.REAL= vw[counter];	VVd(mode_x,mode_z).uw.REAL= uw[counter];	INC counter
 		VVd(mode_x,mode_z).uu.IMAG= uu[counter];	VVd(mode_x,mode_z).vv.IMAG= vv[counter];	
 		VVd(mode_x,mode_z).ww.IMAG= ww[counter];	VVd(mode_x,mode_z).uv.IMAG= uv[counter];	
-		VVd(mode_x,mode_z).vw.IMAG= vw[counter];	VVd(mode_x,mode_z).uw.IMAG= uw[counter];	INC counter
+		VVd(mode_x,mode_z).vw.IMAG= vw[counter];	VVd(mode_x,mode_z).uw.IMAG= uw[counter];	INC counter !)
 		!IF rank=5 THEN WRITE "("mode_x","mode_z")  " Vd(mode_x,mode_z).u
 	REPEAT LOOP
 REPEAT LOOP

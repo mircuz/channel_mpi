@@ -34,11 +34,11 @@ INLINE COMPLEX FUNCTION D4(COMPLEX f(*)) = D4(f.REAL)+I*D4(f.IMAG)
 
 !//--------------------------------------------------------------------------------------------------------------------------
 SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme]
-	!LOOP FOR plane=-1 TO ny+1
-	INTEGER plane=-1
+	LOOP FOR plane=-1 TO ny+1
+	!INTEGER plane=-1
 		move_data(plane)
 		convol_trasp(VV(*,*,plane),V(*,*,plane));		!// Da creare il ciclo in stile CPL per ridurre di molto il peso degli array!!!!
-!	REPEAT
+	REPEAT
 !(	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 		alfa=alfa0*ix; beta=beta0*iz
     	ialfa==I*alfa; ibeta==I*beta

@@ -54,14 +54,14 @@ void x_aliasing(int nx, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read){
 
 void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u) {
 	/* scounts = initial number of ny*nz modes */
-	int stride_x, placeholder=0;
+	int stride_x, placeholder= 0;
 	int mode, i;
 	for ( mode =0; mode < scounts; mode++) {
 		stride_x = mode*nxd*2;
+		placeholder = mode*nx*2;
 		for ( i = 0; i < 2*nx; i++) {
-			u[placeholder] = u[stride_x+i];
-			placeholder++;
-			//printf("u[%d]= %g\n", placeholder, u[placeholder]);
+			u[placeholder+i] = u[stride_x+i];
+			//printf("u[%d]= %g\n", placeholder+i, u[placeholder+i]);
 		}
 	}
 }
@@ -90,6 +90,7 @@ void z_dealiasing(int nx, int nz, int nzd, FFT_SCALAR *U) {
 			writer++;	reader++;	
 		}		
 	}
+	free(temp);
 }
 
 void cores_handler( int modes, int size, int *modes_per_proc) {
