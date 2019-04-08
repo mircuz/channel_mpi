@@ -24,12 +24,12 @@ LOOP FOR j=0 TO ny+2
 	LOOP FOR i=ilo TO ihi
 		LOOP FOR k=0 TO nz*2 
 			V.u(i,k-nz,j-1).REAL= j*(2*nz+1)*(nx+1)*2+i*(2*nz+1)*2+k*2
-			V.v(i,k-nz,j-1).REAL= 0
-			V.w(i,k,j-1).REAL= 0
+			V.v(i,k-nz,j-1).REAL= 1000+ V(i,k-nz,j-1).u.REAL
+			V.w(i,k-nz,j-1).REAL= 0
 			INC n
 			V.u(i,k-nz,j-1).IMAG= V.u(i,k-nz,j-1).REAL+1
-			V.v(i,k,j-1).IMAG= 0
-			V.w(i,k,j-1).IMAG= 0
+			V.v(i,k-nz,j-1).IMAG= 1000+ V(i,k-nz,j-1).u.IMAG
+			V.w(i,k-nz,j-1).IMAG= 0
 			!WRITE "("i","k-nz","j-1") " V(i,k-nz,j-1).u 
 			INC n
 		REPEAT LOOP

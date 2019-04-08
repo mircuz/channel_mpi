@@ -36,7 +36,7 @@ void z_aliasing(int nx, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
 
 void x_aliasing(int nx, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read){
 	int reader = nx*nzd*2-1;		
-	int stride_z, stride_y, i;
+	int stride_z, i;
 	for( stride_z = 2*nxd*nzd-1; stride_z > 0 ; stride_z = stride_z - 2*nxd) {			//Backward x evitare sovrascritture
 		//printf("stride_z %d\n", stride_z)
 		for( i = 0; i < 2*(nxd-nx); i++) {
@@ -66,30 +66,28 @@ void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u) {
 	}
 }
 
-void z_dealiasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U) {
+void z_dealiasing(int nx, int nz, int nzd, FFT_SCALAR *U) {
 	int writer=0;	int reader=0;	int nz_left = 1+(nz-1)/2;
-	int stride_x, stride_y, k;
+	int stride_x, k;
 	FFT_SCALAR *temp = (FFT_SCALAR *) malloc(2*nz_left*sizeof(FFT_SCALAR));
 	if (temp == NULL) {
 		perror(".:Error while allocating temporary vector in z_dealiasing routine:.\n");
 		abort();
 	}
-	for ( stride_x = 0; stride_x < 2*nx*ny*nzd; stride_x = stride_x + 2*ny*nzd ) {
-		for ( stride_y = 0; stride_y < 2*ny*nzd; stride_y = stride_y + 2*nzd) {
-			reader=0;
-			for ( k= 0; k < 2*nz_left; k++) {
-				temp[reader] = U[stride_x + stride_y + k];
-				reader++;
-			}	
-			for ( k=2*(nzd-(nz_left-1)); k < 2*nzd; k++ ) {
-				U[writer] = U[stride_x + stride_y + k];
-				writer++;	
-			}	
-			reader=0;
-			for ( k = 2*(nz_left-1); k < 2*nz; k++) {
-				U[writer] = temp[reader];
-				writer++;	reader++;	
-			}
+	for ( stride_x = 0; stride_x < 2*nx*nzd; stride_x = stride_x + 2*nzd ) {
+		reader=0;
+		for ( k= 0; k < 2*nz_left; k++) {
+			temp[reader] = U[stride_x + k];
+			reader++;
+		}	
+		for ( k=2*(nzd-(nz_left-1)); k < 2*nzd; k++ ) {
+			U[writer] = U[stride_x + k];
+			writer++;	
+		}	
+		reader=0;
+		for ( k = 2*(nz_left-1); k < 2*nz; k++) {
+			U[writer] = temp[reader];
+			writer++;	reader++;	
 		}		
 	}
 }
@@ -114,8 +112,6 @@ void cores_handler( int modes, int size, int *modes_per_proc) {
 			printf("[ERROR] check - modes = %d!!\nUnable to scatter modes properly\nAbort... \n", check - modes);
 	}
 }
-
-
 
 void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4]) {
 	//On rank 0 read the dataset
