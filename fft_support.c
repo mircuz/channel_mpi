@@ -34,23 +34,20 @@ void z_aliasing(int nx, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read){
 	}
 }
 
-void x_aliasing(int nx, int ny, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read){
-	int reader = nx*ny*nzd*2-1;		
+void x_aliasing(int nx, int nzd, int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read){
+	int reader = nx*nzd*2-1;		
 	int stride_z, stride_y, i;
-	for( stride_z = 2*nxd*ny*nzd-1; stride_z > 0 ; stride_z = stride_z - 2*nxd*ny) {			//Backward x evitare sovrascritture
+	for( stride_z = 2*nxd*nzd-1; stride_z > 0 ; stride_z = stride_z - 2*nxd) {			//Backward x evitare sovrascritture
 		//printf("stride_z %d\n", stride_z)
-		for( stride_y = 0; stride_y < 2*nxd*ny ; stride_y = stride_y + 2*nxd) {
-			//printf("\tstride_y %d\n", stride_y);
-			for( i = 0; i < 2*(nxd-nx); i++) {
-				U[stride_z - stride_y - i] = 0;		
-				//printf("U0[%d] = %g\n", stride_z - stride_y - i, U[stride_z - stride_y - i]);	
-			}
-			for( i = 2*(nxd-nx); i < 2*nxd; i++) {
-				U[stride_z - stride_y - i] = U_read[reader];
-				//printf("reader %d\n", reader);
-				reader--;
-				//printf("U[%d] = %g\n", stride_z - stride_y - i, U[stride_z - stride_y - i]);			
-			}
+		for( i = 0; i < 2*(nxd-nx); i++) {
+			U[stride_z - i] = 0;		
+			//printf("U0[%d] = %g\n", stride_z - i, U[stride_z - i]);	
+		}
+		for( i = 2*(nxd-nx); i < 2*nxd; i++) {
+			U[stride_z - i] = U_read[reader];
+			//printf("reader %d\n", reader);
+			reader--;
+			//printf("U[%d] = %g\n", stride_z - i, U[stride_z - i]);			
 		}
 	}
 }

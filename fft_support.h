@@ -15,7 +15,7 @@ void print_z_pencil(int nz, int in_ilo, int in_ihi, FFT_SCALAR *u, int rank, int
 void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4]);
 void apply_AA(int nx, int ny, int nz, int nxd, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read);
 void z_aliasing(int nx, int nz, int nzd, FFT_SCALAR *U, FFT_SCALAR *U_read);
-void x_aliasing(int nx, int ny, int nzd,int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read);
+void x_aliasing(int nx, int nzd,int nxd, FFT_SCALAR *U, FFT_SCALAR *U_read);
 void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u);
 void z_dealiasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U);
 void cores_handler( int modes, int size, int *modes_per_proc);

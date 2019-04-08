@@ -53,17 +53,17 @@ SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*) OF MOMFLUX VVd; POINTER TO ARRAY(
 
   // Apply AA in x-direction locally
   //if (rank == 0) printf("\tApplying local x-antialiasing\n");
-/* x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, u_convol_, u_convol_);
-  x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, v_convol_, v_convol_);
-  x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, w_convol_, w_convol_);
- */ // Backward RFT
+  x_aliasing( nx, (x_khi_-x_klo_+1), nxd, u_convol_, u_convol_);
+  x_aliasing( nx, (x_khi_-x_klo_+1), nxd, v_convol_, v_convol_);
+  x_aliasing( nx, (x_khi_-x_klo_+1), nxd, w_convol_, w_convol_);
+  // Backward RFT
   double timer_b2 = 0.0;
   timer_b2 -= MPI_Wtime();  *>
 !(	FFT_x( u_convol, localdim_x, 1)
 	FFT_x( v_convol, localdim_x, 1)
 	FFT_x( w_convol, localdim_x, 1) !)
 <*//timer_b2 += MPI_Wtime();
-  //print_x_pencil(nxd, x_jlo_, x_jhi_, x_klo_, w_, rank, localdim_x_, 0);
+  //print_x_pencil(nxd, x_klo_, u_convol_, rank, localdim_x_, 0);
   //remap2d_destroy(remap_to_xpencil);
 
   /************************************************ Convolutions *********************************************/
