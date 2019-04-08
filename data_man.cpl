@@ -1,9 +1,6 @@
 !USE rtchecks
 WRITE
 <*/******************************************** Memory Alloc *******************************************/
-  u_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
-  v_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
-  w_convol_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   U_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   V_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   W_t_ = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
@@ -19,7 +16,7 @@ WRITE
   FFT_SCALAR *recvbuf = (FFT_SCALAR *) malloc(localdim_x_*sizeof(FFT_SCALAR));
   MPI_Barrier(MPI_COMM_WORLD);
 
-  if ((u_convol_||v_convol_||w_convol_||uu_||uv_||vv_||vw_||ww_||uw_||sendbuf||recvbuf) == NULL) {
+  if ((uu_||uv_||vv_||vw_||ww_||uw_||sendbuf||recvbuf) == NULL) {
 	  perror(".:Error while allocating memory for remapping variables:.\n");
 	  abort();
   }
@@ -39,7 +36,7 @@ WRITE
 	  read_data(nx, ny, nz, U_read, "u.dat");
   }
   MPI_Barrier(MPI_COMM_WORLD);
-  Alltoall( rank, size, 0, ny_+3, z_ilo, z_ihi, nz, nx, U_read, U_tmp_, 1);
+  Alltoall( rank, size, 0, ny_+3, z_ilo, z_ihi, nz, nx, U_read, U_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(U_read);
 
@@ -54,7 +51,7 @@ WRITE
 	  read_data(nx, ny, nz, V_read, "v.dat");
   }
   MPI_Barrier(MPI_COMM_WORLD);
-  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, V_read, V_t_, 1);
+  Alltoall( rank, size, 0, ny_+3, z_ilo, z_ihi, nz, nx, V_read, V_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(V_read);
 
@@ -69,7 +66,7 @@ WRITE
 	  read_data(nx, ny, nz, W_read, "w.dat");
   }
   MPI_Barrier(MPI_COMM_WORLD);
-  Alltoall( rank, size, z_jlo, z_jhi, z_ilo, z_ihi, nz, nx, W_read, W_t_, 1);
+  Alltoall( rank, size, 0, ny_+3, z_ilo, z_ihi, nz, nx, W_read, W_t_, 1);
   MPI_Barrier(MPI_COMM_WORLD);
   free(W_read); */
 *> 

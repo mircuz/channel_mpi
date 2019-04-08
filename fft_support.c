@@ -69,7 +69,7 @@ void x_dealiasing(int scounts, int nx, int nxd, FFT_SCALAR *u) {
 void z_dealiasing(int nx, int nz, int nzd, FFT_SCALAR *U) {
 	int writer=0;	int reader=0;	int nz_left = 1+(nz-1)/2;
 	int stride_x, k;
-	FFT_SCALAR *temp = (FFT_SCALAR *) malloc(2*nz_left*sizeof(FFT_SCALAR));
+	FFT_SCALAR *temp = (FFT_SCALAR *) malloc(2*nz_left*sizeof(FFT_SCALAR *));
 	if (temp == NULL) {
 		perror(".:Error while allocating temporary vector in z_dealiasing routine:.\n");
 		abort();
@@ -314,7 +314,7 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	//Checking function
 	if (rank == 0){
 		  for(int i = 0; i < recvcounts[0]; i++){
-			  printf("arr_recv[%d]= %f\n", i, arr_recv[i]);
+			  //printf("arr_recv[%d]= %f\n", i, arr_recv[i]);
 		  }
 	  } 
 	MPI_Type_free(vector);

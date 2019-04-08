@@ -17,7 +17,6 @@ USE convol_trasp
 USE dnsdirect
 
 
-
 INTEGER n=0
 
 LOOP FOR j=0 TO ny+2
@@ -34,16 +33,16 @@ LOOP FOR j=0 TO ny+2
 			INC n
 		REPEAT LOOP
 	REPEAT LOOP
-REPEAT LOOP  
+REPEAT LOOP   
 
-!WRITE "["rank"] " V(*,*,-1).u
-
-
-!<* 	clock_t begin = clock();*>
-!LOOP forward WHILE time < t_max-deltat/2
+<* 	clock_t begin = clock();*>
+LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
-	buildrhs(RK1_rai); 	!(linsolve(RK1_rai_coeff/deltat)	
-	vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat) 
+
+	WRITE time
+	outstats
+	buildrhs(RK1_rai); !(outstats; 	linsolve(RK1_rai_coeff/deltat)	
+	vetaTOuvw;computeflowrate(RK1_rai_coeff/deltat);	move_data 
 
 	time=~+2/RK2_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK2_rai, VV, V);	linsolve(RK2_rai_coeff/deltat)
@@ -53,13 +52,13 @@ REPEAT LOOP
 	convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
 	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats;	move_data;!)
 	!//IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk  
-!REPEAT forward 
+REPEAT forward 
 
 !// Get timing
-!(<*	clock_t end = clock();
+<*	clock_t end = clock();
 	double sim_time = (double)(end - begin) / CLOCKS_PER_SEC;	double max_sim_time=0.0;
 	MPI_Allreduce(&sim_time, &max_sim_time,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD); 
 	FILE *ft = fopen("time_out","w");	fprintf(ft, "Simulation performed in %f s", max_sim_time); 	fclose(ft);	*>
 
-IF rank=0 THEN WRITE; WRITE "<Simulation Ended>"; WRITE; WRITE; END IF !)
+IF rank=0 THEN WRITE; WRITE "<Simulation Ended>"; WRITE; WRITE; END IF
 <* 	MPI_Finalize();	*>

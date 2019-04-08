@@ -1,7 +1,8 @@
 CCX = mpicxx
 CC = mpicc
 CFLAGS = /usr/local/fri/complex.o /usr/local/fri/fft.o /usr/local/fri/rbmat.o 
-OPTFLAGS = -O2 -fPIC -march=native
+#OPTFLAGS = -O2 -fPIC -march=native
+OPTFLAGS = -O2 -fPIC
 
 all: translation compilation linking
 

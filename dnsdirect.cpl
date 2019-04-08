@@ -34,7 +34,7 @@ INLINE COMPLEX FUNCTION D4(COMPLEX f(*)) = D4(f.REAL)+I*D4(f.IMAG)
 
 !//--------------------------------------------------------------------------------------------------------------------------
 SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme]
-!	LOOP FOR plane=-1 TO ny+1
+	!LOOP FOR plane=-1 TO ny+1
 	INTEGER plane=-1
 		move_data(plane)
 		convol_trasp(VV(*,*,plane),V(*,*,plane));		!// Da creare il ciclo in stile CPL per ridurre di molto il peso degli array!!!!
@@ -551,6 +551,7 @@ SUBROUTINE read_disk
 	H5Tclose(filetype);
     H5Sclose(memspace);
 	free(complex_disk_data);	*>
+	move_data
 END read_disk 
 
 IF generate_inputs = FALSE THEN read_disk !)
@@ -624,7 +625,7 @@ SUBROUTINE outstats
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
-	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
+!(	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
 		IF rank=0 THEN WRITE "Writing Field at " time "s"
 		!// Generate V_eta array
 		LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
@@ -645,5 +646,5 @@ SUBROUTINE outstats
 			REPEAT
 		REPEAT 
 		flag_veta=1
-	END IF
+	END IF !)
 END outstats

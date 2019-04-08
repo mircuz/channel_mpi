@@ -94,9 +94,6 @@ rhstype memrhs(ilo..ihi,klo..khi,1..(ny-1))
 INLINE FUNCTION newrhs(INTEGER ix,iz,iy)=memrhs(ix,iz,(iy+1000)MOD(3))
 ARRAY(klo..khi,1..ny-1,-2..2) OF REAL D2vmat=0, etamat=0	
 ARRAY(ilo..ihi,klo..khi) OF STRUCTURE(COMPLEX u,v,w,vy,eta) bc0=0, bcn=0
-POINTER TO ARRAY(0..localdim_x) OF REAL u_convol
-POINTER TO ARRAY(0..localdim_x) OF REAL v_convol
-POINTER TO ARRAY(0..localdim_x) OF REAL w_convol
 POINTER TO ARRAY(0..localdim_x) OF REAL U_t
 POINTER TO ARRAY(0..localdim_x) OF REAL V_t
 POINTER TO ARRAY(0..localdim_x) OF REAL W_t
