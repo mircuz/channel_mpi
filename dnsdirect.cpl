@@ -22,6 +22,12 @@ SUBROUTINE move_data(INTEGER j)
 		REPEAT
 END move_data 
 
+SUBROUTINE move_data
+	LOOP FOR iy=-1 TO ny+1
+		move_data(iy)
+	REPEAT LOOP
+END move_data
+
 MODULE dnsdirect
 INLINE REAL FUNCTION D0(REAL f(*)) = d0(-2)*f(-2)+d0(-1)*f(-1)+d0(0)*f(0)+d0(1)*f(1)+d0(2)*f(2)
 INLINE REAL FUNCTION D1(REAL f(*)) = d1(-2)*f(-2)+d1(-1)*f(-1)+d1(0)*f(0)+d1(1)*f(1)+d1(2)*f(2)
@@ -35,11 +41,10 @@ INLINE COMPLEX FUNCTION D4(COMPLEX f(*)) = D4(f.REAL)+I*D4(f.IMAG)
 !//--------------------------------------------------------------------------------------------------------------------------
 SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explicit_part) timescheme]
 	LOOP FOR plane=-1 TO ny+1
-	!INTEGER plane=-1
 		move_data(plane)
 		convol_trasp(VV(*,*,plane),V(*,*,plane));		!// Da creare il ciclo in stile CPL per ridurre di molto il peso degli array!!!!
 	REPEAT
-!(	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
+	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 		alfa=alfa0*ix; beta=beta0*iz
     	ialfa==I*alfa; ibeta==I*beta
    		k2=alfa^2+beta^2
@@ -62,8 +67,8 @@ SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explic
 												(SUM OS(iy,i)*v(i) FOR ALL i),expl}    
 
     		IF ix=0 AND iz=0 THEN
-  !)    		!// u media conservata in eta.REAL e w media in eta.IMAG
-	!(			expl = rhsu.REAL+px+[rhsw.REAL+pz]*I
+      		!// u media conservata in eta.REAL e w media in eta.IMAG
+				expl = rhsu.REAL+px+[rhsw.REAL+pz]*I
 		   		timescheme{memrhs(0,0,iy).eta,oldrhs(0,0,iy).eta,D0(u.REAL)+D0(w.REAL)*I,
                   										 ni*[D2(u.REAL)]+ni*D2(w.REAL)*I,
 							                 !0.5*[D2(u.REAL)]+0.5*D2(w.REAL)*I, !Vittori
@@ -75,14 +80,14 @@ SUBROUTINE buildrhs[SUBROUTINE(COMPLEX rhs^,old^(*),unknown,implicit_part,explic
             	       																	expl} 
       		END IF
 		REPEAT		
-!)		!// Substitute eta and D2v inside V 
-!(		LOOP FOR iy=1 TO ny-1
-			WITH Vd(ix,iz,iy),memrhs(ix,iz,iy): u=eta; v=D2v		
-	!)		!(WRITE "["rank"]  ("ix","iz","iy") V     : " V(ix,iz,iy)
+		!// Substitute eta and D2v inside V 
+		LOOP FOR iy=1 TO ny-1
+			WITH V(ix,iz,iy),memrhs(ix,iz,iy): u=eta; v=D2v		
+			!(WRITE "["rank"]  ("ix","iz","iy") V     : " V(ix,iz,iy)
 			WRITE "["rank"]  ("ix","iz","iy") oldrhs: " oldrhs(ix,iz,iy)
 			WRITE !)
-!(		REPEAT	
-	REPEAT !)
+		REPEAT
+	REPEAT 
 END buildrhs
 
 !//--------------------------------------------------------------------------------------------------------------------------
@@ -625,7 +630,7 @@ SUBROUTINE outstats
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
-!(	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
+	!(IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
 		IF rank=0 THEN WRITE "Writing Field at " time "s"
 		!// Generate V_eta array
 		LOOP FOR ix=ilo TO ihi AND iz=klo TO khi

@@ -176,7 +176,7 @@ LOOP FOR mode_x = ilo TO ihi
 REPEAT LOOP
 END convol_trasp
 
-SUBROUTINE move_data FOLLOWS
+SUBROUTINE move_data(INTEGER y_plane) FOLLOWS
 SUBROUTINE random_field
 	V=0
 	IF rank=0 THEN 
@@ -192,6 +192,9 @@ SUBROUTINE random_field
 	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 		IF ix=0 AND iz=0 THEN DO WITH V(ix,iz,iy): u.REAL=3/4*(1-[1-y(iy)]^2); u.IMAG=0; v=0; w.IMAG=0 FOR iy=-1 TO ny+1
 	REPEAT 	
+	LOOP FOR y_plane=-1 TO ny+1
+		move_data(y_plane)
+	REPEAT 
 	!//write_on_disk
 END random_field
  
