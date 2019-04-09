@@ -105,7 +105,7 @@ POINTER TO ARRAY(0..localdim_x) OF REAL uw
 POINTER TO ARRAY(0..localdim_x) OF REAL ww
 POINTER TO ARRAY(0..localdim_x) OF REAL sendbuf
 POINTER TO ARRAY(0..localdim_x) OF REAL recvbuf
-POINTER TO ARRAY(0..localdim_x) OF REAL eta_write
-POINTER TO ARRAY(0..localdim_x) OF REAL v_write
+POINTER TO ARRAY(0..localdim_z*ny) OF REAL eta_write
+POINTER TO ARRAY(0..localdim_z*ny) OF REAL v_write
 
 set_time

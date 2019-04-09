@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include "remap2d_wrap.h"
-!//#include "/home/mirco/Scrivania/hdf5/include/hdf5.h"
-!//#include "/home/mirco/Scrivania/hdf5/include/hdf5_hl.h"
+#include "/home/mirco/Scrivania/hdf5/include/hdf5.h"
+#include "/home/mirco/Scrivania/hdf5/include/hdf5_hl.h"
 !//#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5.h"
 !//#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5_hl.h"
 
@@ -48,7 +48,7 @@ LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK3_rai_coeff*deltat
 	buildrhs(RK3_rai);	linsolve(RK3_rai_coeff/deltat)
 	vetaTOuvw; 	computeflowrate(RK3_rai_coeff/deltat);	outstats;	move_data;
-	!//IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk  
+	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk  
 REPEAT forward 
 
 !// Get timing

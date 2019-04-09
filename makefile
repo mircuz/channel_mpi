@@ -19,7 +19,8 @@ compilation:
 	$(CC) $(OPTFLAGS) -c dnsdirect.c
 
 linking:	
-	$(CCX) $(CFLAGS) $(OPTFLAGS) -o exe channel_mpi.o initialization.o fft_support.o data_man.o dnsdata.o convol_trasp.o dnsdirect.o /home/mirco/Scrivania/fftmpi-1Oct18/src/libfft2dmpi.so
+	$(CCX) $(CFLAGS) $(OPTFLAGS) -o exe channel_mpi.o initialization.o fft_support.o data_man.o dnsdata.o convol_trasp.o dnsdirect.o /home/mirco/Scrivania/fftmpi-1Oct18/src/libfft2dmpi.so -L/home/mirco/Scrivania/hdf5/lib /home/mirco/Scrivania/hdf5/lib/libhdf5_hl.a /home/mirco/Scrivania/hdf5/lib/libhdf5.a -lz -ldl -lm -Wl,-rpath -Wl,/home/mirco/Scrivania/hdf5/lib -I/usr/local/include -pthread -Wl,-rpath -Wl,/usr/local/lib -Wl,--enable-new-dtags -L/usr/local/lib -lmpi
+
 	make remove_useless
 		#--> Executable ready <--
 		#--> run as mpiexec -n "#procs" exe <--

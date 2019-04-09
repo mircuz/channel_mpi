@@ -256,7 +256,7 @@ END computeflowrate
 
 END dnsdirect
 
-!(SUBROUTINE write_on_disk
+SUBROUTINE write_on_disk
 <*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;	int size= size_; 	int rank = rank_; 	int mem_reader;		double ni = 1/ni_;
 	/*HDF5 APIs definitions*/ 		
     hid_t       file_id, dset_u, dset_v, dset_w, dset_eta;/* file and dataset identifiers */
@@ -273,14 +273,8 @@ END dnsdirect
 	MPI_Info info  = MPI_INFO_NULL;
 	char field_time[25]="/", field_v[25]="", field_eta[25]=""; // field_u[25]="",  field_w[25]="", time_str[25]="Field";
 	gcvt (time_, 10, field_time);
-	//strcat(field_u,field_time);		strcat(field_u,"/u");	
 	strcat(field_v,field_time);		strcat(field_v,"/v");
-	//strcat(field_w,field_time);		strcat(field_w,"/w");
 	strcat(field_eta,field_time);	strcat(field_eta,"/eta");
-	//strcat(time_str,".h5");
-	//if( chdir(output_cwd_) !=0 )
-	//if( chdir("/media/sf_Materiale_Tesi") !=0 )
-		//perror(".:Error changing folder in outstats routine:.");
 	//=======================================================================================================
 	int dim=3;				
 	hsize_t att_dims=dim;		
@@ -333,34 +327,18 @@ END dnsdirect
 	chunk_dims[0] = 1;		chunk_dims[1] = 1;		chunk_dims[2] = nz; 
     plist_id = H5Pcreate(H5P_DATASET_CREATE);
     H5Pset_chunk(plist_id, 3, chunk_dims);
-//	dset_u = H5Dcreate(file_id, field_u, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
     
     /*Set FILE hyperslab in the chunk*/
- //   filespace = H5Dget_space(dset_u);
 	offset[0] = fz_jlo_;	offset[1] = fz_ilo_;	offset[2] = fz_klo_;
 	stride[0] = 1; 			stride[1] = 1;			stride[2] = 1;
 	count[0]  = fz_jhi_-fz_jlo_+1; 			count[1]  = fz_ihi_-fz_ilo_+1;   		count[2]  = 1; 
 	block[0]  = chunk_dims[0]; 		block[1]  = chunk_dims[1];		block[2]  = chunk_dims[2];
-//	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
 
 	//------------------------------------------------ I/O --------------------------------------------------
 	/*Create property list for collective dataset write*/
     plist_id_write = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id_write, H5FD_MPIO_COLLECTIVE);
-  
-/*	mem_reader=0;
-	for(int i = 0; i < nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1); i++){
-		complex_disk_data[i].real = (*(double *)(mem_reader*(ssize_t)sizeof(double)+U_t_));
-		mem_reader++;
-		complex_disk_data[i].imag = (*(double *)(mem_reader*(ssize_t)sizeof(double)+U_t_));
-		mem_reader++;
-	}
-   	file_hyper = H5Dwrite(dset_u, memtype, memspace, filespace, plist_id_write, complex_disk_data);
-*/
-    /*Close U resources*/
-/*	H5Sclose(filespace);
-	H5Dclose(dset_u);
-*/    
+      
 	//========================================================================================================
 	dset_v = H5Dcreate(file_id, field_v, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_v);
@@ -379,24 +357,6 @@ END dnsdirect
 	H5Sclose(filespace);
 	H5Dclose(dset_v);
 
-	//========================================================================================================
-/*	dset_w = H5Dcreate(file_id, field_w, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
-	filespace = H5Dget_space(dset_w);
-	file_hyper = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, stride, count, block);
-	
-	mem_reader=0;
-	for(int i = 0; i < nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1); i++){
-		complex_disk_data[i].real = (*(double *)(mem_reader*(ssize_t)sizeof(double)+W_t_));
-		mem_reader++;		
-		complex_disk_data[i].imag = (*(double *)(mem_reader*(ssize_t)sizeof(double)+W_t_));
-		mem_reader++;
-		}
-    file_hyper = H5Dwrite(dset_w, memtype, memspace, filespace, plist_id_write, complex_disk_data);
-*/
-	/*Close W resources*/
-/*	H5Sclose(filespace);
-	H5Dclose(dset_w);
-*/	
 	//========================================================================================================
 	dset_eta = H5Dcreate(file_id, field_eta, filetype, global_filespace, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 	filespace = H5Dget_space(dset_eta);
@@ -559,7 +519,7 @@ SUBROUTINE read_disk
 	move_data
 END read_disk 
 
-IF generate_inputs = FALSE THEN read_disk !)
+IF generate_inputs = FALSE THEN read_disk 
 
 REAL energy, slice_energy, diss, slice_diss, diss_tot, energy_tot, u_fin, w_fin
 COMPLEX dudy, dvdy, dwdy
@@ -630,7 +590,7 @@ SUBROUTINE outstats
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
-	!(IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
+	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
 		IF rank=0 THEN WRITE "Writing Field at " time "s"
 		!// Generate V_eta array
 		LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
@@ -651,5 +611,5 @@ SUBROUTINE outstats
 			REPEAT
 		REPEAT 
 		flag_veta=1
-	END IF !)
+	END IF 
 END outstats
