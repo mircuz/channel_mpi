@@ -10,6 +10,8 @@
 #include <math.h>
 #include <string.h>
 #include <mpi.h>
+#include "remap2d_wrap.h"
+#include "fftw3-mpi.h"
 
 typedef double FFT_SCALAR;
 
@@ -93,25 +95,30 @@ void z_dealiasing(int nx, int nz, int nzd, FFT_SCALAR *U) {
 	free(temp);
 }
 
-void cores_handler( int modes, int size, int *modes_per_proc) {
-	int rank =0;
-	int check=0;
-	int i;
-	for ( i = 0; i < size; i++) {
-		modes_per_proc[i]=0;
-	}
-	for ( i = 0; i < modes; i++) {
-		if (rank == size ) rank = 0;
-		modes_per_proc[rank] = modes_per_proc[rank]+1;
-		rank = rank+1;	
-	}
-	for ( i = 0; i < size; i++){
-		//printf("%d modes on rank %d\n", modes_per_proc[i], i);
-		check = check+modes_per_proc[i];
-	}
-	if ( (int)(check - modes) != 0 ) {
-			printf("[ERROR] check - modes = %d!!\nUnable to scatter modes properly\nAbort... \n", check - modes);
-	}
+void block_def(int size, int nxd, int nzd, ptrdiff_t *block_x, ptrdiff_t *block_z){
+	if (nxd % size == 0) *block_x = nxd/size;
+	else *block_x = (int)(nxd/size) +1;
+	if (nzd % size == 0) *block_z = nzd/size;
+	else *block_z = (int)(nzd/size) +1;
+	//printf("block_x = %d, block_z= %d\n", block_x, block_z);
+}
+
+void cores_handler( int nxd, int nzd, int size, int rank, ptrdiff_t *local_x, 
+					ptrdiff_t *local_z, ptrdiff_t *local_x_start, ptrdiff_t *local_z_start) {
+	int block_x, block_z;
+	block_def(size, nxd, nzd, &block_x, &block_z);
+	//printf("block_x = %d, block_z= %d\n", block_x, block_z);
+	block_x= (ptrdiff_t) block_x;	block_z= (ptrdiff_t) block_z;		/*The blocks MUST be as big as the array or wider, NOT LESS!!*/ 
+	int n[]={nxd,nzd};
+	ptrdiff_t alloc_local = fftw_mpi_local_size_many_transposed(2, &n, 2,			/*First 2 is rank, second is for complex*/
+                                              block_x, block_z, MPI_COMM_WORLD,
+                                              &local_x, &local_x_start,
+                                              &local_z, &local_z_start);
+	printf("[%d] local_x=%d\tlocal_z=%d\nstart_x=%d\tstart_z=%d\n", rank, local_x, local_z, local_x_start, local_z_start);
+	
+
+
+
 }
 
 void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4]) {
