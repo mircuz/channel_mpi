@@ -43,13 +43,22 @@ WRITE
   int ipmid = (rank/npfast) % npmid;
   int ipslow = rank / (npfast*npmid);
   MPI_Barrier(MPI_COMM_WORLD);
+  if (nproc_y_ != 0 ) {
+	  if (rank==0) printf("\t\t---> Override processors decomposition");
+	  npmid = nproc_y_;
+	  npslow =nproc_z_;
+	  if (npmid*npslow != size ) {
+		  printf("Invalid manual decomposition\nAborting simulation...\n\n\n");
+		  abort();  
+	  }
+  }
   // Recap header
   if (rank == 0) {
   	  printf("\n========================================================================================\n"
   			  "\t2D FFT with %dx%dx%d total modes, %dx%dx%d investigated on %d procs, %dx%dx%d grid\t\n"
   			"========================================================================================\n\n",
   			  nxd,ny,nzd,nx,ny,nz,size,npfast,npmid,npslow);
-    }
+    }  
   // Sanity check
   if ((ny/npmid) < 1) {
 	  perror("\n\n\nInvalid Y Grid decomposition\nAborting simulation...\n\n\n");
