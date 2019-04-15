@@ -15,12 +15,12 @@ INTEGER rank, size
 gamma=0
 USE dnsdata
 USE initialization
-!(USE data_man
+USE data_man
 USE convol_trasp
 USE dnsdirect
 
 
-INTEGER n=0
+!(INTEGER n=0
 
 LOOP FOR j=0 TO ny+2
 	LOOP FOR i=ilo TO ihi

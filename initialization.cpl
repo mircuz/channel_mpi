@@ -52,13 +52,25 @@ WRITE
   ptrdiff_t n[2];		n[0]=nxd;	n[1]=nzd;
   // Define block per proc
   block_def(size, nxd, nzd, &block_x, &block_z);
-  alloc_local = fftw_mpi_local_size_many_transposed(2, &n, 2,			/*First 2 is rank, second is for complex*/
+  alloc_local = fftw_mpi_local_size_many_transposed(2, &n, 2,		
                                               block_x, block_z, MPI_COMM_WORLD,
                                               &local_x, &local_x_start,
                                               &local_z, &local_z_start);
-  printf("[%d] local_x=%d\tlocal_z=%d\nstart_x=%d\tstart_z=%d\n", rank, local_x, local_z, local_x_start, local_z_start);
+  /*int fault_rank;
+  if (local_x==0) {
+    block_x++;	fault_rank= rank;
+	MPI_Bcast(block_x, 1, MPI_INT, fault_rank, MPI_COMM_WORLD);
+	alloc_local = fftw_mpi_local_size_many_transposed(2, &n, 2,	
+                                              block_x, block_z, MPI_COMM_WORLD,
+                                              &local_x, &local_x_start,
+                                              &local_z, &local_z_start);
+  } */
 
-	IMPLEMENTARE IL CHECK SULLE local_x/z: Se=0 allora modifica il block_x/z
+  local_dims(rank, &n, block_x, block_z, &local_x, &local_x_start, &local_z, &local_z_start, &alloc_local);
+
+  //printf("[%d]\tlocal_x=%d\tlocal_z=%d\n\tstart_x=%d\tstart_z=%d\n", rank, local_x, local_z, local_x_start, local_z_start);
+
+	//IMPLEMENTARE IL CHECK SULLE local_x/z: Se=0 allora modifica il block_x/z
 
   // partitioning in z-pencil
   int modes_per_proc[size], i, skipped_x=0, skipped_z=0;
@@ -71,9 +83,9 @@ WRITE
   int z_ilo = 0+ skipped_x;		// I slow
   int z_ihi = z_ilo + modes_per_proc[rank]-1;
 
-  printf("[Z-PENCIL] (k,i,j order)\t"
+ /* printf("[Z-PENCIL] (k,i,j order)\t"
 		  "On rank %d the coordinates are: "
-		  "(%d,%d) -> (%d,%d)\n", rank, z_ilo, z_klo, z_ihi, z_khi );
+		  "(%d,%d) -> (%d,%d)\n", rank, z_ilo, z_klo, z_ihi, z_khi );*/
   // partitioning in x-pencil
   //cores_handler(nzd,size,modes_per_proc);
   for(i=0;i<rank;i++){
@@ -84,9 +96,9 @@ WRITE
   int x_ilo = 0;				// I fast
   int x_ihi = nx-1;
  
-  printf("[X-PENCIL] (i,j,k order)\t"
+/*  printf("[X-PENCIL] (i,j,k order)\t"
 		  "On rank %d the coordinates are: "
-		  "(%d,%d) -> (%d,%d)\n", rank, x_ilo, x_klo, x_ihi, x_khi );
+		  "(%d,%d) -> (%d,%d)\n", rank, x_ilo, x_klo, x_ihi, x_khi );*/
 
  
   /******************************************* Size Variables ******************************************/

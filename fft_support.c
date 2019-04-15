@@ -103,23 +103,23 @@ void block_def(int size, int nxd, int nzd, ptrdiff_t *block_x, ptrdiff_t *block_
 	//printf("block_x = %d, block_z= %d\n", block_x, block_z);
 }
 
-void cores_handler( int nxd, int nzd, int size, int rank, ptrdiff_t *local_x, 
-					ptrdiff_t *local_z, ptrdiff_t *local_x_start, ptrdiff_t *local_z_start) {
-	int block_x, block_z;
-	block_def(size, nxd, nzd, &block_x, &block_z);
-	//printf("block_x = %d, block_z= %d\n", block_x, block_z);
-	block_x= (ptrdiff_t) block_x;	block_z= (ptrdiff_t) block_z;		/*The blocks MUST be as big as the array or wider, NOT LESS!!*/ 
-	int n[]={nxd,nzd};
-	ptrdiff_t alloc_local = fftw_mpi_local_size_many_transposed(2, &n, 2,			/*First 2 is rank, second is for complex*/
-                                              block_x, block_z, MPI_COMM_WORLD,
-                                              &local_x, &local_x_start,
-                                              &local_z, &local_z_start);
-	printf("[%d] local_x=%d\tlocal_z=%d\nstart_x=%d\tstart_z=%d\n", rank, local_x, local_z, local_x_start, local_z_start);
-	
-
-
-
+void local_dims(int rank, int *n[], ptrdiff_t block_x, ptrdiff_t block_z, 
+						ptrdiff_t *local_x, ptrdiff_t *local_x_start, ptrdiff_t *local_z, ptrdiff_t *local_z_start, ptrdiff_t *alloc_local) {
+	int flag, fault_rank;
+	printf("[%d]\tlocal_x=%d\tblock_x=%d\n", rank, *local_x, block_x);
+  	if (*local_x==0) {
+		flag=1;		MPI_Bcast(&flag, 1, MPI_INT, fault_rank, MPI_COMM_WORLD);		MPI_Barrier(MPI_COMM_WORLD); 	printf("I'm in %d!!\n",rank);
+	}
+	if (flag=1) {
+		block_x--;
+		MPI_Bcast(&block_x, 1, MPI_INT, 0, MPI_COMM_WORLD);		MPI_Barrier(MPI_COMM_WORLD);	flag=0;
+		*alloc_local = fftw_mpi_local_size_many_transposed(2, n, 2, block_x, block_z, 
+									MPI_COMM_WORLD, local_x, local_x_start, local_z, local_z_start);
+	local_dims(rank, n, block_x, block_z, local_x, local_x_start, local_z, local_z_start, alloc_local);
+	}
+	//printf("[%d]\tlocal_x=%d\tstart_x=%d\n", rank, *local_x, *local_x_start);
 }
+
 
 void read_data(int nx, int ny, int nz, FFT_SCALAR *U_read, char file_to_read[4]) {
 	//On rank 0 read the dataset
