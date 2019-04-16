@@ -587,8 +587,8 @@ SUBROUTINE outstats
 		END IF
 	REPEAT LOOP
 <*	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Reduce(&slice_diss_, &diss_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&slice_energy_, &energy_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);	
+	MPI_Reduce(&slice_diss_, &diss_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Reduce(&slice_energy_, &energy_tot_, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);	MPI_Barrier(MPI_COMM_WORLD);
 	if(rank_== rank_zero_) {
 		MPI_Send(&u_fin_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 		MPI_Send(&w_fin_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);

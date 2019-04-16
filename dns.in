@@ -1,4 +1,4 @@
-ny=128		nx=64	nz=64
+ny=64		nx=32	nz=32
 alfa0=1.8849	beta0=3.7698
 ymin=0		ymax=2		a=1.6
 ni=4790		pr=0.71	
@@ -9,4 +9,4 @@ u0=0.0		un=0.0		w0=0.0		wn=0.0	t0=-1.0	tn=1.0
 deltat=0.01 	t_max=0.05		starting_time=0.0
 dt_field=200000	dt_save=0.05 
 generate_inputs=yes
-nproc_y=2		nproc_z=1
+nproc_y=0		nproc_z=0

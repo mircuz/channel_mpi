@@ -38,11 +38,7 @@ WRITE
     npmid++;
   }
   npslow = size / npfast / npmid;
-
-  int ipfast = rank % npfast;
-  int ipmid = (rank/npfast) % npmid;
-  int ipslow = rank / (npfast*npmid);
-  MPI_Barrier(MPI_COMM_WORLD);
+  // Override procs decomposition
   if (nproc_y_ != 0 ) {
 	  if (rank==0) printf("\t\t---> Override processors decomposition");
 	  npmid = nproc_y_;
@@ -52,6 +48,12 @@ WRITE
 		  abort();  
 	  }
   }
+
+  int ipfast = rank % npfast;
+  int ipmid = (rank/npfast) % npmid;
+  int ipslow = rank / (npfast*npmid);
+  MPI_Barrier(MPI_COMM_WORLD);
+  
   // Recap header
   if (rank == 0) {
   	  printf("\n========================================================================================\n"
