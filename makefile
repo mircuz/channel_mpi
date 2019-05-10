@@ -28,7 +28,7 @@ dnsdirect.o: dnsdirect.c
 	$(CC) $(OPTFLAGS) -c dnsdirect.c
 
 exe: channel_mpi.o dnsdata.o dnsdirect.o data_man.o fft_support.o convol_trasp.o initialization.o
-	$(CCX) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o $(REMAP_LIB)
+	$(CCX) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o $(REMAP_LIB) $(HDF5_LIB)
 		#--> Executable ready <--
 		#--> run as mpiexec -n "#procs" exe <--
 
@@ -36,6 +36,11 @@ remove_useless:
 	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c
 	rm *.o
 	rm *.d
+
+clear:
+	rm Runtimedata
+	rm results/Field.h5
+	rm results/time_out
 
 clean: 
 	make remove_useless
