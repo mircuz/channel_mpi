@@ -16,10 +16,11 @@ USE data_man
 USE dnsdirect
 USE convol_trasp
 
+
 <* 	clock_t begin = clock();*>
 LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
-	convol_trasp(VV,V);	 	buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
+	convol_trasp(VV,V);		buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
 	vetaTOuvw;	computeflowrate(RK1_rai_coeff/deltat);	ytoz
 
 	time=~+2/RK2_rai_coeff*deltat
