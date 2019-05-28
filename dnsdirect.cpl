@@ -260,9 +260,10 @@ SUBROUTINE write_mean_flow
 	strcat(field_mean_u,field_time);		strcat(field_mean_u,"/u_mean");	
 	strcat(field_mean_w,field_time);		strcat(field_mean_w,"/w_mean");
 
-	double mean_u[ny];
+	double mean_u[ny], mean_w[ny];
 	for (int i = 0; i < ny; i++) {
 		mean_u[i] = (*(double *)((i-1)*(ssize_t)sizeof(double)+mean_u_));	
+		mean_w[i] = (*(double *)((i-1)*(ssize_t)sizeof(double)+mean_w_));	
 	}
 	plist_id = H5Pcreate(H5P_FILE_ACCESS);
 	file_id = H5Fopen("Field.h5", H5F_ACC_RDWR, plist_id);
@@ -273,6 +274,12 @@ SUBROUTINE write_mean_flow
 	filespace = H5Dget_space(dataset_id);
 	wrt = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, dataspace_id, filespace, H5P_DEFAULT, mean_u);
 	H5Dclose(dataset_id);
+
+	dataset_id = H5Dcreate(file_id, field_mean_w, H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	filespace = H5Dget_space(dataset_id);
+	wrt = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, dataspace_id, filespace, H5P_DEFAULT, mean_w);
+	H5Dclose(dataset_id);
+	
 	H5Pclose(plist_id);
 	H5Sclose(dataspace_id);
 	H5Fclose(file_id);*>
@@ -459,7 +466,7 @@ SUBROUTINE write_on_disk
 	H5Fclose(file_id);
     
 	free(complex_disk_data); *>
-	IF rank=0 THEN write_mean_flow
+	IF rank=rank_zero THEN write_mean_flow
 END write_on_disk
 
 SUBROUTINE read_disk
@@ -618,6 +625,8 @@ SUBROUTINE outstats
 		IF ix=0 AND iz=0 THEN 
 			u_fin=SUM -d14n(i)*V(0,0,ny-1+i).u.REAL FOR i=-2 TO 2
 			w_fin=SUM -d14n(i)*V(0,0,ny-1+i).w.REAL FOR i=-2 TO 2
+			mean_u(-1..ny+1) = V(0,0,-1..ny+1).u.REAL
+			mean_w(-1..ny+1) = V(0,0,-1..ny+1).w.REAL
 		END IF
 	REPEAT LOOP
 <*	MPI_Barrier(MPI_COMM_WORLD);
