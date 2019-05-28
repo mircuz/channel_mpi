@@ -196,5 +196,6 @@ POINTER TO ARRAY(0..localdim_x-1) OF REAL sendbuf
 POINTER TO ARRAY(0..localdim_x-1) OF REAL recvbuf
 POINTER TO ARRAY(0..localdim_x-1) OF REAL eta_write
 POINTER TO ARRAY(0..localdim_x-1) OF REAL v_write
+REAL mean_u(-1..ny+1) = 0
 
 set_time

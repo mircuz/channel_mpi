@@ -249,6 +249,35 @@ SUBROUTINE move_data
 	REPEAT 
 END move_data 
 
+SUBROUTINE write_mean_flow
+<*	int nx= 2*nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;
+	hid_t file_id, plist_id, dataspace_id, dataset_id, filespace;
+	hsize_t dims[1];
+	herr_t wrt;
+	dims[0] = ny;
+	char field_time[25]="/",  field_mean_u[25]="",  field_mean_w[25]="";// time_str[25]="Field";
+	gcvt (time_, 10, field_time);
+	strcat(field_mean_u,field_time);		strcat(field_mean_u,"/u_mean");	
+	strcat(field_mean_w,field_time);		strcat(field_mean_w,"/w_mean");
+
+	double mean_u[ny];
+	for (int i = 0; i < ny; i++) {
+		mean_u[i] = (*(double *)((i-1)*(ssize_t)sizeof(double)+mean_u_));	
+	}
+	plist_id = H5Pcreate(H5P_FILE_ACCESS);
+	file_id = H5Fopen("Field.h5", H5F_ACC_RDWR, plist_id);
+	H5Pclose(plist_id);
+	dataspace_id = H5Screate_simple(1, dims, NULL);
+	plist_id = H5Pcreate(H5P_DATASET_CREATE);
+	dataset_id = H5Dcreate(file_id, field_mean_u, H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	filespace = H5Dget_space(dataset_id);
+	wrt = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, dataspace_id, filespace, H5P_DEFAULT, mean_u);
+	H5Dclose(dataset_id);
+	H5Pclose(plist_id);
+	H5Sclose(dataspace_id);
+	H5Fclose(file_id);*>
+END write_mean_flow
+
 SUBROUTINE write_on_disk
 <*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;	int size= size_; 	int rank = rank_; 	int mem_reader;		double ni = 1/ni_;
 	/*HDF5 APIs definitions*/ 		
@@ -264,11 +293,11 @@ SUBROUTINE write_on_disk
     hsize_t		offset[3];
     herr_t		file_type, mem_type, file_hyper, mem_hyper, status;
 	MPI_Info info  = MPI_INFO_NULL;
-	char field_time[25]="/", field_v[25]="", field_eta[25]=""; // field_u[25]="",  field_w[25]="", time_str[25]="Field";
+	char field_time[25]="/", field_v[25]="", field_eta[25]="";// field_mean_u[25]="",  field_mean_w[25]="";// time_str[25]="Field";
 	gcvt (time_, 10, field_time);
-	//strcat(field_u,field_time);		strcat(field_u,"/u");	
+	//strcat(field_mean_u,field_time);		strcat(field_mean_u,"/u_mean");	
 	strcat(field_v,field_time);		strcat(field_v,"/v");
-	//strcat(field_w,field_time);		strcat(field_w,"/w");
+	//strcat(field_mean_w,field_time);		strcat(field_mean_w,"/w_mean");
 	strcat(field_eta,field_time);	strcat(field_eta,"/eta");
 	//strcat(time_str,".h5");
 	//if( chdir(output_cwd_) !=0 )
@@ -416,16 +445,21 @@ SUBROUTINE write_on_disk
 	H5LTset_attribute_double(file_id, field_time, "a", &a_, 1);
 	H5LTset_attribute_double(file_id, field_time, "ni", &ni , 1);
 
-	/*Release global resources*/
-	MPI_Barrier(MPI_COMM_WORLD);
+
+	
 	H5Pclose(plist_id_write);
-	H5Sclose(global_filespace);
-	H5Pclose(plist_id);
-	H5Gclose(group_id);
-	H5Fclose(file_id);
 	H5Tclose(filetype);
-    H5Sclose(memspace);
+	H5Sclose(global_filespace);
+	/*Release global resources*/
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	H5Gclose(group_id);	
+	H5Pclose(plist_id);
+	H5Sclose(memspace);
+	H5Fclose(file_id);
+    
 	free(complex_disk_data); *>
+	IF rank=0 THEN write_mean_flow
 END write_on_disk
 
 SUBROUTINE read_disk
