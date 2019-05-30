@@ -467,6 +467,7 @@ SUBROUTINE write_on_disk
     
 	free(complex_disk_data); *>
 	IF rank=rank_zero THEN write_mean_flow
+  <*MPI_Barrier(MPI_COMM_WORLD);*>
 END write_on_disk
 
 SUBROUTINE read_disk
