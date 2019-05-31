@@ -40,12 +40,11 @@ remove_useless:
 clear:
 	rm Runtimedata
 	rm results/Field.h5
-	rm results/time_out
-
+	rm results/new_0.h5
 clean: 
 	make remove_useless
 	rm exe
 	rm results/Field.h5
-	rm results/time_out
+	rm results/*.h5
 	rm Runtimedata
 

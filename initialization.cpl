@@ -136,9 +136,9 @@ WRITE
   int y_ilo = (int) 1.0*ipslow*nslow/npslow;					// J slow
   int y_ihi = (int) 1.0*(ipslow+1)*nslow/npslow - 1;
 
-  printf("[Y-PENCIL] (j,k,i order)\t"
+  /*printf("[Y-PENCIL] (j,k,i order)\t"
 		  "On rank %d the coordinates are: "
-		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, y_ilo, y_jlo, y_klo, y_ihi, y_jhi, y_khi );
+		  "(%d,%d,%d) -> (%d,%d,%d)\n", rank, y_ilo, y_jlo, y_klo, y_ihi, y_jhi, y_khi );*/
   MPI_Barrier(MPI_COMM_WORLD);
  
   /******************************************* Size Variables ******************************************/
