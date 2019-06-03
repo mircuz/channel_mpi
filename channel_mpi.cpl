@@ -30,9 +30,9 @@ LOOP forward WHILE time < t_max-deltat/2
 	convol_trasp(VV,V);		buildrhs(RK3_rai, VV, V);	linsolve(RK3_rai_coeff/deltat)
 	vetaTOuvw; computeflowrate(RK3_rai_coeff/deltat);	outstats;	ytoz;
 	
+	IF time>0 AND FLOOR((time+0.5*deltat)/dt_field) > FLOOR((time-0.5*deltat)/dt_field) THEN  write_on_disk_uvw(nx,ny,nz)
 	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN  write_on_disk
 REPEAT forward
-write_on_disk_uvw
 
 IF rank=0 THEN WRITE; WRITE "<Simulation Ended>"; WRITE; WRITE; END IF
 <* 	MPI_Barrier(MPI_COMM_WORLD);

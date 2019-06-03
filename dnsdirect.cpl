@@ -657,11 +657,11 @@ SUBROUTINE setup_file_0h5
 		H5Fclose(file_id0); *> 
 END setup_file_0h5 
 
-SUBROUTINE write_on_disk_uvw
+SUBROUTINE write_on_disk_uvw(INTEGER nx_read, ny_read, nz_read)
 	IF rank=0 THEN WRITE "The field at " time "s will be the new 0.h5";
 	setup_file_0h5;
 
-	<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;	int size= size_; 	int rank = rank_; 	int mem_reader;		double ni = 1/ni_;
+	<*	int nx= nx_read_+1;	int nz= 2*nz_read_+1;	int ny=ny_read_+3;	int size= size_; 	int rank = rank_; 	int mem_reader;		double ni = 1/ni_;
 	/*HDF5 APIs definitions*/ 		
     hid_t       file_id, dset_u, dset_v, dset_w, dset_eta;/* file and dataset identifiers */
     hid_t       filespace, memspace, global_filespace;    /* file and memory dataspace identifiers */
