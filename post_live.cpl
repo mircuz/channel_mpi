@@ -1,0 +1,106 @@
+maxquote=10;
+quote=OPEN("quote.in")
+ARRAY(1..maxquote) OF INTEGER quota;	READ FROM quote quota
+
+REALVEL=STRUCTURE(REAL u_p,v_p,w_p)
+ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF VELOCITY V_p 
+SPECTRUM=STRUCTURE(REAL uu_p,uv_p,uw_p,vv_p,vw_p,ww_p)
+DERIVS=STRUCTURE(COMPLEX ux,uy,uz,vx,vy,vz,wx,wy,wz)
+DERPRODS=STRUCTURE(COMPLEX ux2,vx2,wx2,uy2,vy2,wy2,uz2,vz2,wz2,uyvx,uzwx,wyvz)
+
+REALVEL mean(-1..ny DIV 2)=0; SPECTRUM rms(-1..ny DIV 2)=0
+ARRAY(-1..ny+1) OF REAL dUdy=0, meanvel=0
+REAL avfru=0,avfrw=0
+ARRAY(-1..ny+1) OF VELOCITY Vy=0
+INTEGER stats_counter = 1
+
+SUBROUTINE post_live
+!IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN 
+
+
+IF rank = rank_zero THEN
+	LOOP FOR iy=mean.LO TO mean.HI WITH mean(iy)
+		u_p=~+1/2*[V(0,0,iy).u.REAL + V(0,0,ny-iy).u.REAL]
+		w_p=~+1/2*[V(0,0,iy).w.REAL + V(0,0,ny-iy).w.REAL] 
+	REPEAT
+	DO meanvel(iy)=~+V(0,0,iy).u.REAL FOR iy=-1 TO ny+1
+END IF
+
+
+!!!!friction at position -1
+LOOP FOR ALL ix,iz
+	V_p(ix,iz,-1).u= - ( - SUM d140(i)*V(ix,iz,1+i).u FOR i=-2 TO 2)
+	V_p(ix,iz,-1).w= - ( - SUM d140(i)*V(ix,iz,1+i).w FOR i=-2 TO 2)
+	V_p(ix,iz,ny+1).u= - SUM d14n(i)*V(ix,iz,ny+i-1).u FOR i=-2 TO 2
+	V_p(ix,iz,ny+1).w= - SUM d14n(i)*V(ix,iz,ny+i-1).w FOR i=-2 TO 2
+REPEAT LOOP
+
+IF rank= rank_zero THEN
+		avfru=~+1/2*[V_p(0,0,-1).u.REAL + V_p(0,0,ny+1).u.REAL]
+		avfrw=~+1/2*[V_p(0,0,-1).w.REAL + V_p(0,0,ny+1).w.REAL] 
+END IF
+
+!(LOOP FOR iy=rms.LO TO rms.HI WITH rms(iy)    
+uu_p=~+1/2*{[NORM[V(0,*,iy).u] + 2*[SUM NORM[V(ix,*,iy).u] FOR ix=1 TO nx]] + [NORM[V(0,*,ny-iy).u] + 2*[SUM NORM[V(ix,*,ny-iy).u] FOR ix=1 TO nx]]};
+vv_p=~+1/2*{[NORM[V(0,*,iy).v] + 2*[SUM NORM[V(ix,*,iy).v] FOR ix=1 TO nx]] + [NORM[V(0,*,ny-iy).v] + 2*[SUM NORM[V(ix,*,ny-iy).v] FOR ix=1 TO nx]]};
+ww_p=~+1/2*{[NORM[V(0,*,iy).w] + 2*[SUM NORM[V(ix,*,iy).w] FOR ix=1 TO nx]] + [NORM[V(0,*,ny-iy).w] + 2*[SUM NORM[V(ix,*,ny-iy).w] FOR ix=1 TO nx]]};
+uv_p=~+1/2*{[2*[SUM (V(ix,*,iy).u | V(ix,*,iy).v).REAL FOR ix=1 TO nx]] + [-2*[SUM (V(ix,*,ny-iy).u | V(ix,*,ny-iy).v).REAL FOR ix=1 TO nx]]}
+uv_p=~+1/2*{[V(0,*,iy).u | V(0,*,iy).v].REAL + (-1)*[V(0,*,ny-iy).u | V(0,*,ny-iy).v].REAL}  
+uw_p=~+1/2*{[2*[SUM (V(ix,*,iy).u | V(ix,*,iy).w).REAL FOR ix=1 TO nx]] + [2*[SUM (V(ix,*,ny-iy).u | V(ix,*,ny-iy).w).REAL FOR ix=1 TO nx]]}
+uw_p=~+1/2*{[V(0,*,iy).u | V(0,*,iy).w].REAL + [V(0,*,ny-iy).u | V(0,*,ny-iy).w].REAL}
+vw_p=~+1/2*{[2*[SUM (V(ix,*,iy).v | V(ix,*,iy).w).REAL FOR ix=1 TO nx]] + [-2*[SUM (V(ix,*,ny-iy).v | V(ix,*,ny-iy).w).REAL FOR ix=1 TO nx]]} 
+vw_p=~+1/2*{[V(0,*,iy).v | V(0,*,iy).w].REAL + (-1)*[V(0,*,ny-iy).v | V(0,*,ny-iy).w].REAL}
+REPEAT LOOP
+
+LOOP FOR i=1 TO maxquote
+LOOP FOR ALL ix,iz WITH plane_psd(ix,iz,i):
+  uu_p=~+1/2/alfa0/beta0*{NORM[V(ix,iz,quota(i)).u] + NORM[V(ix,iz,ny-quota(i)).u]}
+  vv_p=~+1/2/alfa0/beta0*{NORM[V(ix,iz,quota(i)).v] + NORM[V(ix,iz,ny-quota(i)).v]}
+  ww_p=~+1/2/alfa0/beta0*{NORM[V(ix,iz,quota(i)).w] + NORM[V(ix,iz,ny-quota(i)).w]}
+REPEAT LOOP 
+REPEAT LOOP!)
+
+
+
+!(DO meanvel(iy)=~/nftot FOR iy=-1 TO ny+1
+deriv(meanvel, dUdy)
+LeftLUDivStep2(dUdy, D0mat)!)
+
+
+!(DO WITH rms(iy): uu_p=SQRT{uu_p/nftot-mean(iy).u^2}; vv_p=SQRT{vv_p/nftot}; ww_p=SQRT{ww_p/nftot-mean(iy).w^2}; uv_p=uv_p/nftot; uw_p=uw_p/nftot-(mean(iy).u*mean(iy).w); vw_p=vw_p/nftot FOR iy =0 TO HI
+
+WITH rms(-1): uu_p=SQRT{uu_p/nftot-avfru^2};  ww_p=SQRT{ww_p/nftot-avfrw^2}; uw_p=uw_p/nftot-avfru*avfrw
+  
+LOOP FOR ALL ix,iz,i WITH plane_psd(ix,iz,i):
+  uu_p=~/nftot; vv_p=~/nftot; ww_p=~/nftot 
+REPEAT LOOP!)
+  
+
+!(ARRAY(0..5) OF CHAR str; ASK str
+uc=MAX(mean.u); 
+ut=SQRT[ni*(SUM d140(i)*mean.u(1+i) FOR ALL i)]
+uc2=uc*uc;ut2=ut*ut
+FILE out=CREATE("info.dat")
+WRITE BY NAME TO out uc,ut,ut/ni
+CLOSE out
+
+FILE out=CREATE("mean.dat")
+DO WITH mean(iy): 
+	WRITE TO out y(iy),y(iy)*ut/ni,u,w,u/uc,w/uc,u/ut,w/ut FOR iy=0 TO ny DIV 2
+CLOSE out!)
+
+!(FILE out=CREATE("rms.dat")
+DO WITH rms(iy): 
+	WRITE TO out y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p,uu_p/ut,vv_p/ut,ww_p/ut,uv_p/ut2,uw_p/ut2,vw_p/ut2,ni*(dUdy(iy)-dUdy(ny-iy))/2 FOR iy=0 TO ny DIV 2
+CLOSE out
+
+WRITE "Data at time " time " processed"!)
+!INC stats_counter
+
+
+!(// Ensamble mean
+IF time = t_max
+	DO WITH mean(iy): u=~/nftot; v=~/nftot; w=~/nftot FOR ALL iy
+	avfru=~/nftot; avfrw=~/nftot!)
+!END IF
+END post_live

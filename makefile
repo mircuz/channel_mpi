@@ -37,7 +37,7 @@ exe: channel_mpi.o dnsdata.o dnsdirect.o data_man.o fft_support.o convol_trasp.o
 	@echo '--> run as mpiexec -n "#procs" exe <--'
 
 remove_useless:
-	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c
+	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c post_live.c
 	rm *.o
 	rm *.d
 

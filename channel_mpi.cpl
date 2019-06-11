@@ -43,3 +43,4 @@ IF rank=0 THEN WRITE; WRITE "<Simulation Ended>"; WRITE; WRITE; END IF
 	free(recvbuf_);	 free(sendbuf_);										//Remap local arrays
 	free(eta_write_);	 free(v_write_);
 	MPI_Finalize();	*>
+!// system call to ensamble_mean
