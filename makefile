@@ -26,11 +26,15 @@ dnsdata.o: dnsdata.c
 	$(CC) $(OPTFLAGS) -c dnsdata.c
 dnsdirect.o: dnsdirect.c
 	$(CC) $(OPTFLAGS) -c dnsdirect.c
+post_live.o: post_live.c
+	$(CC) $(OPTFLAGS) -c post_live.c
 
-exe: channel_mpi.o dnsdata.o dnsdirect.o data_man.o fft_support.o convol_trasp.o initialization.o
-	$(CCX) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o dnsdata.o dnsdirect.o $(REMAP_LIB) $(HDF5_LIB)
-		#--> Executable ready <--
-		#--> run as mpiexec -n "#procs" exe <--
+exe: channel_mpi.o dnsdata.o dnsdirect.o data_man.o fft_support.o convol_trasp.o initialization.o post_live.o
+	$(CCX) $(CFLAGS) -o exe channel_mpi.o initialization.o convol_trasp.o fft_support.o data_man.o \
+ dnsdata.o dnsdirect.o post_live.o $(REMAP_LIB) $(HDF5_LIB)
+	make remove_useless
+	@echo '--> Executable ready <--'
+	@echo '--> run as mpiexec -n "#procs" exe <--'
 
 remove_useless:
 	rm convol_trasp.c initialization.c channel_mpi.c dnsdata.c data_man.c dnsdirect.c
