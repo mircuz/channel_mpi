@@ -13,6 +13,7 @@ ARRAY(-1..ny+1) OF REAL dUdy=0, meanvel=0
 REAL avfru=0,avfrw=0
 ARRAY(-1..ny+1) OF VELOCITY Vy=0
 INTEGER stats_counter = 1
+REAL uc=0, ut=0
 
 SUBROUTINE post_live
 !IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN 
@@ -76,15 +77,29 @@ LOOP FOR ALL ix,iz,i WITH plane_psd(ix,iz,i):
 REPEAT LOOP!)
   
 
-!(ARRAY(0..5) OF CHAR str; ASK str
-uc=MAX(mean.u); 
-ut=SQRT[ni*(SUM d140(i)*mean.u(1+i) FOR ALL i)]
-uc2=uc*uc;ut2=ut*ut
-FILE out=CREATE("info.dat")
-WRITE BY NAME TO out uc,ut,ut/ni
-CLOSE out
 
-FILE out=CREATE("mean.dat")
+IF rank= rank_zero THEN 
+	uc=MAX(mean.u_p); 
+	ut=SQRT[ni*(SUM d140(i)*mean.u_p(1+i) FOR ALL i)];
+<*	MPI_Send(&uc_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Send(&ut_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD); *>
+END IF
+
+IF rank= 0 THEN 
+<*	MPI_Recv(&uc_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Recv(&ut_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); *>
+END IF
+
+<*MPI_Barrier(MPI_COMM_WORLD);*>
+
+IF rank=0 THEN
+	uc2=uc*uc;ut2=ut*ut
+	FILE info_file=CREATE("info"stats_counter".dat")
+	WRITE BY NAME TO info_file uc,ut,ut/ni
+	CLOSE info_file
+END IF
+
+!(FILE out=CREATE("mean.dat")
 DO WITH mean(iy): 
 	WRITE TO out y(iy),y(iy)*ut/ni,u,w,u/uc,w/uc,u/ut,w/ut FOR iy=0 TO ny DIV 2
 CLOSE out!)
