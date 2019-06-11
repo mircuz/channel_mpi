@@ -8,7 +8,9 @@ SPECTRUM=STRUCTURE(REAL uu_p,uv_p,uw_p,vv_p,vw_p,ww_p)
 DERIVS=STRUCTURE(COMPLEX ux,uy,uz,vx,vy,vz,wx,wy,wz)
 DERPRODS=STRUCTURE(COMPLEX ux2,vx2,wx2,uy2,vy2,wy2,uz2,vz2,wz2,uyvx,uzwx,wyvz)
 
-REALVEL mean(-1..ny DIV 2)=0; SPECTRUM rms(-1..ny DIV 2)=0
+REALVEL mean(-1..ny DIV 2)=0;	REAL u_p_vect(-1..ny DIV 2)=0, v_p_vect(-1..ny DIV 2)=0, w_p_vect(-1..ny DIV 2)=0;	
+INTEGER mean_dim=HI(mean) - LO(mean)
+SPECTRUM rms(-1..ny DIV 2)=0
 ARRAY(-1..ny+1) OF REAL dUdy=0, meanvel=0
 REAL avfru=0,avfrw=0
 ARRAY(-1..ny+1) OF VELOCITY Vy=0
@@ -81,28 +83,42 @@ REPEAT LOOP!)
 IF rank= rank_zero THEN 
 	uc=MAX(mean.u_p); 
 	ut=SQRT[ni*(SUM d140(i)*mean.u_p(1+i) FOR ALL i)];
+	u_p_vect = mean.u_p;	w_p_vect = mean.w_p;	w_p_vect = mean.w_p;
 <*	MPI_Send(&uc_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&ut_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD); *>
+	MPI_Send(&ut_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Send(&(u_p_vect_[0]),mean_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Send(&(v_p_vect_[0]),mean_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Send(&(w_p_vect_[0]),mean_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD); *>
 END IF
 
 IF rank= 0 THEN 
 <*	MPI_Recv(&uc_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&ut_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); *>
+	MPI_Recv(&ut_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Recv(&(u_p_vect_[0]),mean_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Recv(&(v_p_vect_[0]),mean_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Recv(&(w_p_vect_[0]),mean_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); *>
 END IF
 
 <*MPI_Barrier(MPI_COMM_WORLD);*>
 
+
+
+!// Write on files
 IF rank=0 THEN
 	uc2=uc*uc;ut2=ut*ut
 	FILE info_file=CREATE("info"stats_counter".dat")
-	WRITE BY NAME TO info_file uc,ut,ut/ni
+		WRITE BY NAME TO info_file uc,ut,ut/ni
 	CLOSE info_file
+
+	FILE mean_file=CREATE("mean"stats_counter".dat")
+	mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
+		DO WITH mean(iy): 
+		WRITE TO mean_file y(iy),y(iy)*ut/ni,u_p,w_p,u_p/uc,w_p/uc,u_p/ut,w_p/ut FOR iy=0 TO ny DIV 2
+	CLOSE mean_file
+
 END IF
 
-!(FILE out=CREATE("mean.dat")
-DO WITH mean(iy): 
-	WRITE TO out y(iy),y(iy)*ut/ni,u,w,u/uc,w/uc,u/ut,w/ut FOR iy=0 TO ny DIV 2
-CLOSE out!)
+
 
 !(FILE out=CREATE("rms.dat")
 DO WITH rms(iy): 
