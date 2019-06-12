@@ -1,0 +1,72 @@
+USE rbmat
+REALVEL=STRUCTURE(REAL u_p,v_p,w_p)
+SPECTRUM=STRUCTURE(REAL uu_p,uv_p,uw_p,vv_p,vw_p,ww_p)
+FILE dnsin = OPEN("dns.in")
+INTEGER nx,ny,nz
+REAL alfa0,beta0,ymin,ymax,a,ni;
+
+READ BY NAME FROM dnsin ny, nx, nz,alfa0,beta0,ymin,ymax,a,ni; ni=1/ni;
+REALVEL mean(-1..ny DIV 2)=0; REALVEL r_mean(-1..ny DIV 2)=0;	REAL u_p_vect(-1..ny DIV 2)=0, v_p_vect(-1..ny DIV 2)=0, w_p_vect(-1..ny DIV 2)=0;	
+INTEGER y_dim=HI(mean) - LO(mean)
+SPECTRUM rms(-1..ny DIV 2)=0;	REAL uu_vector(-1..ny DIV 2)=0,	global_uu(-1..ny DIV 2)=0
+								REAL vv_vector(-1..ny DIV 2)=0,	global_vv(-1..ny DIV 2)=0
+								REAL ww_vector(-1..ny DIV 2)=0,	global_ww(-1..ny DIV 2)=0
+								REAL uv_vector(-1..ny DIV 2)=0,	global_uv(-1..ny DIV 2)=0
+								REAL uw_vector(-1..ny DIV 2)=0,	global_uw(-1..ny DIV 2)=0
+								REAL vw_vector(-1..ny DIV 2)=0,	global_vw(-1..ny DIV 2)=0
+REAL y_orig(-1..ny+1)
+DO y_orig(i)=ymin+0.5*(ymax-ymin)*[tanh(a*(2*i/ny-1))/tanh(a)+0.5*(ymax-ymin)] FOR ALL i !Channel
+ARRAY(-2..2) OF REAL d140
+REAL M(0..4,0..4),t(0..4)
+DO M(i,j)=(y_orig(-1+j)-y_orig(0))**(4-i) FOR i=0 TO 4 AND j=0 TO 4; LUdecomp M
+t=0; t(3)=1
+d140(-2+(*))=M\t
+
+REAL avfru=0,r_avfru=0,avfrw=0,r_avfrw=0
+INTEGER nftot,nfmin,nfmax,stats_counter = 1
+REAL uc=0, ut=0
+ARRAY(-1..ny DIV 2) OF REAL y,y_plus
+CHAR cwd[1024], output_cwd[1024]
+ASK nfmin, nfmax
+nftot = nfmax-nfmin+1
+WRITE "Merging stats"
+<*	getcwd(cwd_, sizeof(cwd_));
+	strcat(output_cwd_,cwd_);
+	strcat(output_cwd_,"/results");
+	printf("Running in : %s\n", output_cwd_);
+	if( chdir(output_cwd_) !=0 )
+	    perror(".:Error changing folder in outstats routine:."); *>
+
+
+!// Load data and perform summation
+LOOP files FOR nfield=nfmin TO nfmax
+	FILE mean_file = OPEN("mean"nfield".dat")
+	LOOP FOR iy=-1 TO ny DIV 2 
+		READ FROM mean_file y(iy),y_plus(iy),r_mean(iy).u_p,r_mean(iy).w_p
+!//		WRITE y(iy), y_plus(iy), r_mean(iy).u_p,r_mean(iy).w_p
+	REPEAT
+	READ FROM mean_file r_avfru, r_avfrw
+	avfru= ~ + r_avfru
+	avfrw= ~ + r_avfrw
+	mean.u_p = ~ +r_mean.u_p
+	mean.w_p = ~ +r_mean.w_p
+	CLOSE(mean_file)
+
+	!(//FILE rms_file  = OPEN("rms"nfield".dat")!)
+
+
+
+
+REPEAT files
+
+!// Ensamble average
+DO WITH mean(iy): u_p=~/nftot; v_p=~/nftot; w_p=~/nftot FOR ALL iy
+avfru=~/nftot; avfrw=~/nftot
+
+uc=MAX(mean.u_p); 
+ut=SQRT[ni*(SUM d140(i)*mean.u_p(1+i) FOR ALL i)]; 
+uc2=uc*uc;ut2=ut*ut
+FILE out=CREATE("info.dat")
+WRITE BY NAME TO out uc,ut,ut/ni
+CLOSE out
+

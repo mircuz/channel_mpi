@@ -11,6 +11,7 @@ all: translation exe
 
 translation:
 	/usr/local/fri/fri /usr/local/fri/cpl channel_mpi.cpl
+	makecpl ensamble_stats.cpl
 
 initialization.o: initialization.c 
 	$(CC) $(OPTFLAGS) -c initialization.c
@@ -48,5 +49,6 @@ clear:
 	rm results/*.dat
 clean: 
 	rm exe
+	rm ensamble_stats
 	rm Runtimedata
 

@@ -21,8 +21,9 @@ SUBROUTINE post_live
 !IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN 
 IF rank = rank_zero THEN
 	LOOP FOR iy=mean.LO TO mean.HI WITH mean(iy)
-		u_p=~+1/2*[V(0,0,iy).u.REAL + V(0,0,ny-iy).u.REAL]
-		w_p=~+1/2*[V(0,0,iy).w.REAL + V(0,0,ny-iy).w.REAL] 
+		u_p=1/2*[V(0,0,iy).u.REAL + V(0,0,ny-iy).u.REAL]
+		w_p=1/2*[V(0,0,iy).w.REAL + V(0,0,ny-iy).w.REAL] 
+		!//WRITE u_p
 	REPEAT
 END IF
 
@@ -36,8 +37,8 @@ LOOP FOR ALL ix,iz
 REPEAT LOOP
 
 IF rank= rank_zero THEN
-		avfru=~+1/2*[V_p(0,0,-1).u.REAL + V_p(0,0,ny+1).u.REAL]
-		avfrw=~+1/2*[V_p(0,0,-1).w.REAL + V_p(0,0,ny+1).w.REAL] 
+		avfru=1/2*[V_p(0,0,-1).u.REAL + V_p(0,0,ny+1).u.REAL]
+		avfrw=1/2*[V_p(0,0,-1).w.REAL + V_p(0,0,ny+1).w.REAL] 
 END IF
 
 LOOP FOR iy=rms.LO TO rms.HI WITH rms(iy)    
@@ -86,7 +87,9 @@ IF rank= rank_zero THEN
 	MPI_Send(&ut_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 	MPI_Send(&(u_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 	MPI_Send(&(v_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&(w_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD); *>
+	MPI_Send(&(w_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Send(&avfru_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Send(&avfrw_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD); *>
 END IF
 
 IF rank= 0 THEN 
@@ -94,7 +97,9 @@ IF rank= 0 THEN
 	MPI_Recv(&ut_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Recv(&(u_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Recv(&(v_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&(w_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); *>
+	MPI_Recv(&(w_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Recv(&avfru_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Recv(&avfrw_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); *>
 END IF
 
 <*MPI_Barrier(MPI_COMM_WORLD);*>
@@ -102,20 +107,21 @@ END IF
 
 IF rank=0 THEN
 mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
-	DO WITH rms(iy): uu_p=SQRT{uu_p-mean(iy).u_p^2}; vv_p=SQRT{vv_p}; ww_p=SQRT{ww_p-mean(iy).w_p^2}; uw_p=uw_p-(mean(iy).u_p*mean(iy).w_p) FOR iy =0 TO HI
+!	DO WITH rms(iy): uu_p=SQRT{uu_p-mean(iy).u_p^2}; vv_p=SQRT{vv_p}; ww_p=SQRT{ww_p-mean(iy).w_p^2}; uw_p=uw_p-(mean(iy).u_p*mean(iy).w_p) FOR iy =0 TO HI
 !WITH rms(-1): uu_p=SQRT{uu_p-avfru^2};  ww_p=SQRT{ww_p-avfrw^2}; uw_p=uw_p-avfru*avfrw
 END IF
 !// Write on files
 IF rank=0 THEN
 	uc2=uc*uc;ut2=ut*ut
 	FILE info_file=CREATE("info"stats_counter".dat")
-		WRITE BY NAME TO info_file uc,ut,ut/ni, avfru,avfrw
+		WRITE BY NAME TO info_file uc,ut,ut/ni
 	CLOSE info_file
 
 	FILE mean_file=CREATE("mean"stats_counter".dat")
-	!//mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
 		DO WITH mean(iy): 
-		WRITE TO mean_file y(iy),y(iy)*ut/ni,u_p,w_p,u_p/uc,w_p/uc,u_p/ut,w_p/ut FOR iy=0 TO ny DIV 2
+		!//WRITE TO mean_file y(iy),y(iy)*ut/ni,u_p,w_p,u_p/uc,w_p/uc,u_p/ut,w_p/ut FOR iy=0 TO ny DIV 2
+		WRITE TO mean_file y(iy),y(iy)*ut/ni,u_p,w_p FOR iy=-1 TO ny DIV 2
+		WRITE TO mean_file avfru,avfrw
 	CLOSE mean_file
 
 	FILE rms_file=CREATE("rms"stats_counter".dat")
