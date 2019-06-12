@@ -103,7 +103,7 @@ END IF
 IF rank=0 THEN
 mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
 	DO WITH rms(iy): uu_p=SQRT{uu_p-mean(iy).u_p^2}; vv_p=SQRT{vv_p}; ww_p=SQRT{ww_p-mean(iy).w_p^2}; uw_p=uw_p-(mean(iy).u_p*mean(iy).w_p) FOR iy =0 TO HI
-WITH rms(-1): uu_p=SQRT{uu_p-avfru^2};  ww_p=SQRT{ww_p-avfrw^2}; uw_p=uw_p-avfru*avfrw
+!WITH rms(-1): uu_p=SQRT{uu_p-avfru^2};  ww_p=SQRT{ww_p-avfrw^2}; uw_p=uw_p-avfru*avfrw
 END IF
 !// Write on files
 IF rank=0 THEN
@@ -125,14 +125,9 @@ IF rank=0 THEN
 
 END IF
 
+<*MPI_Barrier(MPI_COMM_WORLD);*>
 
 
-!(FILE rms_file=CREATE("rms.dat")
-DO WITH rms(iy): 
-	WRITE TO out y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p,uu_p/ut,vv_p/ut,ww_p/ut,uv_p/ut2,uw_p/ut2,vw_p/ut2 FOR iy=0 TO ny DIV 2
-CLOSE out
-
-WRITE "Data at time " time " processed"!)
 !INC stats_counter
 
 

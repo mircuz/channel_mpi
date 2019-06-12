@@ -5,6 +5,7 @@ SUBROUTINE linsolve(REAL lambda) FOLLOWS
 SUBROUTINE deriv(ARRAY(*) OF REAL f0,f1^) FOLLOWS
 SUBROUTINE vetaTOuvw FOLLOWS
 SUBROUTINE computeflowrate(REAL lambda) FOLLOWS
+SUBROUTINE post_live FOLLOWS
 #include <string.h>
 <* typedef struct complex {
 		double 	real;
@@ -621,27 +622,32 @@ SUBROUTINE outstats
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
-	IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
-		IF rank=0 THEN WRITE "Writing Field at " time "s"
-		!// Generate V_eta array
-		LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
-			LOOP FOR iy=-1 TO ny+1
-				WITH fieldbuf(ix,iz,iy)
-		  		v = V(ix,iz,iy).v
-		 	 	ialfa = I*alfa0*ix; ibeta = I*beta0*iz
-		  		eta = ibeta*V(ix,iz,iy).u - ialfa*V(ix,iz,iy).w
-			REPEAT
-		REPEAT
-		INTEGER counter_buf = 0
-		LOOP FOR i=ilo TO ihi
-			LOOP FOR k=klo TO khi
-				LOOP FOR j=-1 TO ny+1
-					eta_write[counter_buf]= fieldbuf(i,k,j).eta.REAL;		v_write[counter_buf]= fieldbuf(i,k,j).v.REAL;		INC counter_buf;
-					eta_write[counter_buf]= fieldbuf(i,k,j).eta.IMAG;		v_write[counter_buf]= fieldbuf(i,k,j).v.IMAG;		INC counter_buf;
+	
+	IF live_postpro = FALSE THEN
+		IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN
+			IF rank=0 THEN WRITE "Writing Field at " time "s"
+			!// Generate V_eta array
+			LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
+				LOOP FOR iy=-1 TO ny+1
+					WITH fieldbuf(ix,iz,iy)
+			  		v = V(ix,iz,iy).v
+			 	 	ialfa = I*alfa0*ix; ibeta = I*beta0*iz
+			  		eta = ibeta*V(ix,iz,iy).u - ialfa*V(ix,iz,iy).w
 				REPEAT
 			REPEAT
-		REPEAT 
-		flag_veta=1
+			INTEGER counter_buf = 0
+			LOOP FOR i=ilo TO ihi
+				LOOP FOR k=klo TO khi
+					LOOP FOR j=-1 TO ny+1
+						eta_write[counter_buf]= fieldbuf(i,k,j).eta.REAL;		v_write[counter_buf]= fieldbuf(i,k,j).v.REAL;		INC counter_buf;
+						eta_write[counter_buf]= fieldbuf(i,k,j).eta.IMAG;		v_write[counter_buf]= fieldbuf(i,k,j).v.IMAG;		INC counter_buf;
+					REPEAT
+				REPEAT
+			REPEAT 
+			flag_veta=1
+		END IF
+	ELSE 
+		post_live
 	END IF
 END outstats
 
