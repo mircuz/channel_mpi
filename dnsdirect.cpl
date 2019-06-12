@@ -615,9 +615,9 @@ SUBROUTINE outstats
 	} 
 	MPI_Barrier(MPI_COMM_WORLD);	*> 
 	IF rank=0 THEN
-		!(WRITE time:1.9, u1zero:1.9, u_fin :1.9,
+		WRITE time:1.9, u1zero:1.9, u_fin :1.9,
         	w1zero :1.9, ,w_fin :1.9,
-			flowx,px+corrpx,flowz,pz+corrpz,deltat,energy_tot,diss_tot!)
+			flowx,px+corrpx,flowz,pz+corrpz,deltat,energy_tot,diss_tot
 		WRITE TO time_file time:1.9, u1zero:1.9, 
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
 			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)

@@ -43,7 +43,6 @@ LOOP files FOR nfield=nfmin TO nfmax
 	FILE mean_file = OPEN("mean"nfield".dat")
 	LOOP FOR iy=-1 TO ny DIV 2 
 		READ FROM mean_file y(iy),y_plus(iy),r_mean(iy).u_p,r_mean(iy).w_p
-!//		WRITE y(iy), y_plus(iy), r_mean(iy).u_p,r_mean(iy).w_p
 	REPEAT
 	READ FROM mean_file r_avfru, r_avfrw
 	avfru= ~ + r_avfru

@@ -18,7 +18,7 @@ INTEGER stats_counter = 1
 REAL uc=0, ut=0
 
 SUBROUTINE post_live
-!IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN 
+IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN 
 IF rank = rank_zero THEN
 	LOOP FOR iy=mean.LO TO mean.HI WITH mean(iy)
 		u_p=1/2*[V(0,0,iy).u.REAL + V(0,0,ny-iy).u.REAL]
@@ -134,7 +134,7 @@ END IF
 <*MPI_Barrier(MPI_COMM_WORLD);*>
 
 
-!INC stats_counter
+INC stats_counter
 
 
 !(// Ensamble mean
@@ -146,4 +146,5 @@ IF time = t_max
 !(DO WITH rms(iy): uu_p=SQRT{uu_p/nftot-mean(iy).u^2}; vv_p=SQRT{vv_p/nftot}; ww_p=SQRT{ww_p/nftot-mean(iy).w^2}; uv_p=uv_p/nftot; uw_p=uw_p/nftot-(mean(iy).u*mean(iy).w); vw_p=vw_p/nftot FOR iy =0 TO HI
 
 WITH rms(-1): uu_p=SQRT{uu_p/nftot-avfru^2};  ww_p=SQRT{ww_p/nftot-avfrw^2}; uw_p=uw_p/nftot-avfru*avfrw!)
+END IF
 END post_live
