@@ -1,7 +1,4 @@
-maxquote=10;
-quote=OPEN("quote.in")
-ARRAY(1..maxquote) OF INTEGER quota;	READ FROM quote quota
-
+!//Live post processing routine to use during extra wide simulations 
 REALVEL=STRUCTURE(REAL u_p,v_p,w_p)
 ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF VELOCITY V_p 
 SPECTRUM=STRUCTURE(REAL uu_p,uv_p,uw_p,vv_p,vw_p,ww_p)
@@ -11,26 +8,26 @@ DERPRODS=STRUCTURE(COMPLEX ux2,vx2,wx2,uy2,vy2,wy2,uz2,vz2,wz2,uyvx,uzwx,wyvz)
 REALVEL mean(-1..ny DIV 2)=0;	REAL u_p_vect(-1..ny DIV 2)=0, v_p_vect(-1..ny DIV 2)=0, w_p_vect(-1..ny DIV 2)=0;	
 INTEGER y_dim=HI(mean) - LO(mean)
 SPECTRUM rms(-1..ny DIV 2)=0;	REAL uu_vector(-1..ny DIV 2)=0,	global_uu(-1..ny DIV 2)=0
-ARRAY(-1..ny+1) OF REAL dUdy=0, meanvel=0
+								REAL vv_vector(-1..ny DIV 2)=0,	global_vv(-1..ny DIV 2)=0
+								REAL ww_vector(-1..ny DIV 2)=0,	global_ww(-1..ny DIV 2)=0
+								REAL uv_vector(-1..ny DIV 2)=0,	global_uv(-1..ny DIV 2)=0
+								REAL uw_vector(-1..ny DIV 2)=0,	global_uw(-1..ny DIV 2)=0
+								REAL vw_vector(-1..ny DIV 2)=0,	global_vw(-1..ny DIV 2)=0
 REAL avfru=0,avfrw=0
-ARRAY(-1..ny+1) OF VELOCITY Vy=0
 INTEGER stats_counter = 1
 REAL uc=0, ut=0
 
 SUBROUTINE post_live
 !IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN 
-
-
 IF rank = rank_zero THEN
 	LOOP FOR iy=mean.LO TO mean.HI WITH mean(iy)
 		u_p=~+1/2*[V(0,0,iy).u.REAL + V(0,0,ny-iy).u.REAL]
 		w_p=~+1/2*[V(0,0,iy).w.REAL + V(0,0,ny-iy).w.REAL] 
 	REPEAT
-	DO meanvel(iy)=~+V(0,0,iy).u.REAL FOR iy=-1 TO ny+1
 END IF
 
 
-!!!!friction at position -1
+!//friction at position -1
 LOOP FOR ALL ix,iz
 	V_p(ix,iz,-1).u= - ( - SUM d140(i)*V(ix,iz,1+i).u FOR i=-2 TO 2)
 	V_p(ix,iz,-1).w= - ( - SUM d140(i)*V(ix,iz,1+i).w FOR i=-2 TO 2)
@@ -44,83 +41,42 @@ IF rank= rank_zero THEN
 END IF
 
 LOOP FOR iy=rms.LO TO rms.HI WITH rms(iy)    
-!uu_p=~+1/2*{[NORM[V(0,*,iy).u] + 2*[SUM NORM[V(ix,*,iy).u] FOR ix=1 TO nx]] + [NORM[V(0,*,ny-iy).u] + 2*[SUM NORM[V(ix,*,ny-iy).u] FOR ix=1 TO nx]]};
 	LOOP FOR k=klo TO khi
 		LOOP FOR i=ilo TO ihi
 			IF i=0 THEN
 				uu_p=~+1/2*[NORM[V(i,k,iy).u] + NORM[V(i,k,ny-iy).u]]
+				vv_p=~+1/2*[NORM[V(i,k,iy).v] + NORM[V(i,k,ny-iy).v]]
+				ww_p=~+1/2*[NORM[V(i,k,iy).w] + NORM[V(i,k,ny-iy).w]]
+				uv_p=~+1/2*{[V(i,k,iy).u | V(i,k,iy).v].REAL + (-1)*[V(i,k,ny-iy).u | V(i,k,ny-iy).v].REAL}
+				uw_p=~+1/2*{[V(i,k,iy).u | V(i,k,iy).w].REAL + [V(i,k,ny-iy).u | V(i,k,ny-iy).w].REAL}
+				vw_p=~+1/2*{[V(i,k,iy).v | V(i,k,iy).w].REAL + (-1)*[V(i,k,ny-iy).v | V(i,k,ny-iy).w].REAL}
 			ELSE
 				uu_p=~+ NORM[V(i,k,iy).u]+ NORM[V(i,k,ny-iy).u]
+				vv_p=~+ NORM[V(i,k,iy).v]+ NORM[V(i,k,ny-iy).v]
+				ww_p=~+ NORM[V(i,k,iy).w]+ NORM[V(i,k,ny-iy).w]
+				uv_p=~+[(V(i,k,iy).u | V(i,k,iy).v).REAL ] - [(V(i,k,ny-iy).u | V(i,k,ny-iy).v).REAL]
+				uw_p=~+[(V(i,k,iy).u | V(i,k,iy).w).REAL ] + [(V(i,k,ny-iy).u | V(i,k,ny-iy).w).REAL]
+				vw_p=~+[(V(i,k,iy).v | V(i,k,iy).w).REAL ] - [(V(i,k,ny-iy).v | V(i,k,ny-iy).w).REAL]
 			END IF		
 		REPEAT
 	REPEAT
-!(vv_p=~+1/2*{[NORM[V(0,*,iy).v] + 2*[SUM NORM[V(ix,*,iy).v] FOR ix=1 TO nx]] + [NORM[V(0,*,ny-iy).v] + 2*[SUM NORM[V(ix,*,ny-iy).v] FOR ix=1 TO nx]]};
-ww_p=~+1/2*{[NORM[V(0,*,iy).w] + 2*[SUM NORM[V(ix,*,iy).w] FOR ix=1 TO nx]] + [NORM[V(0,*,ny-iy).w] + 2*[SUM NORM[V(ix,*,ny-iy).w] FOR ix=1 TO nx]]};
-uv_p=~+1/2*{[2*[SUM (V(ix,*,iy).u | V(ix,*,iy).v).REAL FOR ix=1 TO nx]] + [-2*[SUM (V(ix,*,ny-iy).u | V(ix,*,ny-iy).v).REAL FOR ix=1 TO nx]]}
-uv_p=~+1/2*{[V(0,*,iy).u | V(0,*,iy).v].REAL + (-1)*[V(0,*,ny-iy).u | V(0,*,ny-iy).v].REAL}  
-uw_p=~+1/2*{[2*[SUM (V(ix,*,iy).u | V(ix,*,iy).w).REAL FOR ix=1 TO nx]] + [2*[SUM (V(ix,*,ny-iy).u | V(ix,*,ny-iy).w).REAL FOR ix=1 TO nx]]}
-uw_p=~+1/2*{[V(0,*,iy).u | V(0,*,iy).w].REAL + [V(0,*,ny-iy).u | V(0,*,ny-iy).w].REAL}
-vw_p=~+1/2*{[2*[SUM (V(ix,*,iy).v | V(ix,*,iy).w).REAL FOR ix=1 TO nx]] + [-2*[SUM (V(ix,*,ny-iy).v | V(ix,*,ny-iy).w).REAL FOR ix=1 TO nx]]} 
-vw_p=~+1/2*{[V(0,*,iy).v | V(0,*,iy).w].REAL + (-1)*[V(0,*,ny-iy).v | V(0,*,ny-iy).w].REAL}!)
 REPEAT LOOP
 
-
-
-
-!uu_vector=rms.uu_p;
-<*{char *_45_;
-
-_45_=(-1)*(ssize_t)sizeof(struct SPECTRUM_)+(char*)&(*(struct SPECTRUM_*)(rms_)).uu_p_; 
-{char *_44_=(-1)*(ssize_t)sizeof(double)+uu_vector_;
-int _44_1=post_live_25h-(-1); 
-do{
-	{ (*(double *)(_44_))=(*(double *)(_45_)); 
-	_45_ =(ssize_t)sizeof(struct SPECTRUM_)+_45_;}
-	_44_+=(ssize_t)sizeof(double);_44_1--;}while(_44_1>=0);}
-	} ;*>
-
-!WRITE uu_vector
-<*for (int i = 0; i < 5; i++) { 
-	fprintf(stdout,"[%d]%g\t",rank_,(*(double *)((i-1)*(ssize_t)sizeof(double)+uu_vector_)) );
-}
-*>
-
-!//Esempio
-!(<*for (int i = 0; i < ny; i++) {
-		mean_u[i] = (*(double *)((i-1)*(ssize_t)sizeof(double)+mean_u_));	
-		mean_w[i] = (*(double *)((i-1)*(ssize_t)sizeof(double)+mean_w_));	
-	}
-*>!)
+uu_vector=rms.uu_p;	vv_vector=rms.vv_p;	ww_vector=rms.ww_p;	uv_vector=rms.uv_p;	uw_vector=rms.uw_p;	vw_vector=rms.vw_p;
+WRITE
 
 <*	MPI_Reduce(uu_vector_,global_uu_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(vv_vector_,global_vv_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(ww_vector_,global_ww_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(uv_vector_,global_uv_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(uw_vector_,global_uw_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(vw_vector_,global_vw_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);*>
-WRITE
-WRITE "["rank"] " global_uu
 
-!(LOOP FOR i=1 TO maxquote
-LOOP FOR ALL ix,iz WITH plane_psd(ix,iz,i):
-  uu_p=~+1/2/alfa0/beta0*{NORM[V(ix,iz,quota(i)).u] + NORM[V(ix,iz,ny-quota(i)).u]}
-  vv_p=~+1/2/alfa0/beta0*{NORM[V(ix,iz,quota(i)).v] + NORM[V(ix,iz,ny-quota(i)).v]}
-  ww_p=~+1/2/alfa0/beta0*{NORM[V(ix,iz,quota(i)).w] + NORM[V(ix,iz,ny-quota(i)).w]}
-REPEAT LOOP 
-REPEAT LOOP!)
-
-
-
-!(DO meanvel(iy)=~/nftot FOR iy=-1 TO ny+1
-deriv(meanvel, dUdy)
-LeftLUDivStep2(dUdy, D0mat)!)
-
-
-!(DO WITH rms(iy): uu_p=SQRT{uu_p/nftot-mean(iy).u^2}; vv_p=SQRT{vv_p/nftot}; ww_p=SQRT{ww_p/nftot-mean(iy).w^2}; uv_p=uv_p/nftot; uw_p=uw_p/nftot-(mean(iy).u*mean(iy).w); vw_p=vw_p/nftot FOR iy =0 TO HI
-
-WITH rms(-1): uu_p=SQRT{uu_p/nftot-avfru^2};  ww_p=SQRT{ww_p/nftot-avfrw^2}; uw_p=uw_p/nftot-avfru*avfrw
-  
-LOOP FOR ALL ix,iz,i WITH plane_psd(ix,iz,i):
-  uu_p=~/nftot; vv_p=~/nftot; ww_p=~/nftot 
-REPEAT LOOP!)
-  
-
+IF rank=0 THEN 
+	WITH rms: 
+		uu_p=global_uu;	vv_p=global_vv; ww_p=global_ww; uv_p=global_uv; uw_p=global_uw;	vw_p=global_vw
+END IF
 
 IF rank= rank_zero THEN 
 	uc=MAX(mean.u_p); 
@@ -144,27 +100,36 @@ END IF
 <*MPI_Barrier(MPI_COMM_WORLD);*>
 
 
-
+IF rank=0 THEN
+mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
+	DO WITH rms(iy): uu_p=SQRT{uu_p-mean(iy).u_p^2}; vv_p=SQRT{vv_p}; ww_p=SQRT{ww_p-mean(iy).w_p^2}; uw_p=uw_p-(mean(iy).u_p*mean(iy).w_p) FOR iy =0 TO HI
+WITH rms(-1): uu_p=SQRT{uu_p-avfru^2};  ww_p=SQRT{ww_p-avfrw^2}; uw_p=uw_p-avfru*avfrw
+END IF
 !// Write on files
 IF rank=0 THEN
 	uc2=uc*uc;ut2=ut*ut
 	FILE info_file=CREATE("info"stats_counter".dat")
-		WRITE BY NAME TO info_file uc,ut,ut/ni
+		WRITE BY NAME TO info_file uc,ut,ut/ni, avfru,avfrw
 	CLOSE info_file
 
 	FILE mean_file=CREATE("mean"stats_counter".dat")
-	mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
+	!//mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
 		DO WITH mean(iy): 
 		WRITE TO mean_file y(iy),y(iy)*ut/ni,u_p,w_p,u_p/uc,w_p/uc,u_p/ut,w_p/ut FOR iy=0 TO ny DIV 2
 	CLOSE mean_file
+
+	FILE rms_file=CREATE("rms"stats_counter".dat")
+	DO WITH rms(iy): 
+		WRITE TO rms_file y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p,uu_p/ut,vv_p/ut,ww_p/ut,uv_p/ut2,uw_p/ut2,vw_p/ut2 FOR iy=0 TO ny DIV 2
+	CLOSE rms_file
 
 END IF
 
 
 
-!(FILE out=CREATE("rms.dat")
+!(FILE rms_file=CREATE("rms.dat")
 DO WITH rms(iy): 
-	WRITE TO out y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p,uu_p/ut,vv_p/ut,ww_p/ut,uv_p/ut2,uw_p/ut2,vw_p/ut2,ni*(dUdy(iy)-dUdy(ny-iy))/2 FOR iy=0 TO ny DIV 2
+	WRITE TO out y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p,uu_p/ut,vv_p/ut,ww_p/ut,uv_p/ut2,uw_p/ut2,vw_p/ut2 FOR iy=0 TO ny DIV 2
 CLOSE out
 
 WRITE "Data at time " time " processed"!)
@@ -176,4 +141,8 @@ IF time = t_max
 	DO WITH mean(iy): u=~/nftot; v=~/nftot; w=~/nftot FOR ALL iy
 	avfru=~/nftot; avfrw=~/nftot!)
 !END IF
+
+!(DO WITH rms(iy): uu_p=SQRT{uu_p/nftot-mean(iy).u^2}; vv_p=SQRT{vv_p/nftot}; ww_p=SQRT{ww_p/nftot-mean(iy).w^2}; uv_p=uv_p/nftot; uw_p=uw_p/nftot-(mean(iy).u*mean(iy).w); vw_p=vw_p/nftot FOR iy =0 TO HI
+
+WITH rms(-1): uu_p=SQRT{uu_p/nftot-avfru^2};  ww_p=SQRT{ww_p/nftot-avfrw^2}; uw_p=uw_p/nftot-avfru*avfrw!)
 END post_live

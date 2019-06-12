@@ -45,10 +45,8 @@ clear:
 	rm Runtimedata
 	rm results/Field.h5
 	rm results/new_0.h5
+	rm results/*.dat
 clean: 
-	make remove_useless
 	rm exe
-	rm results/Field.h5
-	rm results/*.h5
 	rm Runtimedata
 
