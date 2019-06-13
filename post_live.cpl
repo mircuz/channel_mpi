@@ -14,7 +14,6 @@ SPECTRUM rms(-1..ny DIV 2)=0;	REAL uu_vector(-1..ny DIV 2)=0,	global_uu(-1..ny D
 								REAL uw_vector(-1..ny DIV 2)=0,	global_uw(-1..ny DIV 2)=0
 								REAL vw_vector(-1..ny DIV 2)=0,	global_vw(-1..ny DIV 2)=0
 REAL avfru=0,avfrw=0
-INTEGER stats_counter = 1
 REAL uc=0, ut=0
 
 SUBROUTINE post_live
