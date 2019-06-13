@@ -6,8 +6,8 @@ meanpx=1	meanpz=0
 u_conv=0.0	w_conv=0.0
 u0=0.0		un=0.0		w0=0.0		wn=0.0	t0=-1.0	tn=1.0
 
-deltat=0.0001 	t_max=0.0002		starting_time=0
-dt_field=0.1	dt_save=0.0001
+deltat=0.0001 	t_max=0.0004		starting_time=0
+dt_field=0.1	dt_save=0.0002
 generate_inputs=no
 nproc_y=0		nproc_z=0
 live_postpro=yes

@@ -35,7 +35,7 @@ WRITE "Merging stats"
 	strcat(output_cwd_,"/results");
 	printf("Running in : %s\n", output_cwd_);
 	if( chdir(output_cwd_) !=0 )
-	    perror(".:Error changing folder in outstats routine:."); *>
+	    perror(".:Error changing folder to catch postpro time slices:."); *>
 
 
 !// Load data and perform summation
@@ -59,6 +59,10 @@ LOOP files FOR nfield=nfmin TO nfmax
 REPEAT files
 
 !// Ensamble average
+<*	printf("Output in : %s\n", cwd_);
+	if( chdir(cwd_) !=0 )
+	    perror(".:Error changing folder for writing global stats:."); *>
+
 DO WITH mean(iy): u_p=~/nftot; v_p=~/nftot; w_p=~/nftot FOR ALL iy
 avfru=~/nftot; avfrw=~/nftot
 
@@ -67,5 +71,10 @@ ut=SQRT[ni*(SUM d140(i)*mean.u_p(1+i) FOR ALL i)];
 uc2=uc*uc;ut2=ut*ut
 FILE out=CREATE("info.dat")
 WRITE BY NAME TO out uc,ut,ut/ni
+CLOSE out
+
+FILE out=CREATE("mean.dat")
+DO WITH mean(iy): 
+	WRITE TO out y(iy),y(iy)*ut/ni,u_p,w_p,u_p/uc,w_p/uc,u_p/ut,w_p/ut FOR iy=0 TO ny DIV 2
 CLOSE out
 

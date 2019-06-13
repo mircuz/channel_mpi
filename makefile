@@ -45,8 +45,10 @@ remove_useless:
 clear:
 	rm Runtimedata
 	rm results/Field.h5
-	rm results/new_0.h5
 	rm results/*.dat
+	rm results/new_0.h5
+	rm *.dat
+	
 clean: 
 	rm exe
 	rm ensamble_stats

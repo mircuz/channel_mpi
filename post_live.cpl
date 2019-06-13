@@ -137,11 +137,7 @@ END IF
 INC stats_counter
 
 
-!(// Ensamble mean
-IF time = t_max
-	DO WITH mean(iy): u=~/nftot; v=~/nftot; w=~/nftot FOR ALL iy
-	avfru=~/nftot; avfrw=~/nftot!)
-!END IF
+!// Ensamble mean
 
 !(DO WITH rms(iy): uu_p=SQRT{uu_p/nftot-mean(iy).u^2}; vv_p=SQRT{vv_p/nftot}; ww_p=SQRT{ww_p/nftot-mean(iy).w^2}; uv_p=uv_p/nftot; uw_p=uw_p/nftot-(mean(iy).u*mean(iy).w); vw_p=vw_p/nftot FOR iy =0 TO HI
 
