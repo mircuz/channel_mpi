@@ -8,12 +8,7 @@ REAL alfa0,beta0,ymin,ymax,a,ni;
 READ BY NAME FROM dnsin ny, nx, nz,alfa0,beta0,ymin,ymax,a,ni; ni=1/ni;
 REALVEL mean(-1..ny DIV 2)=0; REALVEL r_mean(-1..ny DIV 2)=0;	REAL u_p_vect(-1..ny DIV 2)=0, v_p_vect(-1..ny DIV 2)=0, w_p_vect(-1..ny DIV 2)=0;	
 INTEGER y_dim=HI(mean) - LO(mean)
-SPECTRUM rms(-1..ny DIV 2)=0;	REAL uu_vector(-1..ny DIV 2)=0,	global_uu(-1..ny DIV 2)=0
-								REAL vv_vector(-1..ny DIV 2)=0,	global_vv(-1..ny DIV 2)=0
-								REAL ww_vector(-1..ny DIV 2)=0,	global_ww(-1..ny DIV 2)=0
-								REAL uv_vector(-1..ny DIV 2)=0,	global_uv(-1..ny DIV 2)=0
-								REAL uw_vector(-1..ny DIV 2)=0,	global_uw(-1..ny DIV 2)=0
-								REAL vw_vector(-1..ny DIV 2)=0,	global_vw(-1..ny DIV 2)=0
+SPECTRUM rms(-1..ny DIV 2)=0;	SPECTRUM r_rms(-1..ny DIV 2)=0;
 REAL y_orig(-1..ny+1)
 DO y_orig(i)=ymin+0.5*(ymax-ymin)*[tanh(a*(2*i/ny-1))/tanh(a)+0.5*(ymax-ymin)] FOR ALL i !Channel
 ARRAY(-2..2) OF REAL d140
@@ -51,10 +46,13 @@ LOOP files FOR nfield=nfmin TO nfmax
 	mean.w_p = ~ +r_mean.w_p
 	CLOSE(mean_file)
 
-	!(//FILE rms_file  = OPEN("rms"nfield".dat")!)
-
-
-
+	FILE rms_file  = OPEN("rms"nfield".dat")
+	LOOP FOR iy=0 TO ny DIV 2 
+		READ FROM rms_file y(iy),y_plus(iy),r_rms(iy).uu_p,r_rms(iy).vv_p,r_rms(iy).ww_p,r_rms(iy).uv_p,r_rms(iy).uw_p,r_rms(iy).vw_p
+	REPEAT
+	rms.uu_p = ~ +r_rms.uu_p;	rms.vv_p = ~ +r_rms.vv_p;	rms.ww_p = ~ +r_rms.ww_p;
+	rms.uv_p = ~ +r_rms.uv_p;	rms.uw_p = ~ +r_rms.uw_p;	rms.vw_p = ~ +r_rms.vw_p;
+	CLOSE(rms_file)
 
 REPEAT files
 
@@ -66,6 +64,9 @@ REPEAT files
 DO WITH mean(iy): u_p=~/nftot; v_p=~/nftot; w_p=~/nftot FOR ALL iy
 avfru=~/nftot; avfrw=~/nftot
 
+DO WITH rms(iy): uu_p=SQRT{uu_p/nftot-mean(iy).u_p^2}; vv_p=SQRT{vv_p/nftot}; ww_p=SQRT{ww_p/nftot-mean(iy).w_p^2}; uv_p=uv_p/nftot; uw_p=uw_p/nftot-(mean(iy).u_p*mean(iy).w_p); vw_p=vw_p/nftot FOR iy =0 TO HI
+
+
 uc=MAX(mean.u_p); 
 ut=SQRT[ni*(SUM d140(i)*mean.u_p(1+i) FOR ALL i)]; 
 uc2=uc*uc;ut2=ut*ut
@@ -76,5 +77,10 @@ CLOSE out
 FILE out=CREATE("mean.dat")
 DO WITH mean(iy): 
 	WRITE TO out y(iy),y(iy)*ut/ni,u_p,w_p,u_p/uc,w_p/uc,u_p/ut,w_p/ut FOR iy=0 TO ny DIV 2
+CLOSE out
+
+FILE out=CREATE("rms.dat")
+DO WITH rms(iy): 
+	WRITE TO out y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p,uu_p/ut,vv_p/ut,ww_p/ut,uv_p/ut2,uw_p/ut2,vw_p/ut2 FOR iy=0 TO ny DIV 2
 CLOSE out
 
