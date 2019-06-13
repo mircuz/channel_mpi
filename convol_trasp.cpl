@@ -240,7 +240,7 @@ END ytoz
 
 SUBROUTINE random_field
 	V=0
-	LOOP FOR ix=ilo TO ihi
+	!(LOOP FOR ix=ilo TO ihi
 		LOOP FOR ALL iy
 			LOOP FOR ALL iz
 				WITH V(ix,iz,iy): u=0.0001*EXP(RAND()*2*PI*I); v=0.0001*EXP(RAND()*2*PI*I); w=0.0001*EXP(RAND()*2*PI*I)
@@ -251,7 +251,15 @@ SUBROUTINE random_field
 	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 		IF ix=0 AND iz=0 THEN DO WITH V(ix,iz,iy): u.REAL=[3/4*(1-[1-y(iy)]^2)]/1000; u.IMAG=0; v=0; w.IMAG=0 FOR iy=-1 TO ny+1
 	REPEAT 
-	IF rank=0 THEN WRITE "Input data Generated"
+	IF rank=0 THEN WRITE "Input data Generated"!)
+
+	IF rank=rank_zero THEN 
+		IF inj_nx<ihi THEN
+			ERROR("Error on injection, aborting..")	
+		ELSE 
+			inject_data
+		END IF
+	END IF
 	ytoz
 	write_on_disk
 END random_field

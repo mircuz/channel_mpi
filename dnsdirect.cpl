@@ -429,6 +429,38 @@ SUBROUTINE write_on_disk
   <*MPI_Barrier(MPI_COMM_WORLD);*>
 END write_on_disk
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SUBROUTINE inject_data
+	
+END inject_data
+
+
+
+
+
+
+
 SUBROUTINE read_disk
 	<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int file_reader;
 	/*HDF5 APIs definitions*/ 		
