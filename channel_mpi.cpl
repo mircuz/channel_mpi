@@ -17,6 +17,7 @@ USE dnsdirect
 USE convol_trasp
 USE post_live
 
+
 LOOP forward WHILE time < t_max-deltat/2
 	time=~+2/RK1_rai_coeff*deltat
 	convol_trasp(VV,V);		buildrhs(RK1_rai, VV, V);	linsolve(RK1_rai_coeff/deltat)	
