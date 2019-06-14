@@ -254,13 +254,12 @@ SUBROUTINE random_field
 	IF rank=0 THEN WRITE "Zero array data generated"!)
 
 	IF rank=rank_zero THEN 
-		IF inj_nx<ihi THEN
+		IF inj_nx>ihi THEN
 			ERROR("Error on injection, aborting..")	
 		ELSE 
 			inject_data(inj_nx,inj_nz)
 		END IF
 	END IF
-
 	ytoz
 	write_on_disk_uvw(nx,ny,nz)		!//TESTING ONLY
 	write_on_disk

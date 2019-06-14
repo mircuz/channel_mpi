@@ -429,9 +429,6 @@ SUBROUTINE write_on_disk
   <*MPI_Barrier(MPI_COMM_WORLD);*>
 END write_on_disk
 
-
-
-
 SUBROUTINE inject_data(INTEGER injection_nx,injection_nz)
 <*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int file_reader;
 	int inj_nx = injection_nx_+1;				int inj_nz=2*injection_nz_+1;
@@ -454,7 +451,7 @@ SUBROUTINE inject_data(INTEGER injection_nx,injection_nz)
 	strcat(field_u,field_time);	strcat(field_u,"/u");
 	strcat(field_w,field_time);	strcat(field_w,"/w");
 	char whereami[50];	getcwd(whereami,sizeof(whereami));
-	if (rank==0) printf("Injecting field %s/injection_data.h5/%s\n", whereami,field_u);
+	if (rank==0) printf("Injecting field %s/injection_data.h5/%s\n", whereami,field_time);
 
 	//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
 	complex *complex_disk_data = (complex*) malloc(inj_nz*inj_nx*ny*sizeof(complex));	
@@ -523,7 +520,7 @@ SUBROUTINE inject_data(INTEGER injection_nx,injection_nz)
 	H5Dclose(dset_w);
 	/*Release global resources*/
 	H5Fclose(file_id);
-	H5Tclose(filetype);*>
+	H5Tclose(filetype);	*>
 	INTEGER counter=0
 	LOOP FOR mode_y = -1 TO ny+1	
 		LOOP FOR mode_x = 0 TO inj_nx
@@ -540,10 +537,6 @@ SUBROUTINE inject_data(INTEGER injection_nx,injection_nz)
 		REPEAT LOOP
 	REPEAT LOOP
 END inject_data
-
-
-
-
 
 SUBROUTINE read_disk
 	<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int file_reader;
