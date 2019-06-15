@@ -254,8 +254,11 @@ SUBROUTINE random_field
 	IF rank=0 THEN WRITE "Zero array data generated"!)
 
 	IF rank=rank_zero THEN 
+		WRITE "Writing ("0","-inj_nz")->("inj_nx","inj_nz") inside ("ilo","klo")->("ihi","khi")"
 		IF inj_nx>ihi THEN
-			ERROR("Error on injection, aborting..")	
+			ERROR("Error on x dimension injection, aborting..")	
+		ELSE IF -inj_nz<klo OR inj_nz> khi THEN
+			ERROR("Error on z dimension injection, aborting..")
 		ELSE 
 			inject_data(inj_nx,inj_nz)
 		END IF
