@@ -1,7 +1,7 @@
-ny=100		nx=100	nz=100
+ny=120		nx=100	nz=100
 alfa0=0.5	beta0=1
 ymin=0		ymax=2		a=1.6
-ni=1000		pr=0.71	
+ni=2000		pr=0.71	
 meanpx=1	meanpz=0
 u_conv=0.0	w_conv=0.0
 u0=0.0		un=0.0		w0=0.0		wn=0.0	t0=-1.0	tn=1.0

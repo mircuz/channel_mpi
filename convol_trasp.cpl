@@ -262,7 +262,7 @@ SUBROUTINE random_field
 	END IF
 	ytoz
 	write_on_disk_uvw(nx,ny,nz)		!//TESTING ONLY
-	write_on_disk
+	IF live_postpro= FALSE THEN write_on_disk
 END random_field
 
 IF generate_inputs = TRUE THEN random_field
