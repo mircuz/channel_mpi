@@ -253,18 +253,12 @@ SUBROUTINE random_field
 	REPEAT 
 	IF rank=0 THEN WRITE "Zero array data generated"!)
 
-	IF rank=rank_zero THEN 
-		WRITE "Writing ("0","-inj_nz")->("inj_nx","inj_nz") inside ("ilo","klo")->("ihi","khi")"
-		IF inj_nx>ihi THEN
-			ERROR("Error on x dimension injection, aborting..")	
-		ELSE IF -inj_nz<klo OR inj_nz> khi THEN
-			ERROR("Error on z dimension injection, aborting..")
-		ELSE 
+	IF ilo=0 AND ihi>inj_nx THEN
+		IF klo<-inj_nz AND khi> inj_nz THEN
 			inject_data(inj_nx,inj_nz)
 		END IF
 	END IF
 	ytoz
-	write_on_disk_uvw(nx,ny,nz)		!//TESTING ONLY
 	IF live_postpro= FALSE THEN write_on_disk
 END random_field
 
