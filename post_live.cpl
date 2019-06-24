@@ -14,7 +14,7 @@ SPECTRUM rms(-1..ny DIV 2)=0;	REAL uu_vector(-1..ny DIV 2)=0,	global_uu(-1..ny D
 								REAL uw_vector(-1..ny DIV 2)=0,	global_uw(-1..ny DIV 2)=0
 								REAL vw_vector(-1..ny DIV 2)=0,	global_vw(-1..ny DIV 2)=0
 REAL avfru=0,avfrw=0
-REAL uc=0, ut=0
+REAL uc=0, ut=0, u_m1=0, w_m1=0
 
 SUBROUTINE post_live
 IF time>0 AND FLOOR((time+0.5*deltat)/dt_save) > FLOOR((time-0.5*deltat)/dt_save) THEN 
@@ -81,9 +81,11 @@ END IF
 IF rank= rank_zero THEN 
 	uc=MAX(mean.u_p); 
 	ut=SQRT[ni*(SUM d140(i)*mean.u_p(1+i) FOR ALL i)];
-	u_p_vect = mean.u_p;	w_p_vect = mean.w_p;	w_p_vect = mean.w_p;
+	u_p_vect = mean.u_p;	w_p_vect = mean.w_p;	w_p_vect = mean.w_p;	u_m1=mean.u_p(-1);	w_m1=mean.w_p(-1)
 <*	MPI_Send(&uc_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 	MPI_Send(&ut_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Send(&u_m1_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+	MPI_Send(&w_m1_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 	MPI_Send(&(u_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 	MPI_Send(&(v_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
 	MPI_Send(&(w_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
@@ -94,6 +96,8 @@ END IF
 IF rank= 0 THEN 
 <*	MPI_Recv(&uc_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Recv(&ut_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Recv(&u_m1_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Recv(&w_m1_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Recv(&(u_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Recv(&(v_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Recv(&(w_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
@@ -105,6 +109,7 @@ END IF
 
 IF rank=0 THEN
 	mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
+	mean.u_p(-1)=u_m1;		mean.w_p(-1)=w_m1
 END IF
 !// Write on files
 IF rank=0 THEN
@@ -132,3 +137,110 @@ END IF
 INC stats_counter
 END IF
 END post_live
+
+MODULE injection
+SUBROUTINE inject_data(INTEGER injection_nx,injection_nz)
+<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int file_reader;
+	int inj_nx = injection_nx_+1;				int inj_nz=2*injection_nz_+1;
+	/*HDF5 APIs definitions*/ 		
+    hid_t       file_id, dset_u, dset_v, dset_w;          /* file and dataset identifiers */
+    hid_t       filespace, memspace, global_filespace;    /* file and memory dataspace identifiers */
+	hid_t		plist_id, plist_id_write;		          /* property list identifier */
+	hid_t		filetype, memtype;
+    hsize_t     dimsf[3], dim_vect[1];    /* dataset dimensions */
+    herr_t		file_type, mem_type, file_hyper, mem_hyper, status;
+	char field_time[25]="/", field_v[25]="", field_u[25]="", field_w[25]="";
+	gcvt (time_, 10, field_time);
+	strcat(field_v,field_time);	strcat(field_v,"/v");
+	strcat(field_u,field_time);	strcat(field_u,"/u");
+	strcat(field_w,field_time);	strcat(field_w,"/w");
+	char whereami[50];	getcwd(whereami,sizeof(whereami));
+	printf("Injecting field %s/injection_data.h5/%s\n", whereami,field_time);
+
+	//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
+	complex *inj_data = (complex*) malloc(inj_nz*inj_nx*ny*sizeof(complex));	
+	if ( inj_data == NULL) {
+		perror(".:Error while allocating complex_disk_data:.\n");	
+		abort();
+	}	
+						
+	/*Create FILE Type*/
+	filetype = H5Tcreate (H5T_COMPOUND, sizeof (complex));
+	file_type = H5Tinsert (filetype, "real", HOFFSET (complex, real), H5T_IEEE_F64LE);
+	file_type = H5Tinsert (filetype, "imag", HOFFSET (complex, imag), H5T_IEEE_F64LE);
+
+	/*Create MEMORY Type*/
+	memtype = H5Tcreate (H5T_COMPOUND, sizeof (complex));
+	mem_type = H5Tinsert (memtype, "real", HOFFSET (complex, real), H5T_NATIVE_DOUBLE);
+	mem_type = H5Tinsert (memtype, "imag", HOFFSET (complex, imag), H5T_NATIVE_DOUBLE);
+	//------------------------------------------------ FILE --------------------------------------------------
+	memspace = H5Screate_simple(1, dim_vect, NULL);
+	/*Set up file access property*/
+    plist_id = H5Pcreate(H5P_FILE_ACCESS);
+    file_id = H5Fopen("injection_data.h5", H5F_ACC_RDONLY, plist_id);
+    H5Pclose(plist_id);  
+
+    /*Open the FILE dataset*/
+	dset_u = H5Dopen(file_id, field_u, H5P_DEFAULT);
+    filespace = H5Dget_space(dset_u);
+	//------------------------------------------------ I/O --------------------------------------------------
+	file_hyper = H5Dread(dset_u, memtype, H5S_ALL, filespace, H5P_DEFAULT, inj_data);
+	file_reader=0;
+	for(int i = 0; i < inj_nx*inj_nz*ny; i++) {
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+U_t_)) = inj_data[i].real;		file_reader++;
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+U_t_)) = inj_data[i].imag;		file_reader++;	
+		//printf("disk[%d]=%f+i%f\n", i,complex_disk_data[i].real,complex_disk_data[i].imag );
+	}
+	/*Close U resources*/
+	H5Sclose(filespace);
+	H5Dclose(dset_u);
+	
+	dset_v = H5Dopen(file_id, field_v, H5P_DEFAULT);
+    filespace = H5Dget_space(dset_v);
+	//------------------------------------------------ I/O --------------------------------------------------
+	file_hyper = H5Dread(dset_v, memtype, H5S_ALL, filespace, H5P_DEFAULT, inj_data);
+	file_reader=0;
+	for(int i = 0; i < inj_nx*inj_nz*ny; i++) {
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+V_t_)) = inj_data[i].real;		file_reader++;
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+V_t_)) = inj_data[i].imag;		file_reader++;	
+		//printf("disk[%d]=%f+i%f\n", i,complex_disk_data[i].real,complex_disk_data[i].imag );
+	}
+	/*Close V resources*/
+	H5Sclose(filespace);
+	H5Dclose(dset_v);
+
+	dset_w = H5Dopen(file_id, field_w, H5P_DEFAULT);
+    filespace = H5Dget_space(dset_w);
+	//------------------------------------------------ I/O --------------------------------------------------
+	file_hyper = H5Dread(dset_w, memtype, H5S_ALL, filespace, H5P_DEFAULT, inj_data);
+	file_reader=0;
+	for(int i = 0; i < inj_nx*inj_nz*ny; i++) {
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+W_t_)) = inj_data[i].real;		file_reader++;
+		(*(double *)(file_reader*(ssize_t)sizeof(double)+W_t_)) = inj_data[i].imag;		file_reader++;	
+		//printf("disk[%d]=%f+i%f\n", i,complex_disk_data[i].real,complex_disk_data[i].imag );
+	}
+	/*Close W resources*/
+	H5Sclose(filespace);
+	H5Dclose(dset_w);
+	/*Release global resources*/
+	H5Sclose(memspace);
+	H5Fclose(file_id);
+	H5Tclose(filetype);
+	H5Tclose(memtype);	*>
+	INTEGER inj_counter=0
+	LOOP FOR mode_y = -1 TO ny+1	
+		LOOP FOR mode_x = 0 TO inj_nx
+			LOOP FOR mode_z = -inj_nz TO inj_nz
+				V(mode_x,mode_z,mode_y).u.REAL = U_t[inj_counter];	
+				V(mode_x,mode_z,mode_y).v.REAL = V_t[inj_counter];	
+				V(mode_x,mode_z,mode_y).w.REAL = W_t[inj_counter];	
+				INC inj_counter
+				V(mode_x,mode_z,mode_y).u.IMAG = U_t[inj_counter];	
+				V(mode_x,mode_z,mode_y).v.IMAG = V_t[inj_counter];	
+				V(mode_x,mode_z,mode_y).w.IMAG = W_t[inj_counter];	
+				INC inj_counter
+			REPEAT LOOP
+		REPEAT LOOP
+	REPEAT LOOP
+END inject_data
+END injection
