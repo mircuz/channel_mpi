@@ -5,8 +5,8 @@
 #include "remap3d_wrap.h"
 #include "/home/mirco/Scrivania/hdf5/include/hdf5.h"
 #include "/home/mirco/Scrivania/hdf5/include/hdf5_hl.h"
-!//#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5.h"
-!//#include "/cineca/prod/opt/libraries/hdf5/1.8.18/openmpi--1-10.3--gnu--6.1.0/include/hdf5_hl.h"
+!#include "/cineca/prod/opt/libraries/hdf5/1.8.20/openmpi--3.0.0--gnu--7.3.0/include/hdf5.h"
+!#include "/cineca/prod/opt/libraries/hdf5/1.8.20/openmpi--3.0.0--gnu--7.3.0/include/hdf5_hl.h"
 
 INTEGER rank, size
 gamma=0

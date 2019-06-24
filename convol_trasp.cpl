@@ -1,4 +1,6 @@
 WRITE
+
+SUBROUTINE inject_data(INTEGER injection_nx,injection_nz) FOLLOWS
 SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRAY(*,*,*) OF VELOCITY Vd )
 <*
 	/****************************************************************************
@@ -240,29 +242,31 @@ END ytoz
 
 SUBROUTINE random_field
 	V=0
-	!(LOOP FOR ix=ilo TO ihi
+	LOOP FOR ix=ilo TO ihi
 		LOOP FOR ALL iy
-			LOOP FOR ALL iz
+			LOOP FOR iz=klo TO khi
 				WITH V(ix,iz,iy): u=0.0001*EXP(RAND()*2*PI*I); v=0.0001*EXP(RAND()*2*PI*I); w=0.0001*EXP(RAND()*2*PI*I)
-				!//IF iz>1 THEN V(ix,-iz,iy).u=CONJG(V(0,iz,iy).u);V(0,-iz,iy).v=CONJG(V(0,iz,iy).v);V(0,-iz,iy).w=CONJG(V(0,iz,iy).w)
+			!	IF iz>1 THEN V(ix,-iz,iy).u=CONJG(V(0,iz,iy).u);V(0,-iz,iy).v=CONJG(V(0,iz,iy).v);V(0,-iz,iy).w=CONJG(V(0,iz,iy).w)
 			REPEAT
 		REPEAT
 	REPEAT
 	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 		IF ix=0 AND iz=0 THEN DO WITH V(ix,iz,iy): u.REAL=[3/4*(1-[1-y(iy)]^2)]/1000; u.IMAG=0; v=0; w.IMAG=0 FOR iy=-1 TO ny+1
 	REPEAT 
-	IF rank=0 THEN WRITE "Zero array data generated"!)
+	IF rank=0 THEN WRITE "Zero array data generated"
 
-	IF rank=rank_zero THEN 
-		IF inj_nx>ihi THEN
-			ERROR("Error on injection, aborting..")	
-		ELSE 
-			inject_data(inj_nx,inj_nz)
+	!(IF rank=rank_zero THEN 
+		IF ilo=0 AND inj_nx<ihi THEN
+			IF klo<-inj_nz AND khi>inj_nz THEN
+				WRITE "injecting ("inj_nx","inj_nz") inside [("ilo","klo")->("ihi","khi")]"
+				inject_data(inj_nx,inj_nz)
+			ELSE 
+				ERROR("Error on injection, aborting..")	
+			END IF
 		END IF
-	END IF
+	END IF!)
 	ytoz
-	write_on_disk_uvw(nx,ny,nz)		!//TESTING ONLY
-	write_on_disk
+	!write_on_disk
 END random_field
 
 IF generate_inputs = TRUE THEN random_field

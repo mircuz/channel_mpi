@@ -3,7 +3,7 @@ REALVEL=STRUCTURE(REAL u_p,v_p,w_p)
 SPECTRUM=STRUCTURE(REAL uu_p,uv_p,uw_p,vv_p,vw_p,ww_p)
 FILE dnsin = OPEN("dns.in")
 INTEGER nx,ny,nz
-REAL alfa0,beta0,ymin,ymax,a,ni;
+REAL alfa0,beta0,ymin,ymax,ni,a;
 
 READ BY NAME FROM dnsin ny, nx, nz,alfa0,beta0,ymin,ymax,a,ni; ni=1/ni;
 REALVEL mean(-1..ny DIV 2)=0; REALVEL r_mean(-1..ny DIV 2)=0;	REAL u_p_vect(-1..ny DIV 2)=0, v_p_vect(-1..ny DIV 2)=0, w_p_vect(-1..ny DIV 2)=0;	
@@ -24,6 +24,7 @@ ARRAY(-1..ny DIV 2) OF REAL y,y_plus
 CHAR cwd[1024], output_cwd[1024]
 ASK nfmin, nfmax
 nftot = nfmax-nfmin+1
+WRITE "ny="ny " nx="nx " nz="nz " ni=" 1/ni
 WRITE "Merging stats"
 <*	getcwd(cwd_, sizeof(cwd_));
 	strcat(output_cwd_,cwd_);
