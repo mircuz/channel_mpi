@@ -2,8 +2,6 @@
 REALVEL=STRUCTURE(REAL u_p,v_p,w_p)
 ARRAY(ilo..ihi, klo..khi,-1..ny+1) OF VELOCITY V_p 
 SPECTRUM=STRUCTURE(REAL uu_p,uv_p,uw_p,vv_p,vw_p,ww_p)
-DERIVS=STRUCTURE(COMPLEX ux,uy,uz,vx,vy,vz,wx,wy,wz)
-DERPRODS=STRUCTURE(COMPLEX ux2,vx2,wx2,uy2,vy2,wy2,uz2,vz2,wz2,uyvx,uzwx,wyvz)
 
 REALVEL mean(-1..ny DIV 2)=0;	REAL u_p_vect(-1..ny DIV 2)=0, v_p_vect(-1..ny DIV 2)=0, w_p_vect(-1..ny DIV 2)=0;	
 INTEGER y_dim=HI(mean) - LO(mean)
@@ -13,6 +11,8 @@ SPECTRUM rms(-1..ny DIV 2)=0;	REAL uu_vector(-1..ny DIV 2)=0,	global_uu(-1..ny D
 								REAL uv_vector(-1..ny DIV 2)=0,	global_uv(-1..ny DIV 2)=0
 								REAL uw_vector(-1..ny DIV 2)=0,	global_uw(-1..ny DIV 2)=0
 								REAL vw_vector(-1..ny DIV 2)=0,	global_vw(-1..ny DIV 2)=0
+								REAL uu_m1=0, vv_m1=0, ww_m1=0, uv_m1=0, vw_m1=0, uw_m1=0
+								REAL global_uu_m1=0, global_vv_m1=0, global_ww_m1=0, global_uv_m1=0, global_vw_m1=0, global_uw_m1=0
 REAL avfru=0,avfrw=0
 REAL uc=0, ut=0, u_m1=0, w_m1=0
 
@@ -63,7 +63,8 @@ LOOP FOR iy=rms.LO TO rms.HI WITH rms(iy)
 REPEAT LOOP
 
 uu_vector=rms.uu_p;	vv_vector=rms.vv_p;	ww_vector=rms.ww_p;	uv_vector=rms.uv_p;	uw_vector=rms.uw_p;	vw_vector=rms.vw_p;
-WRITE
+uu_m1=rms.uu_p(-1); vv_m1=rms.vv_p(-1);	ww_m1=rms.ww_p(-1);	uv_m1=rms.uv_p(-1);	uw_m1=rms.uw_p(-1);	vw_m1=rms.vw_p(-1);
+WRITE 
 
 <*	MPI_Reduce(uu_vector_,global_uu_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 	MPI_Reduce(vv_vector_,global_vv_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
@@ -71,11 +72,20 @@ WRITE
 	MPI_Reduce(uv_vector_,global_uv_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 	MPI_Reduce(uw_vector_,global_uw_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 	MPI_Reduce(vw_vector_,global_vw_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	//-1 positions
+	MPI_Reduce(&uu_m1_,&global_uu_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(&vv_m1_,&global_vv_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(&ww_m1_,&global_ww_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(&uv_m1_,&global_uv_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(&uw_m1_,&global_uw_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(&vw_m1_,&global_vw_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);*>
 
 IF rank=0 THEN 
 	WITH rms: 
 		uu_p=global_uu;	vv_p=global_vv; ww_p=global_ww; uv_p=global_uv; uw_p=global_uw;	vw_p=global_vw
+	WITH rms(-1): 
+		uu_p=global_uu_m1; vv_p=global_vv_m1; ww_p=global_ww_m1; uv_p=global_uv_m1; uw_p=global_vw_m1; vw_p=global_vw_m1
 END IF
 
 IF rank= rank_zero THEN 
@@ -127,7 +137,7 @@ IF rank=0 THEN
 
 	FILE rms_file=CREATE("rms"stats_counter".dat")
 	DO WITH rms(iy): 
-		WRITE TO rms_file y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p FOR iy=0 TO ny DIV 2
+		WRITE TO rms_file y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p FOR iy=-1 TO ny DIV 2
 	CLOSE rms_file
 
 END IF
