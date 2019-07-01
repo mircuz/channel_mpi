@@ -242,7 +242,7 @@ END ytoz
 
 SUBROUTINE random_field
 	V=0
-	LOOP FOR ix=ilo TO ihi
+	!(LOOP FOR ix=ilo TO ihi
 		LOOP FOR ALL iy
 			LOOP FOR iz=klo TO khi
 				WITH V(ix,iz,iy): u=0.0001*EXP(RAND()*2*PI*I); v=0.0001*EXP(RAND()*2*PI*I); w=0.0001*EXP(RAND()*2*PI*I)
@@ -253,20 +253,159 @@ SUBROUTINE random_field
 	LOOP FOR ix=ilo TO ihi AND iz=klo TO khi
 		IF ix=0 AND iz=0 THEN DO WITH V(ix,iz,iy): u.REAL=[3/4*(1-[1-y(iy)]^2)]/1000; u.IMAG=0; v=0; w.IMAG=0 FOR iy=-1 TO ny+1
 	REPEAT 
-	IF rank=0 THEN WRITE "Zero array data generated"
+	IF rank=0 THEN WRITE "Zero array data generated"!)
 
-	!(IF rank=rank_zero THEN 
-		IF ilo=0 AND inj_nx<ihi THEN
-			IF klo<-inj_nz AND khi>inj_nz THEN
-				WRITE "injecting ("inj_nx","inj_nz") inside [("ilo","klo")->("ihi","khi")]"
-				inject_data(inj_nx,inj_nz)
-			ELSE 
-				ERROR("Error on injection, aborting..")	
-			END IF
-		END IF
-	END IF!)
+	IF rank=rank_zero THEN
+        WRITE "localdims [("ilo","klo")->("ihi","khi")]"
+                IF ilo=0 AND inj_nx<ihi THEN
+                        IF klo<-inj_nz AND khi>inj_nz THEN
+                                WRITE "injecting ("inj_nx","inj_nz") inside [("ilo","klo")->("ihi","khi")]"
+                                inject_data(inj_nx,inj_nz)
+                        ELSE
+                                ERROR("Error on injection, aborting..")
+                        END IF
+                END IF
+        END IF
 	ytoz
 	!write_on_disk
 END random_field
 
 IF generate_inputs = TRUE THEN random_field
+
+
+
+REAL cfl=0
+SUBROUTINE getcfl(POINTER TO ARRAY(*,*,*) OF VELOCITY Vd)
+dx=PI/(alfa0*nxd); dz=2*PI/(beta0*nzd);	cfl=0
+REAL dy
+  <*  //----------------------------------------------- Bridge Variables -------------------------------------------
+  int rank = rank_; int nz, nzd, nx, nxd, ny;
+  nx = nx_+1; ny = ny_+3;	nz = nz_*2+1; nxd = nxd_, nzd = nzd_;
+  void *remap_to_zpencil, *remap_to_xpencil, *remap_to_ypencil;
+  int nqty, permute, memoryflag, sendsize, recvsize;
+  /************************************************ backward FFTs *********************************************/
+  // ------------------------------------------- Setup z-Transpose --------------------------------------------
+  nqty = 2;			// Use couples of real numbers per grid point
+  memoryflag = 1;		// Self-allocate the buffers
+  remap3d_create( MPI_COMM_WORLD , &remap_to_xpencil);
+  permute = 1;  		// From z-contiguous to x-contiguous arrays
+  remap3d_setup( remap_to_xpencil,
+      		  	  z_klo_,  z_khi_, z_ilo_,  z_ihi_, z_jlo_, z_jhi_,
+				  x_klo_,  x_khi_, x_ilo_,  x_ihi_, x_jlo_, x_jhi_, 
+      			  nqty, permute, memoryflag, &sendsize, &recvsize);
+  MPI_Barrier(MPI_COMM_WORLD);
+  // -----------------------------------------------------------------------------------------------------------	
+  // Apply AA in z-direction locally
+  z_aliasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, uu_, U_t_); 	
+  z_aliasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, vv_, V_t_);	
+  z_aliasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, ww_, W_t_);	
+  MPI_Barrier(MPI_COMM_WORLD);
+  // Backward FFT
+  double timer_b1 = 0.0;
+  timer_b1 -= MPI_Wtime();	*>
+	FFT_z( uu, localdim_z, 1)
+	FFT_z( vv, localdim_z, 1)
+	FFT_z( ww, localdim_z, 1)
+<*MPI_Barrier(MPI_COMM_WORLD);
+  timer_b1 += MPI_Wtime();
+//print_z_pencil( nzd, z_ilo_, z_ihi_, z_jlo_, u_convol_, rank, localdim_z_, 0); 
+
+  // Transpose in x-pencil
+  double timer_trasp_z = 0.0, TIMER_TRASP_z = 0.0; 
+  timer_trasp_z -= MPI_Wtime();
+  MPI_Barrier(MPI_COMM_WORLD);
+    remap3d_remap(remap_to_xpencil,uu_,uu_,sendbuf_,recvbuf_);
+    remap3d_remap(remap_to_xpencil,vv_,vv_,sendbuf_,recvbuf_);
+    remap3d_remap(remap_to_xpencil,ww_,ww_,sendbuf_,recvbuf_);
+  MPI_Barrier(MPI_COMM_WORLD); 
+  timer_trasp_z += MPI_Wtime();
+
+  // Apply AA in x-direction locally
+  x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, uu_, uu_);
+  x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, vv_, vv_);
+  x_aliasing( nx, (x_jhi_-x_jlo_+1), (x_khi_-x_klo_+1), nxd, ww_, ww_);
+  MPI_Barrier(MPI_COMM_WORLD);
+  // Backward RFT
+  double timer_b2 = 0.0;
+  timer_b2 -= MPI_Wtime();  *>
+	FFT_x( uu, localdim_x, 1)
+	FFT_x( vv, localdim_x, 1)
+	FFT_x( ww, localdim_x, 1)
+<*MPI_Barrier(MPI_COMM_WORLD);
+  timer_b2 += MPI_Wtime();
+  //print_x_pencil(nxd, x_jlo_, x_jhi_, x_klo_, w_, rank, localdim_x_, 0);
+  remap3d_destroy(remap_to_xpencil); 
+  MPI_Barrier(MPI_COMM_WORLD);
+// -------------------------------------------- Setup x-Transpose -----------------------------------------
+  remap3d_create( MPI_COMM_WORLD , &remap_to_zpencil);
+  permute = 2; 		// From x-contiguous to z-contiguous arrays
+  remap3d_setup( remap_to_zpencil,
+		  	  	  x_ilo_,  x_ihi_, x_jlo_,  x_jhi_,  x_klo_, x_khi_,
+				  z_ilo_,  z_ihi_, z_jlo_,  z_jhi_,  z_klo_, z_khi_,
+				  nqty, permute, memoryflag, &sendsize, &recvsize);
+  MPI_Barrier(MPI_COMM_WORLD);
+  // -----------------------------------------------------------------------------------------------------------
+	x_dealiasing( localdim_x_/nxd, nx, nxd, uu_);
+	x_dealiasing( localdim_x_/nxd, nx, nxd, vv_);
+	x_dealiasing( localdim_x_/nxd, nx, nxd, ww_);
+	MPI_Barrier(MPI_COMM_WORLD);
+	remap3d_remap(remap_to_zpencil,uu_,uu_,sendbuf_,recvbuf_);
+    remap3d_remap(remap_to_zpencil,vv_,vv_,sendbuf_,recvbuf_);
+    remap3d_remap(remap_to_zpencil,ww_,ww_,sendbuf_,recvbuf_);
+    MPI_Barrier(MPI_COMM_WORLD);
+	z_dealiasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, uu_);
+	z_dealiasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, vv_);
+	z_dealiasing( (z_ihi_-z_ilo_+1), (z_jhi_-z_jlo_+1), nz, nzd, ww_);
+ 	remap3d_destroy(remap_to_zpencil);
+	MPI_Barrier(MPI_COMM_WORLD);
+	// ------------------------------------------- Setup Y-Transpose --------------------------------------------
+  remap3d_create( MPI_COMM_WORLD , &remap_to_ypencil);
+  permute = 2;  		// From z-contiguous to y-contiguous arrays
+  remap3d_setup( remap_to_ypencil,
+      		  	  fz_klo_,  fz_khi_, fz_ilo_,  fz_ihi_, fz_jlo_, fz_jhi_,
+				  y_klo_,  y_khi_, y_ilo_,  y_ihi_, y_jlo_, y_jhi_, 
+      			  nqty, permute, memoryflag, &sendsize, &recvsize);
+  MPI_Barrier(MPI_COMM_WORLD);
+  // -----------------------------------------------------------------------------------------------------------
+    //remap3d_remap(remap_to_ypencil,u_,u_,sendbuf_,recvbuf_); 	
+	remap3d_remap(remap_to_ypencil,uu_,uu_,sendbuf_,recvbuf_); 	
+  	remap3d_remap(remap_to_ypencil,vv_,vv_,sendbuf_,recvbuf_);
+	remap3d_remap(remap_to_ypencil,ww_,ww_,sendbuf_,recvbuf_);
+	MPI_Barrier(MPI_COMM_WORLD);
+	remap3d_destroy(remap_to_ypencil); *>
+	WRITE
+	INTEGER counter_cfl=0
+	LOOP FOR mode_x = ilo TO ihi
+		LOOP FOR mode_z = klo TO khi
+			LOOP FOR mode_y = -1 TO ny+1
+				Vd(mode_x,mode_z,mode_y).u.REAL = uu[counter_cfl];	
+				Vd(mode_x,mode_z,mode_y).v.REAL = vv[counter_cfl];	
+				Vd(mode_x,mode_z,mode_y).w.REAL = ww[counter_cfl];	INC counter_cfl
+				Vd(mode_x,mode_z,mode_y).u.IMAG = uu[counter_cfl];	
+				Vd(mode_x,mode_z,mode_y).v.IMAG = vv[counter_cfl];	
+				Vd(mode_x,mode_z,mode_y).w.IMAG = ww[counter_cfl];	INC counter_cfl
+			REPEAT
+		REPEAT
+	REPEAT
+
+!!
+LOOP FOR iy=1 TO ny-1
+	u_max(iy-1)= MAXABS[Vd.u.IMAG(ilo..ihi,klo..khi,iy)]
+	v_max(iy-1)= MAXABS[Vd.v.IMAG(ilo..ihi,klo..khi,iy)]
+	w_max(iy-1)= MAXABS[Vd.w.IMAG(ilo..ihi,klo..khi,iy)]
+REPEAT
+
+<*	MPI_Allreduce(&(u_max_[0]),&(u_cfl_[0]),ny_,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+	MPI_Allreduce(&(v_max_[0]),&(v_cfl_[0]),ny_,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+	MPI_Allreduce(&(w_max_[0]),&(w_cfl_[0]),ny_,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);	*>
+
+
+LOOP FOR iy=1 TO ny-1
+  	dy=0.5*(y(iy+1)-y(iy-1))
+	cfl=MAX{cfl,u_cfl(iy+1)/dx + v_cfl(iy+1)/dy + w_cfl(iy+1)/dz}
+REPEAT
+
+IF cflmax>0 THEN
+	deltat=cflmax/cfl
+END IF
+END getcfl

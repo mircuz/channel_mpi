@@ -617,10 +617,10 @@ SUBROUTINE outstats
 	IF rank=0 THEN
 		WRITE time:1.9, u1zero:1.9, u_fin :1.9,
         	w1zero :1.9, ,w_fin :1.9,
-			flowx,px+corrpx,flowz,pz+corrpz,deltat,energy_tot,diss_tot
+			flowx,px+corrpx,flowz,pz+corrpz,cflmax,deltat,energy_tot,diss_tot
 		WRITE TO time_file time:1.9, u1zero:1.9, 
 			u_fin :1.9, w1zero :1.9, w_fin :1.9,
-			flowx,px+corrpx,flowz,pz+corrpz, , ,deltat,energy_tot,diss_tot; FLUSH(time_file)
+			flowx,px+corrpx,flowz,pz+corrpz, ,cflmax,deltat,energy_tot,diss_tot; FLUSH(time_file)
 	END IF 
 	
 	IF live_postpro = FALSE THEN
