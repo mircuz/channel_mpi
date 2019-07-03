@@ -274,7 +274,7 @@ IF generate_inputs = TRUE THEN random_field
 
 
 
-REAL cfl=0
+REAL cfl=0, dt_cfl=deltat
 SUBROUTINE getcfl(POINTER TO ARRAY(*,*,*) OF VELOCITY Vd)
 dx=PI/(alfa0*nxd); dz=2*PI/(beta0*nzd);	cfl=0
 REAL dy
@@ -388,7 +388,6 @@ REAL dy
 		REPEAT
 	REPEAT
 
-!!
 LOOP FOR iy=1 TO ny-1
 	u_max(iy-1)= MAXABS[Vd.u.IMAG(ilo..ihi,klo..khi,iy)]
 	v_max(iy-1)= MAXABS[Vd.v.IMAG(ilo..ihi,klo..khi,iy)]
@@ -408,4 +407,7 @@ REPEAT
 IF cflmax>0 THEN
 	deltat=cflmax/cfl
 END IF
+
+dt_cfl = 3*deltat
+
 END getcfl
