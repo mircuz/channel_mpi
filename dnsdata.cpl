@@ -102,12 +102,7 @@ SUBROUTINE read_initial_data
 	END IF
 END read_initial_data
 
-BOOLEAN reread=NO
-SUBROUTINE kill_received(INTEGER signum)
-	reread=YES
-END kill_received
-
-read_initial_data; signal(SIGUSR2,kill_received)
+read_initial_data;
 
 !// FFT Dimensions---------------------------------------------------------------------------------------
 INTEGER nxd = (nx)*3 DIV 2 -1 ;	INTEGER nzd = 3*nz-1;

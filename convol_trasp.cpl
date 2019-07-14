@@ -1,5 +1,5 @@
 WRITE
-
+#include "fft_support.h"
 SUBROUTINE inject_data(INTEGER injection_nx,injection_nz) FOLLOWS
 SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRAY(*,*,*) OF VELOCITY Vd )
 <*

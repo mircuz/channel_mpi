@@ -7,7 +7,6 @@ WRITE
 	 ************************************************************************************************
 											     	  					  Author: Dr. Mirco Meazzo */
   
-  #include "fft_support.h"
   getcwd(cwd_, sizeof(cwd_));
   strcat(output_cwd_,cwd_);
   strcat(output_cwd_,"/results");
