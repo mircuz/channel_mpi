@@ -449,7 +449,7 @@ SUBROUTINE read_disk
 	strcat(time_str,".h5");
 	if (rank==0) printf("Reading field from %s/%s\n", output_cwd_,time_str);
 	//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
-	complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1)*sizeof(complex));	
+	complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+2)*(fz_ihi_-fz_ilo_+2)*sizeof(complex));	
 	if ( complex_disk_data == NULL) {
 		perror(".:Error while allocating complex_disk_data:.\n");	
 		abort();
@@ -652,26 +652,9 @@ SUBROUTINE outstats
 	END IF
 END outstats
 
-SUBROUTINE setup_file_0h5
-	!(<*	int nx= nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;		int size= size_; 	int rank = rank_; 	int mem_reader;
-		hid_t plist_id0, file_id0;
-		char file_title[10]="";
-		gcvt (time_, 5, file_title);
-		strcat(file_title,".h5");
-		/*Set up file access property list with parallel I/O access*/
-   		plist_id0 = H5Pcreate(H5P_FILE_ACCESS);
-    	H5Pset_fapl_mpio(plist_id0, MPI_COMM_WORLD, MPI_INFO_NULL);
-    	/*Create a new file collectively and release property list identifier*/
-    	file_id0 = H5Fcreate(file_title, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id0);
-    	H5Pclose(plist_id0);
-		H5Fclose(file_id0); *> !)
-END setup_file_0h5 
 
 INTEGER file_cont=1
 SUBROUTINE write_on_disk_uvw(INTEGER nx_read, ny_read, nz_read)
-	!(REAL U_writing(0..((1+2*nz_read)*(fz_jhi-fz_jlo+1)*(fz_ihi-fz_ilo+1)));
-	U_writing = U_t
-	WRITE U_t!)
 	
 	IF rank=0 THEN WRITE "Saving field at" time " as "file_cont".h5";
 	!//setup_file_0h5;
@@ -704,7 +687,7 @@ SUBROUTINE write_on_disk_uvw(INTEGER nx_read, ny_read, nz_read)
 	double att_modes[dim];
 	att_modes[0] = nx;	att_modes[1] = nz;	att_modes[2] = ny;
 	//-------------------------------------------- DATATYPE DEF -----------------------------------------------	
-	complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+1)*(fz_ihi_-fz_ilo_+1)*sizeof(complex));	
+	complex *complex_disk_data = (complex*) malloc(nz*(fz_jhi_-fz_jlo_+2)*(fz_ihi_-fz_ilo_+2)*sizeof(complex));	
 	if ( complex_disk_data == NULL) {
 		perror(".:Error while allocating complex_disk_data:.\n");	
 		abort();
@@ -838,7 +821,7 @@ SUBROUTINE write_on_disk_uvw(INTEGER nx_read, ny_read, nz_read)
 	H5Sclose(memspace);
 	H5Fclose(file_id);
     
-	free(complex_disk_data); *>
-  <*MPI_Barrier(MPI_COMM_WORLD);*>
+	free(complex_disk_data);
+  	MPI_Barrier(MPI_COMM_WORLD);*>
 	INC file_cont
 END write_on_disk_uvw

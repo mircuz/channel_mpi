@@ -408,6 +408,6 @@ IF cflmax>0 THEN
 	deltat=cflmax/cfl
 END IF
 
-dt_cfl = 3*deltat
+dt_cfl = 10*deltat
 
 END getcfl
