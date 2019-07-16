@@ -250,6 +250,7 @@ SUBROUTINE move_data
 	REPEAT 
 END move_data 
 
+INTEGER writer_counter=0
 SUBROUTINE write_mean_flow
 <*	int nx= 2*nx_+1;	int nz= 2*nz_+1;	int ny=ny_+3;
 	hid_t file_id, plist_id, dataspace_id, dataset_id, filespace;
@@ -257,7 +258,7 @@ SUBROUTINE write_mean_flow
 	herr_t wrt;
 	dims[0] = ny;
 	char field_time[25]="/",  field_mean_u[25]="",  field_mean_w[25]="";// time_str[25]="Field";
-	gcvt (time_, 10, field_time);
+	gcvt (writer_counter_, 10, field_time);
 	strcat(field_mean_u,field_time);		strcat(field_mean_u,"/u_mean");	
 	strcat(field_mean_w,field_time);		strcat(field_mean_w,"/w_mean");
 
@@ -302,7 +303,7 @@ SUBROUTINE write_on_disk
     herr_t		file_type, mem_type, file_hyper, mem_hyper, status;
 	MPI_Info info  = MPI_INFO_NULL;
 	char field_time[25]="/", field_v[25]="", field_eta[25]="";
-	gcvt (time_, 10, field_time);
+	gcvt (writer_counter_, 10, field_time);
 	strcat(field_v,field_time);		strcat(field_v,"/v");
 	strcat(field_eta,field_time);	strcat(field_eta,"/eta");
 	//=======================================================================================================
@@ -426,7 +427,8 @@ SUBROUTINE write_on_disk
     
 	free(complex_disk_data); *>
 	IF rank=rank_zero THEN write_mean_flow
-  <*MPI_Barrier(MPI_COMM_WORLD);*>
+  <*MPI_Barrier(MPI_COMM_WORLD);	
+	writer_counter_++; *>
 END write_on_disk
 
 SUBROUTINE read_disk
