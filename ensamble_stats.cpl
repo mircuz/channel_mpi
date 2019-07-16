@@ -48,7 +48,7 @@ LOOP files FOR nfield=nfmin TO nfmax
 	CLOSE(mean_file)
 
 	FILE rms_file  = OPEN("rms"nfield".dat")
-	LOOP FOR iy=-1 TO ny DIV 2 
+	LOOP FOR iy=-1 TO rms.HI 
 		READ FROM rms_file y(iy),y_plus(iy),r_rms(iy).uu_p,r_rms(iy).vv_p,r_rms(iy).ww_p,r_rms(iy).uv_p,r_rms(iy).uw_p,r_rms(iy).vw_p
 	REPEAT
 	rms.uu_p = ~ +r_rms.uu_p;	rms.vv_p = ~ +r_rms.vv_p;	rms.ww_p = ~ +r_rms.ww_p;
@@ -65,8 +65,9 @@ REPEAT files
 DO WITH mean(iy): u_p=~/nftot; v_p=~/nftot; w_p=~/nftot FOR ALL iy
 avfru=~/nftot; avfrw=~/nftot
 
-DO WITH rms(iy): uu_p=SQRT{uu_p/nftot-mean(iy).u_p^2}; vv_p=SQRT{vv_p/nftot}; ww_p=SQRT{ww_p/nftot-mean(iy).w_p^2}; uv_p=uv_p/nftot; uw_p=uw_p/nftot-(mean(iy).u_p*mean(iy).w_p); vw_p=vw_p/nftot FOR iy =0 TO HI
-!WITH rms(-1): uu_p=SQRT{uu_p/nftot-avfru^2};  ww_p=SQRT{ww_p/nftot-avfrw^2}; uw_p=uw_p/nftot-avfru*avfrw
+DO WITH rms(iy):  uu_p=SQRT{uu_p/nftot-mean(iy).u_p^2}; vv_p=SQRT{vv_p/nftot}; ww_p=SQRT{ww_p/nftot-mean(iy).w_p^2}; uv_p=uv_p/nftot; uw_p=uw_p/nftot-(mean(iy).u_p*mean(iy).w_p); vw_p=vw_p/nftot FOR iy =0 TO HI
+ 
+!WITH rms(-1): uu_p=SQRT{uu_p/nftot- avfru^2};  ww_p=SQRT{ww_p/nftot- avfrw^2}; uw_p=uw_p/nftot-avfru*avfrw
 
 uc=MAX(mean.u_p); 
 ut=SQRT[ni*(SUM d140(i)*mean.u_p(1+i) FOR ALL i)]; 

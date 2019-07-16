@@ -66,22 +66,22 @@ uu_vector=rms.uu_p;	vv_vector=rms.vv_p;	ww_vector=rms.ww_p;	uv_vector=rms.uv_p;	
 uu_m1=rms.uu_p(-1); vv_m1=rms.vv_p(-1);	ww_m1=rms.ww_p(-1);	uv_m1=rms.uv_p(-1);	uw_m1=rms.uw_p(-1);	vw_m1=rms.vw_p(-1);
 WRITE 
 
-<*	MPI_Reduce(uu_vector_,global_uu_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(vv_vector_,global_vv_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(ww_vector_,global_ww_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(uv_vector_,global_uv_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(uw_vector_,global_uw_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(vw_vector_,global_vw_,y_dim_,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+<*	MPI_Reduce(uu_vector_,global_uu_,y_dim_,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(vv_vector_,global_vv_,y_dim_,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(ww_vector_,global_ww_,y_dim_,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(uv_vector_,global_uv_,y_dim_,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(uw_vector_,global_uw_,y_dim_,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(vw_vector_,global_vw_,y_dim_,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
 	//-1 positions
-	MPI_Reduce(&uu_m1_,&global_uu_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(&vv_m1_,&global_vv_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(&ww_m1_,&global_ww_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(&uv_m1_,&global_uv_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(&uw_m1_,&global_uw_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-	MPI_Reduce(&vw_m1_,&global_vw_m1_,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	MPI_Reduce(&uu_m1_,&global_uu_m1_,1,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(&vv_m1_,&global_vv_m1_,1,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(&ww_m1_,&global_ww_m1_,1,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(&uv_m1_,&global_uv_m1_,1,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(&uw_m1_,&global_uw_m1_,1,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
+	MPI_Reduce(&vw_m1_,&global_vw_m1_,1,MPI_DOUBLE,MPI_SUM,rank_zero_,MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);*>
 
-IF rank=0 THEN 
+IF rank=rank_zero THEN 
 	WITH rms: 
 		uu_p=global_uu;	vv_p=global_vv; ww_p=global_ww; uv_p=global_uv; uw_p=global_uw;	vw_p=global_vw
 	WITH rms(-1): 
@@ -91,53 +91,22 @@ END IF
 IF rank= rank_zero THEN 
 	uc=MAX(mean.u_p); 
 	ut=SQRT[ni*(SUM d140(i)*mean.u_p(1+i) FOR ALL i)];
-	u_p_vect = mean.u_p;	w_p_vect = mean.w_p;	w_p_vect = mean.w_p;	u_m1=mean.u_p(-1);	w_m1=mean.w_p(-1)
-<*	MPI_Send(&uc_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&ut_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&u_m1_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&w_m1_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&(u_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&(v_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&(w_p_vect_[0]),y_dim_,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&avfru_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-	MPI_Send(&avfrw_,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD); *>
-END IF
-
-IF rank= 0 THEN 
-<*	MPI_Recv(&uc_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&ut_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&u_m1_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&w_m1_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&(u_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&(v_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&(w_p_vect_[0]),y_dim_,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&avfru_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Recv(&avfrw_,1,MPI_DOUBLE,rank_zero_,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE); *>
-END IF
-
-<*MPI_Barrier(MPI_COMM_WORLD);*>
-
-IF rank=0 THEN
-	mean.u_p = u_p_vect;	mean.v_p = v_p_vect;	mean.w_p = w_p_vect;
-	mean.u_p(-1)=u_m1;		mean.w_p(-1)=w_m1
-END IF
-!// Write on files
-IF rank=0 THEN
+	!// Write on files
 	WRITE "Writing file stats "stats_counter" at time "time
 	uc2=uc*uc;ut2=ut*ut
 	FILE info_file=CREATE("info"stats_counter".dat")
-		WRITE BY NAME TO info_file uc,ut,ut/ni
+		WRITE BY NAME TO info_file uc:1.9,ut:1.9,ut/ni:1.9
 	CLOSE info_file
 
 	FILE mean_file=CREATE("mean"stats_counter".dat")
 		DO WITH mean(iy): 
-		WRITE TO mean_file y(iy),y(iy)*ut/ni,u_p,w_p FOR iy=-1 TO ny DIV 2
-		WRITE TO mean_file avfru,avfrw
+		WRITE TO mean_file y(iy):1.9,y(iy)*ut/ni:1.9,u_p:1.9,w_p:1.9 FOR iy=-1 TO ny DIV 2
+		WRITE TO mean_file avfru:1.9,avfrw:1.9
 	CLOSE mean_file
 
 	FILE rms_file=CREATE("rms"stats_counter".dat")
 	DO WITH rms(iy): 
-		WRITE TO rms_file y(iy),y(iy)*ut/ni,uu_p,vv_p,ww_p,uv_p,uw_p,vw_p FOR iy=-1 TO ny DIV 2
+		WRITE TO rms_file y(iy):1.9,y(iy)*ut/ni:1.9,uu_p:1.9,vv_p:1.9,ww_p:1.9,uv_p:1.9,uw_p:1.9,vw_p:1.9 FOR iy=-1 TO ny DIV 2
 	CLOSE rms_file
 
 END IF
