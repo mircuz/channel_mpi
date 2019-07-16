@@ -97,6 +97,7 @@ void z_dealiasing(int nx, int ny, int nz, int nzd, FFT_SCALAR *U) {
 			}
 		}		
 	}
+	free(temp);
 }
 
 void cores_handler( int modes, int size, int *modes_per_proc) {
@@ -333,4 +334,3 @@ void Alltoall(int rank, int size, int in_jlo, int in_jhi, int in_ilo,
 	  } */
 	MPI_Type_free(vector);
 }
-

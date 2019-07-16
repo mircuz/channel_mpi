@@ -71,7 +71,7 @@ SUBROUTINE convol_trasp( POINTER TO ARRAY(*,*,*) OF MOMFLUX VVd; POINTER TO ARRA
   double timer_conv = 0.0;
   timer_conv -= MPI_Wtime();
   MPI_Barrier(MPI_COMM_WORLD);  *>
-LOOP FOR i=0 TO localdim_x
+	LOOP FOR i=0 TO localdim_x
 	uu[i] = u_convol[i]*u_convol[i]
 	uv[i] = u_convol[i]*v_convol[i]
 	vv[i] = v_convol[i]*v_convol[i]
@@ -276,8 +276,7 @@ IF generate_inputs = TRUE THEN random_field
 
 REAL cfl=0, dt_cfl=deltat
 SUBROUTINE getcfl(POINTER TO ARRAY(*,*,*) OF VELOCITY Vd)
-dx=PI/(alfa0*nxd); dz=2*PI/(beta0*nzd);	cfl=0
-REAL dy
+REAL dx=PI/(alfa0*nxd); REAL dz=2*PI/(beta0*nzd); REAL dy=0; cfl=0
   <*  //----------------------------------------------- Bridge Variables -------------------------------------------
   int rank = rank_; int nz, nzd, nx, nxd, ny;
   nx = nx_+1; ny = ny_+3;	nz = nz_*2+1; nxd = nxd_, nzd = nzd_;
@@ -401,7 +400,7 @@ REPEAT
 
 LOOP FOR iy=1 TO ny-1
   	dy=0.5*(y(iy+1)-y(iy-1))
-	cfl=MAX{cfl,u_cfl(iy+1)/dx + v_cfl(iy+1)/dy + w_cfl(iy+1)/dz}
+	cfl=MAX{cfl,u_cfl(iy)/dx + v_cfl(iy)/dy + w_cfl(iy)/dz}
 REPEAT
 
 IF cflmax>0 THEN

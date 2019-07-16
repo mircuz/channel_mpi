@@ -197,7 +197,7 @@ POINTER TO ARRAY(0..localdim_x-1) OF REAL eta_write
 POINTER TO ARRAY(0..localdim_x-1) OF REAL v_write
 REAL mean_u(-1..ny+1)
 REAL mean_w(-1..ny+1)
-REAL u_max(0..ny-1), w_max(0..ny-1), v_max(0..ny-1)
-REAL u_cfl(0..ny-1),v_cfl(0..ny-1),w_cfl(0..ny-1)
+REAL u_max(0..ny-1)=0, w_max(0..ny-1)=0, v_max(0..ny-1)=0
+REAL u_cfl(0..ny-1)=0,v_cfl(0..ny-1)=0,w_cfl(0..ny-1)=0
 
 set_time
